@@ -40,10 +40,15 @@ function playThrough(rng, choose) {
     const contest = DT.contest.contestForTurn(state.turn);
     if (contest) {
       DT.contest.runAll(state, contest, specialistPick(state.turn), rng);
-    } else if (action !== 'injured') {
-      const ev = DT.events.roll(state, rng);
-      if (ev && ev.kind === 'char') DT.events.applyChoice(state, ev.event, 0);
-      else if (ev) DT.events.applyHappening(state, ev.event);
+    } else {
+      const wc = DT.contest.worldsContestForTurn(state.turn);
+      if (wc && DT.contest.worldsQualified(state, state.turn)) {
+        DT.contest.runAll(state, wc, [], rng);
+      } else if (action !== 'injured') {
+        const ev = DT.events.roll(state, rng);
+        if (ev && ev.kind === 'char') DT.events.applyChoice(state, ev.event, 0);
+        else if (ev) DT.events.applyHappening(state, ev.event);
+      }
     }
     DT.engine.endTurn(state, rng);
   }
@@ -54,8 +59,8 @@ test('まともな方針なら20回全部卒業できる', () => {
   for (let seed = 1; seed <= 20; seed++) {
     const s = playThrough(lcg(seed), chooseSensible);
     assert.strictEqual(s.status, 'graduated', 'seed=' + seed);
-    // 8大会 × (総合1+スペシャ枠) = 1年2+2 + 2年3+3 + 3年4+4 + 4年4+4 = 26エントリー
-    assert.strictEqual(s.results.length, 26, 'seed=' + seed + ' エントリー数');
+    // 8大会 × (総合1+スペシャ枠) = 1年2+2 + 2年3+3 + 3年4+4 + 4年4+4 = 26エントリー（通常大会のみ）
+    assert.strictEqual(s.results.filter(r => r.type !== 'worlds').length, 26, 'seed=' + seed + ' エントリー数');
     const e = DT.ending.evaluate(s);
     assert.ok('SABCDE'.includes(e.rank), 'seed=' + seed + ' rank=' + e.rank);
   }
@@ -99,7 +104,22 @@ test('ライバル戦績が記録される', () => {
   const shion = s.rivalRecord.shion;
   assert.strictEqual(shion.win + shion.lose, 8); // 志音は全8大会に出る
   const kaito = s.rivalRecord.kaito;
-  assert.strictEqual(kaito.win + kaito.lose, 4); // 魁人はAJDCのみ
+  const worldsCount = s.results.filter(r => r.type === 'worlds').length;
+  assert.strictEqual(kaito.win + kaito.lose, 4 + worldsCount); // 魁人はAJDC + 世界大会
+});
+
+test('世界大会は出場権があるときだけ結果に現れる', () => {
+  let worldsAppearances = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const s = playThrough(lcg(seed), chooseSensible);
+    const wins = (t) => s.results.some(r => r.rank === 1 && (r.type === 'oidc' || r.type === 'ajdc') && r.turn > t - 12 && r.turn < t);
+    s.results.filter(r => r.type === 'worlds').forEach(r => {
+      assert.ok(wins(r.turn), 'seed=' + seed + ' 無資格出場 turn=' + r.turn);
+      worldsAppearances += 1;
+    });
+  }
+  console.log('  世界大会出場回数(20シード計): ' + worldsAppearances);
+  assert.ok(worldsAppearances >= 1, '20シードで一度も世界大会に出られていない');
 });
 
 test('参考: 20シードの卒業ランク分布を表示', () => {
