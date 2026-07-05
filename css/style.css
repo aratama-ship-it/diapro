@@ -1,0 +1,39 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  background: #1a1a2e;
+  color: #eaeaea;
+  min-height: 100vh;
+}
+#app { max-width: 480px; margin: 0 auto; padding: 16px; }
+.screen { display: flex; flex-direction: column; gap: 12px; padding-top: 24px; }
+.hidden { display: none; }
+h1 { font-size: 1.6rem; text-align: center; color: #ffd166; }
+h2 { font-size: 1.3rem; text-align: center; color: #ffd166; }
+.subtitle { text-align: center; color: #aaa; font-size: 0.9rem; }
+.center { text-align: center; }
+button {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #2e2e4e;
+  color: #eaeaea;
+  font-size: 1rem;
+  cursor: pointer;
+}
+button.primary { background: #e07a5f; font-weight: bold; }
+button:disabled { opacity: 0.4; cursor: default; }
+.card { background: #23233d; border-radius: 12px; padding: 12px; }
+.stat-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 0.85rem; }
+.stat-row .label { width: 9em; flex-shrink: 0; }
+.stat-row .bar-bg { flex: 1; height: 10px; background: #11111f; border-radius: 5px; overflow: hidden; display: block; }
+.stat-row .bar { height: 100%; background: linear-gradient(90deg, #4ecdc4, #ffd166); display: block; }
+.stat-row .val { width: 2.5em; text-align: right; }
+#main-header { text-align: center; font-size: 1.05rem; color: #ffd166; }
+#main-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#main-actions button { font-size: 0.85rem; padding: 10px 4px; }
+#main-log { font-size: 0.85rem; line-height: 1.6; min-height: 3em; }
+.cond-warn { color: #ff6b6b; font-weight: bold; }
+.result-big { text-align: center; font-size: 2rem; margin: 12px 0; color: #ffd166; }
+table.results { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+table.results td, table.results th { padding: 4px; border-bottom: 1px solid #333; text-align: left; }

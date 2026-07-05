@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ディアボロ選手育成</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <section id="screen-title" class="screen">
+    <h1>ディアボロ選手育成</h1>
+    <p class="subtitle">〜大学4年間、ディアボロに懸けろ〜</p>
+    <button id="btn-new" class="primary">はじめから</button>
+    <button id="btn-continue">つづきから</button>
+  </section>
+
+  <section id="screen-create" class="screen hidden">
+    <h2>新入生スカウト</h2>
+    <p class="subtitle">今年の新入生はこんな選手！</p>
+    <div id="create-stats" class="card"></div>
+    <button id="btn-reroll">引き直す</button>
+    <button id="btn-start" class="primary">この選手で始める</button>
+  </section>
+
+  <section id="screen-main" class="screen hidden">
+    <header id="main-header"></header>
+    <div id="main-cond" class="card"></div>
+    <div id="main-stats" class="card"></div>
+    <div id="main-actions" class="card"></div>
+    <div id="main-log" class="card"></div>
+  </section>
+
+  <section id="screen-contest" class="screen hidden">
+    <h2 id="contest-name"></h2>
+    <div id="contest-result" class="card"></div>
+    <button id="btn-contest-ok" class="primary">結果を受け止める</button>
+  </section>
+
+  <section id="screen-ending" class="screen hidden">
+    <h2 id="ending-title"></h2>
+    <div id="ending-detail" class="card"></div>
+    <button id="btn-restart" class="primary">タイトルへ</button>
+  </section>
+</div>
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/contest.js"></script>
+<script src="js/ending.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
