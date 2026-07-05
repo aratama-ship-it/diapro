@@ -21,11 +21,11 @@
     );
     const ajdcOverallWin = state.results.some(r => r.type === 'ajdc' && r.division === 'overall' && r.rank === 1);
     let rank;
-    if (ajdcOverallWin || points >= 250) rank = 'S';
-    else if (points >= 150) rank = 'A';
-    else if (points >= 90) rank = 'B';
-    else if (points >= 50) rank = 'C';
-    else if (points >= 20) rank = 'D';
+    if (ajdcOverallWin || points >= 900) rank = 'S';
+    else if (points >= 700) rank = 'A';
+    else if (points >= 450) rank = 'B';
+    else if (points >= 300) rank = 'C';
+    else if (points >= 90) rank = 'D';
     else rank = 'E';
     const titles = {
       S: '伝説のディアボリスト',
