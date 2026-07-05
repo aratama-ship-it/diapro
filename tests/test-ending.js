@@ -50,4 +50,16 @@ test('evaluate: 合計ポイントと能力平均を返す', () => {
   assert.ok(e.title.length > 0);
 });
 
+test('evaluate: スペシャリスト部門のAJDC優勝ではSにならない', () => {
+  const s = DT.state.newCharacter(() => 0.5);
+  s.status = 'graduated';
+  s.results = [{
+    name: 'test', type: 'ajdc', division: 'v1d', divisionLabel: '1ディアボロ垂直軸部門',
+    rank: 1, entrants: 16, score: 60, misses: 0, points: 50
+  }];
+  const e = DT.ending.evaluate(s);
+  assert.notStrictEqual(e.rank, 'S');
+  assert.strictEqual(e.ajdcOverallWin, false);
+});
+
 summary();
