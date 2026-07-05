@@ -84,4 +84,37 @@ test('missRate: 怪我中はミス率+15%', () => {
   assert.strictEqual(DT.contest.missRate(s), 25);
 });
 
+test('rivalScore: 成長曲線どおり（ノイズ0）', () => {
+  const shion = DT.DATA.RIVALS[0];
+  // rng 0.5 → ノイズ0
+  assert.strictEqual(DT.contest.rivalScore(shion, DT.DATA.CONTESTS[0], () => 0.5), 22); // 1年
+  assert.strictEqual(DT.contest.rivalScore(shion, DT.DATA.CONTESTS[7], () => 0.5), 52); // 4年
+});
+
+test('runAll: 総合部門にライバルが実在し勝敗が記録される', () => {
+  const s = allFifty(); // スコア50 > 志音1年22
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], [], () => 0.5); // 1年OIDC: 志音のみ
+  assert.strictEqual(rs[0].rivalOutcomes.length, 1);
+  assert.strictEqual(rs[0].rivalOutcomes[0].id, 'shion');
+  assert.strictEqual(rs[0].rivalOutcomes[0].beat, true);
+  assert.strictEqual(s.rivalRecord.shion.win, 1);
+  assert.strictEqual(s.motivation, 4); // 勝ってやる気+1
+  assert.ok(rs[0].rivalMessages.some(m => m.includes('志音')));
+});
+
+test('runAll: AJDCには魁人も出る・負けは魁人ノーペナルティ', () => {
+  const s = allFifty(); // スコア50: 志音1年22に勝ち、魁人66に負け
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[1], [], () => 0.5); // 1年AJDC
+  assert.strictEqual(rs[0].rivalOutcomes.length, 2);
+  assert.strictEqual(s.rivalRecord.kaito.lose, 1);
+  assert.strictEqual(s.rivalRecord.shion.win, 1);
+  assert.strictEqual(s.motivation, 4); // 志音勝ち+1のみ（魁人負けは減点なし）
+});
+
+test('runAll: スペシャリスト部門にライバルは出ない', () => {
+  const s = allFifty();
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['v1d'], () => 0.5);
+  assert.deepStrictEqual(rs[1].rivalOutcomes, []);
+});
+
 summary();

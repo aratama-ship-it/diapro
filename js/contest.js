@@ -61,17 +61,32 @@
     return Math.min(specialistCount, Math.ceil(turn / 12));
   }
 
+  function rivalScore(rival, contest, rng) {
+    rng = rng || Math.random;
+    const year = Math.ceil(contest.turn / 12);
+    return Math.round((rival.base + rival.growth * (year - 1) + (rng() - 0.5) * 2 * rival.sd) * 10) / 10;
+  }
+
+  function rivalsFor(contest) {
+    return DT.DATA.RIVALS.filter(r => r.contests.includes(contest.type));
+  }
+
   function runDivision(state, contest, divisionId, rng) {
     const lv = LEVELS[contest.type];
     const year = Math.ceil(contest.turn / 12);
     const mean = lv.base + lv.growth * (year - 1);
+
+    const rivals = divisionId === 'overall' ? rivalsFor(contest) : [];
+    const rivalEntries = rivals.map(r => ({ rival: r, score: rivalScore(r, contest, rng) }));
+
     const opponents = [];
-    for (let i = 0; i < lv.entrants - 1; i++) {
+    for (let i = 0; i < lv.entrants - 1 - rivalEntries.length; i++) {
       const g = (rng() + rng() + rng()) / 3;
       opponents.push(mean + (g - 0.5) * 2 * lv.sd * 1.8);
     }
     const p = playerScore(state, divisionId, rng);
-    const rank = 1 + opponents.filter(o => o > p.score).length;
+    const allScores = opponents.concat(rivalEntries.map(e => e.score));
+    const rank = 1 + allScores.filter(o => o > p.score).length;
     const half = Math.ceil(lv.entrants / 2);
     const div = divisionOf(divisionId);
     const table = lv.points[div.scoring];
@@ -80,13 +95,16 @@
       : rank === 3 ? table[2]
       : rank <= half ? table[3]
       : table[4];
+    const rivalOutcomes = rivalEntries.map(e => ({
+      id: e.rival.id, name: e.rival.name, score: e.score, beat: p.score > e.score
+    }));
     return {
       name: contest.name, type: contest.type,
       division: divisionId, divisionLabel: div.label,
       rank, entrants: lv.entrants, score: p.score,
       parts: p.parts, judgeMod: p.judgeMod, misses: p.misses,
       execDeduction: p.execDeduction, specialDeduction: p.specialDeduction,
-      points
+      points, rivalOutcomes
     };
   }
 
@@ -98,6 +116,25 @@
       if (i > 0) state.fatigue = clamp(state.fatigue + DT.DATA.SCORING.entryFatigue, 0, 100);
       const r = runDivision(state, contest, id, rng);
       state.results.push(r);
+      if (id === 'overall') {
+        const rivalMessages = [];
+        let beatAny = false;
+        r.rivalOutcomes.forEach(o => {
+          if (o.beat) {
+            state.rivalRecord[o.id].win += 1;
+            beatAny = true;
+            rivalMessages.push(o.name + 'に勝った！（' + o.score + '点）');
+          } else {
+            state.rivalRecord[o.id].lose += 1;
+            rivalMessages.push(o.name + 'に敗れた…（' + o.score + '点）');
+            if (o.id === 'shion') state.motivation = clamp(state.motivation - 1, 1, 5);
+          }
+        });
+        if (beatAny) state.motivation = clamp(state.motivation + 1, 1, 5);
+        r.rivalMessages = rivalMessages;
+      } else {
+        r.rivalMessages = [];
+      }
       results.push(r);
     });
     return results;
@@ -107,5 +144,5 @@
     return DT.DATA.CONTESTS.find(c => c.turn === turn) || null;
   }
 
-  DT.contest = { breakdown, missRate, playerScore, maxSpecialists, runAll, contestForTurn, LEVELS };
+  DT.contest = { breakdown, missRate, playerScore, maxSpecialists, runAll, contestForTurn, rivalScore, LEVELS };
 })(typeof window !== 'undefined' ? window : globalThis);
