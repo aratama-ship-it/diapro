@@ -117,4 +117,42 @@ test('runAll: スペシャリスト部門にライバルは出ない', () => {
   assert.deepStrictEqual(rs[1].rivalOutcomes, []);
 });
 
+test('worldsContestForTurn: 11月だけ返す', () => {
+  assert.strictEqual(DT.contest.worldsContestForTurn(8).type, 'worlds');
+  assert.strictEqual(DT.contest.worldsContestForTurn(8).name, '1年 世界大会');
+  assert.strictEqual(DT.contest.worldsContestForTurn(44).name, '4年 世界大会');
+  assert.strictEqual(DT.contest.worldsContestForTurn(5), null);
+});
+
+test('worldsQualified: 直近1年のOIDC/AJDC優勝で出場権', () => {
+  const s = allFifty();
+  assert.strictEqual(DT.contest.worldsQualified(s, 8), false);
+  s.results.push({ name: '1年 OIDC', type: 'oidc', division: 'v1d', rank: 1, points: 20, turn: 5 });
+  assert.strictEqual(DT.contest.worldsQualified(s, 8), true);   // スペシャ部門優勝でもOK
+  assert.strictEqual(DT.contest.worldsQualified(s, 20), false); // 翌年には失効（20-12=8 < 5は範囲外）
+  s.results.push({ name: '1年 AJDC', type: 'ajdc', division: 'overall', rank: 2, points: 70, turn: 12 });
+  assert.strictEqual(DT.contest.worldsQualified(s, 20), false); // 2位では権利なし
+  s.results.push({ name: '2年 OIDC', type: 'oidc', division: 'overall', rank: 1, points: 40, turn: 17 });
+  assert.strictEqual(DT.contest.worldsQualified(s, 20), true);
+});
+
+test('runAll: 世界大会は総合のみ・魁人が出る・超高レベル', () => {
+  const s = allFifty();
+  DT.DATA.STATS.forEach(st => { s.stats[st.id] = 100; });
+  const wc = DT.contest.worldsContestForTurn(44); // 4年: 相手平均 58+15=73
+  const rs = DT.contest.runAll(s, wc, [], () => 0.5);
+  assert.strictEqual(rs.length, 1);
+  assert.strictEqual(rs[0].rank, 1); // 全能力100(=100点)なら魁人73.5にも勝つ
+  assert.strictEqual(rs[0].points, 150);
+  assert.strictEqual(rs[0].turn, 44);
+  assert.strictEqual(rs[0].rivalOutcomes.length, 1);
+  assert.strictEqual(rs[0].rivalOutcomes[0].id, 'kaito');
+});
+
+test('結果オブジェクトにturnが入る（既存大会）', () => {
+  const s = allFifty();
+  DT.contest.runAll(s, DT.DATA.CONTESTS[0], [], () => 0.5);
+  assert.strictEqual(s.results[0].turn, 5);
+});
+
 summary();

@@ -63,3 +63,14 @@ test('evaluate: スペシャリスト部門のAJDC優勝ではSにならない',
 });
 
 summary();
+
+test('evaluate: 世界大会優勝で世界チャンピオン（S）', () => {
+  const s = DT.state.newCharacter(() => 0.5);
+  s.status = 'graduated';
+  s.results = [{ name: '4年 世界大会', type: 'worlds', division: 'overall', divisionLabel: '個人総合部門',
+                 rank: 1, entrants: 16, score: 80, misses: 0, points: 150, turn: 44 }];
+  const e = DT.ending.evaluate(s);
+  assert.strictEqual(e.rank, 'S');
+  assert.strictEqual(e.title, '世界チャンピオン');
+  assert.strictEqual(e.worldsWin, true);
+});

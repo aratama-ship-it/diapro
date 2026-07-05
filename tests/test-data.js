@@ -55,7 +55,7 @@ test('DATA: キャラ5人とライバル2人が定義されている', () => {
   assert.strictEqual(DT.DATA.RIVALS.length, 2);
   assert.deepStrictEqual(DT.DATA.RIVALS.map(r => r.id), ['shion', 'kaito']);
   assert.deepStrictEqual(DT.DATA.RIVALS[0].contests, ['oidc', 'ajdc']);
-  assert.deepStrictEqual(DT.DATA.RIVALS[1].contests, ['ajdc']);
+  assert.deepStrictEqual(DT.DATA.RIVALS[1].contests, ['ajdc', 'worlds']);
 });
 
 test('DATA: イベント定義の整合性', () => {

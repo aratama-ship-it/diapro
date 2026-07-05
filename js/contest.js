@@ -53,7 +53,9 @@
     oidc: { base: 25, growth: 5, sd: 10, entrants: 16,
             points: { overall: [40, 25, 15, 8, 2], specialist: [20, 13, 8, 4, 1] } },
     ajdc: { base: 35, growth: 9, sd: 12, entrants: 16,
-            points: { overall: [100, 70, 50, 20, 5], specialist: [50, 35, 25, 10, 3] } }
+            points: { overall: [100, 70, 50, 20, 5], specialist: [50, 35, 25, 10, 3] } },
+    worlds: { base: 58, growth: 5, sd: 8, entrants: 16,
+              points: { overall: [150, 100, 70, 30, 10], specialist: [75, 50, 35, 15, 5] } }
   };
 
   function maxSpecialists(turn) {
@@ -104,7 +106,7 @@
       rank, entrants: lv.entrants, score: p.score,
       parts: p.parts, judgeMod: p.judgeMod, misses: p.misses,
       execDeduction: p.execDeduction, specialDeduction: p.specialDeduction,
-      points, rivalOutcomes
+      points, rivalOutcomes, turn: contest.turn
     };
   }
 
@@ -140,9 +142,22 @@
     return results;
   }
 
+  function worldsContestForTurn(turn) {
+    if (!DT.DATA.WORLDS_TURNS.includes(turn)) return null;
+    const year = Math.ceil(turn / 12);
+    return { turn, type: 'worlds', name: year + '年 世界大会' };
+  }
+
+  function worldsQualified(state, worldsTurn) {
+    return state.results.some(r =>
+      r.rank === 1 && (r.type === 'oidc' || r.type === 'ajdc') &&
+      r.turn > worldsTurn - 12 && r.turn < worldsTurn
+    );
+  }
+
   function contestForTurn(turn) {
     return DT.DATA.CONTESTS.find(c => c.turn === turn) || null;
   }
 
-  DT.contest = { breakdown, missRate, playerScore, maxSpecialists, runAll, contestForTurn, rivalScore, LEVELS };
+  DT.contest = { breakdown, missRate, playerScore, maxSpecialists, runAll, contestForTurn, worldsContestForTurn, worldsQualified, rivalScore, LEVELS };
 })(typeof window !== 'undefined' ? window : globalThis);

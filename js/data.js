@@ -53,6 +53,7 @@
     STUDY: { id: 'study', label: '勉強', gain: 10, fatigue: 4 },
     REST:  { id: 'rest',  label: '休養' },
     TOTAL_TURNS: 48,
+    WORLDS_TURNS: [8, 20, 32, 44],
     STUDY_MIN: 20,          // 学力がこれ未満の月が続くと退学
     STUDY_LIMIT_MONTHS: 3,  // 退学までの連続月数
     STUDY_BONUS: 70,        // 学力がこれ以上なら練習成功率ボーナス
@@ -125,7 +126,7 @@
     // v2: ライバル（総合部門に実在する対戦相手）
     RIVALS: [
       { id: 'shion', name: '志音', contests: ['oidc', 'ajdc'], base: 22, growth: 10, sd: 4 },
-      { id: 'kaito', name: '魁人', contests: ['ajdc'],         base: 66, growth: 2.5, sd: 4 }
+      { id: 'kaito', name: '魁人', contests: ['ajdc', 'worlds'],         base: 66, growth: 2.5, sd: 4 }
     ]
   };
 })(typeof window !== 'undefined' ? window : globalThis);

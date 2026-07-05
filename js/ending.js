@@ -19,6 +19,7 @@
     const abilityAvg = Math.round(
       DT.DATA.STATS.reduce((a, s) => a + state.stats[s.id], 0) / DT.DATA.STATS.length
     );
+    const worldsWin = state.results.some(r => r.type === 'worlds' && r.rank === 1);
     const ajdcOverallWin = state.results.some(r => r.type === 'ajdc' && r.division === 'overall' && r.rank === 1);
     let rank;
     if (ajdcOverallWin || points >= 850) rank = 'S';
@@ -27,6 +28,7 @@
     else if (points >= 300) rank = 'C';
     else if (points >= 90) rank = 'D';
     else rank = 'E';
+    if (worldsWin) rank = 'S';
     const titles = {
       S: '伝説のディアボリスト',
       A: '全国区のトッププレイヤー',
@@ -35,7 +37,8 @@
       D: 'これからのプレイヤー',
       E: 'サークルの思い出'
     };
-    return { rank, title: titles[rank], totalPoints: points, abilityAvg, ajdcOverallWin };
+    const title = worldsWin ? '世界チャンピオン' : titles[rank];
+    return { rank, title, totalPoints: points, abilityAvg, ajdcOverallWin, worldsWin };
   }
 
   DT.ending = { evaluate };
