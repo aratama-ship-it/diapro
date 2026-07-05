@@ -86,8 +86,11 @@
   // --- メイン画面 ---
   function renderMain(logs) {
     const nextContest = DT.DATA.CONTESTS.find(c => c.turn >= state.turn);
+    const nextWorlds = DT.DATA.WORLDS_TURNS.find(t => t >= state.turn);
+    const worldsNote = (nextWorlds && DT.contest.worldsQualified(state, nextWorlds)) ? '｜世界大会出場権あり！' : '';
     $('#main-header').textContent = DT.engine.turnLabel(state.turn) +
-      (nextContest ? '｜次: ' + nextContest.name + '（' + DT.engine.turnLabel(nextContest.turn) + '）' : '');
+      (nextContest ? '｜次: ' + nextContest.name + '（' + DT.engine.turnLabel(nextContest.turn) + '）' : '') +
+      worldsNote;
 
     const bd = DT.contest.breakdown(state, 'overall');
     const expected = Math.round(Object.values(bd).reduce((a, v) => a + v, 0) * 10) / 10;
@@ -144,6 +147,13 @@
       renderEntry(contest);
       return;
     }
+    const wc = DT.contest.worldsContestForTurn(state.turn);
+    if (wc && DT.contest.worldsQualified(state, state.turn)) {
+      pendingMessages = result.messages;
+      pendingContest = wc;
+      renderWorldsEntry(wc);
+      return;
+    }
     if (actionId !== 'injured') {
       const ev = DT.events.roll(state);
       if (ev && ev.kind === 'char') {
@@ -198,8 +208,25 @@
     renderMain(logs);
   }
 
+  // --- 世界大会出場選択 ---
+  function renderWorldsEntry(wc) {
+    $('#entry-title').textContent = wc.name + ' 出場権獲得！';
+    $('#entry-hint').textContent = '直近1年の優勝実績により出場できます。相手は世界トップレベル（王者・魁人も出場）。';
+    const enter = el('button', 'primary', '出場する');
+    enter.onclick = () => {
+      const results = DT.contest.runAll(state, pendingContest, []);
+      finishTurn(pendingMessages, results);
+    };
+    const skip = el('button', '', '見送る');
+    skip.onclick = () => finishTurn(pendingMessages, null);
+    $('#entry-divisions').replaceChildren(enter, skip);
+    $('#btn-entry-go').classList.add('hidden');
+    show('#screen-entry');
+  }
+
   // --- エントリー選択 ---
   function renderEntry(contest) {
+    $('#btn-entry-go').classList.remove('hidden');
     const max = DT.contest.maxSpecialists(state.turn);
     entrySelection = [];
     $('#entry-title').textContent = contest.name + ' エントリー';
