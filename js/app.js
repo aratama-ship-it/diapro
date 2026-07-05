@@ -132,6 +132,8 @@
     const end = DT.engine.endTurn(state);
     const logs = messages.concat(end.events);
     DT.state.save(state);
+    pendingContest = null;
+    pendingMessages = [];
     if (contestResults) {
       pendingLogs = logs;
       renderContestResults(contestResults);
@@ -154,6 +156,9 @@
     entrySelection = [];
     $('#entry-title').textContent = contest.name + ' エントリー';
     $('#entry-hint').textContent = '個人総合部門は必ず出場。スペシャリストはあと' + max + '部門まで掛け持ちできます（1演技ごとに疲労+' + DT.DATA.SCORING.entryFatigue + '）';
+    if (state.injuredTurns > 0) {
+      $('#entry-hint').textContent += '　⚠ 怪我の影響でミス率+15%！';
+    }
     const rows = [];
     const fixed = el('button', '', '個人総合部門（必須）');
     fixed.disabled = true;
@@ -208,11 +213,20 @@
   function resultsTable(results) {
     const table = el('table', 'results');
     const head = el('tr');
-    ['大会', '順位', 'pt'].forEach(h => head.appendChild(el('th', '', h)));
+    ['部門', '順位', 'pt'].forEach(h => head.appendChild(el('th', '', h)));
     table.appendChild(head);
+    let lastName = null;
     results.forEach(r => {
+      if (r.name !== lastName) {
+        lastName = r.name;
+        const group = el('tr');
+        const th = el('th', '', r.name);
+        th.colSpan = 3;
+        group.appendChild(th);
+        table.appendChild(group);
+      }
       const tr = el('tr');
-      tr.appendChild(el('td', '', r.name + ' ' + r.divisionLabel));
+      tr.appendChild(el('td', '', r.divisionLabel));
       tr.appendChild(el('td', '', r.rank + '位'));
       tr.appendChild(el('td', '', r.points + 'pt'));
       table.appendChild(tr);
