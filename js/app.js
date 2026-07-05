@@ -6,6 +6,9 @@
   let state = null;
   let candidate = null;
   let pendingLogs = [];
+  let pendingMessages = [];
+  let entrySelection = [];
+  let pendingContest = null;
 
   // --- DOMヘルパー（innerHTML不使用） ---
   function el(tag, cls, text) {
@@ -76,7 +79,7 @@
       statBar('学力', state.study),
       textRow('やる気', motiLabels[state.motivation - 1]),
       textRow('予想スコア', expected + '点 / 100点'),
-      textRow('ミス率', DT.contest.missRate(state) + '%')
+      textRow('ミス率（1判定あたり）', DT.contest.missRate(state) + '%')
     ];
     if (state.study < DT.DATA.STUDY_MIN) {
       condNodes.push(el('div', 'cond-warn', '⚠ 学業警告中！'));
@@ -116,14 +119,22 @@
   function onAction(actionId) {
     const result = DT.engine.applyAction(state, actionId);
     const contest = DT.contest.contestForTurn(state.turn);
-    let contestResult = null;
-    if (contest) contestResult = DT.contest.run(state, contest);
+    if (contest) {
+      pendingMessages = result.messages;
+      pendingContest = contest;
+      renderEntry(contest);
+      return;
+    }
+    finishTurn(result.messages, null);
+  }
+
+  function finishTurn(messages, contestResults) {
     const end = DT.engine.endTurn(state);
-    const logs = result.messages.concat(end.events);
+    const logs = messages.concat(end.events);
     DT.state.save(state);
-    if (contestResult) {
+    if (contestResults) {
       pendingLogs = logs;
-      renderContest(contestResult);
+      renderContestResults(contestResults);
       return;
     }
     afterTurn(logs);
@@ -137,17 +148,57 @@
     renderMain(logs);
   }
 
-  // --- 大会画面 ---
-  function renderContest(r) {
-    $('#contest-name').textContent = r.name;
-    $('#contest-result').replaceChildren(
-      el('div', 'result-big', r.rank + '位 / ' + r.entrants + '人'),
-      textRow('スコア', r.score + '点'),
-      ...DT.DATA.STATS.map(s => textRow(s.label + '点', String(r.parts[s.id]))),
-      textRow('実施減点（ミス' + r.misses + '回）', '-' + r.execDeduction + '点'),
-      textRow('特別減点', '-' + r.specialDeduction + '点'),
-      textRow('獲得ポイント', r.points + 'pt')
-    );
+  // --- エントリー選択 ---
+  function renderEntry(contest) {
+    const max = DT.contest.maxSpecialists(state.turn);
+    entrySelection = [];
+    $('#entry-title').textContent = contest.name + ' エントリー';
+    $('#entry-hint').textContent = '個人総合部門は必ず出場。スペシャリストはあと' + max + '部門まで掛け持ちできます（1演技ごとに疲労+' + DT.DATA.SCORING.entryFatigue + '）';
+    const rows = [];
+    const fixed = el('button', '', '個人総合部門（必須）');
+    fixed.disabled = true;
+    rows.push(fixed);
+    DT.DATA.DIVISIONS.filter(d => d.scoring === 'specialist').forEach(d => {
+      const b = el('button', '', d.label);
+      b.onclick = () => {
+        const idx = entrySelection.indexOf(d.id);
+        if (idx >= 0) {
+          entrySelection.splice(idx, 1);
+          b.classList.remove('primary');
+        } else if (entrySelection.length < max) {
+          entrySelection.push(d.id);
+          b.classList.add('primary');
+        }
+      };
+      rows.push(b);
+    });
+    $('#entry-divisions').replaceChildren(...rows);
+    show('#screen-entry');
+  }
+
+  $('#btn-entry-go').onclick = () => {
+    const results = DT.contest.runAll(state, pendingContest, entrySelection);
+    finishTurn(pendingMessages, results);
+  };
+
+  // --- 大会結果 ---
+  function renderContestResults(results) {
+    $('#contest-name').textContent = results[0].name + ' 結果';
+    const nodes = [];
+    results.forEach((r, i) => {
+      nodes.push(el('div', 'result-big', r.divisionLabel + ' ' + r.rank + '位 / ' + r.entrants + '人'));
+      if (i === 0) {
+        DT.DATA.STATS.forEach(s => {
+          if (r.parts[s.id] !== undefined) nodes.push(textRow(s.label + '点', String(r.parts[s.id])));
+        });
+        nodes.push(textRow('調子・審査', (r.judgeMod >= 0 ? '+' : '') + r.judgeMod + '点'));
+        nodes.push(textRow('実施減点（ミス' + r.misses + '回）', '-' + r.execDeduction + '点'));
+        nodes.push(textRow('特別減点', '-' + r.specialDeduction + '点'));
+      }
+      nodes.push(textRow('スコア', r.score + '点'));
+      nodes.push(textRow('獲得ポイント', r.points + 'pt'));
+    });
+    $('#contest-result').replaceChildren(...nodes);
     show('#screen-contest');
   }
 
@@ -161,7 +212,7 @@
     table.appendChild(head);
     results.forEach(r => {
       const tr = el('tr');
-      tr.appendChild(el('td', '', r.name));
+      tr.appendChild(el('td', '', r.name + ' ' + r.divisionLabel));
       tr.appendChild(el('td', '', r.rank + '位'));
       tr.appendChild(el('td', '', r.points + 'pt'));
       table.appendChild(tr);
