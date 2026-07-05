@@ -86,4 +86,86 @@ test('applyAction: 勉強成功で学力+10', () => {
   assert.strictEqual(s.didStudy, true);
 });
 
+test('turnLabel: 4月始まりの年月表示', () => {
+  assert.strictEqual(DT.engine.turnLabel(1), '1年生 4月');
+  assert.strictEqual(DT.engine.turnLabel(10), '1年生 1月');
+  assert.strictEqual(DT.engine.turnLabel(12), '1年生 3月');
+  assert.strictEqual(DT.engine.turnLabel(13), '2年生 4月');
+  assert.strictEqual(DT.engine.turnLabel(48), '4年生 3月');
+});
+
+test('endTurn: 勉強しなかった月は学力-2、疲労は自然回復-5', () => {
+  const s = base();
+  s.fatigue = 30;
+  DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.study, 38);
+  assert.strictEqual(s.fatigue, 25);
+  assert.strictEqual(s.turn, 2);
+});
+
+test('endTurn: 勉強した月は学力が減衰しない', () => {
+  const s = base();
+  s.didStudy = true;
+  DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.study, 40);
+});
+
+test('endTurn: 高疲労で練習すると怪我リスク加算', () => {
+  const s = base();
+  s.didTrain = true;
+  s.fatigue = 70;
+  DT.engine.endTurn(s, () => 0.99); // 乱数0.99は怪我しない
+  assert.strictEqual(s.injuryRisk, 15); // 10 + 5
+});
+
+test('endTurn: 怪我発生で来月療養・リスクリセット', () => {
+  const s = base();
+  s.didTrain = true;
+  s.injuryRisk = 100; // 怪我確率 100/500 = 20%
+  const r = DT.engine.endTurn(s, () => 0.0);
+  assert.strictEqual(s.injuredTurns, 1);
+  assert.strictEqual(s.injuryRisk, 25);
+  assert.strictEqual(s.motivation, 2);
+  assert.ok(r.events.some(e => e.includes('怪我')));
+});
+
+test('endTurn: 療養明けで回復', () => {
+  const s = base();
+  s.injuredTurns = 1;
+  s.fatigue = 60;
+  const r = DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.injuredTurns, 0);
+  assert.strictEqual(s.fatigue, 30); // 60 - 25(療養) - 5(自然回復)
+  assert.ok(r.events.some(e => e.includes('治った')));
+});
+
+test('endTurn: 学力低迷3ヶ月連続で退学', () => {
+  const s = base();
+  s.study = 10;
+  DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.lowStudyMonths, 1);
+  assert.strictEqual(s.status, 'playing');
+  DT.engine.endTurn(s, () => 0.99);
+  const r = DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.status, 'expelled');
+  assert.ok(r.events.some(e => e.includes('退学')));
+});
+
+test('endTurn: 学力回復で警告カウンタがリセットされる', () => {
+  const s = base();
+  s.study = 10;
+  DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.lowStudyMonths, 1);
+  s.study = 50;
+  DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.lowStudyMonths, 0);
+});
+
+test('endTurn: 48ターン目終了で卒業', () => {
+  const s = base();
+  s.turn = 48;
+  DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.status, 'graduated');
+});
+
 summary();
