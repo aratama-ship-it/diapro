@@ -4,10 +4,12 @@
   const SAVE_KEY = 'diabolo-trainer-save-v4';
   const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3'];
 
-  function newCharacter(rng) {
+  function newCharacter(rng, backgroundId) {
     rng = rng || Math.random;
+    const bg = DT.DATA.BACKGROUNDS.find(b => b.id === backgroundId) ||
+               DT.DATA.BACKGROUNDS.find(b => b.id === 'highschool');
     const stats = {};
-    DT.DATA.STATS.forEach(s => { stats[s.id] = 10 + Math.floor(rng() * 26); });
+    DT.DATA.STATS.forEach(s => { stats[s.id] = bg.statMin + Math.floor(rng() * bg.statSpread); });
     return {
       turn: 1,
       stats: stats,
@@ -22,6 +24,7 @@
       results: [],
       status: 'playing',
       name: '主人公',
+      background: bg.id,
       coachEvents: 0,
       specialUnlocked: false,
       rivalRecord: DT.DATA.RIVALS.reduce((acc, r) => { acc[r.id] = { win: 0, lose: 0 }; return acc; }, {})

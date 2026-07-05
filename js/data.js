@@ -56,6 +56,13 @@
     STUDY_MIN: 20,          // 学力がこれ未満の月が続くと退学
     STUDY_LIMIT_MONTHS: 3,  // 退学までの連続月数
     STUDY_BONUS: 70,        // 学力がこれ以上なら練習成功率ボーナス
+    // 難易度調整: ディアボロを始めた時期。初期能力のロール幅が変わる（学力は共通）
+    BACKGROUNDS: [
+      { id: 'college',    label: '大学から始めた', difficulty: 'ハード',         statMin: 5,  statSpread: 16 },
+      { id: 'highschool', label: '高校から始めた', difficulty: 'ノーマル',       statMin: 10, statSpread: 26 },
+      { id: 'juniorhigh', label: '中学から始めた', difficulty: 'イージー',       statMin: 20, statSpread: 26 },
+      { id: 'childhood',  label: '幼少期から',     difficulty: 'ベリーイージー', statMin: 30, statSpread: 26 }
+    ],
     // v2: 登場キャラクター（名前はdata.jsで一元管理 — 変更はここだけでよい）
     CHARACTERS: [
       { id: 'coach',  name: '剣持コーチ', role: '部の指導者。元世界チャンピオン' },

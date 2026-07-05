@@ -40,6 +40,14 @@ test('DATA: 大会はOIDC(8月)×4とAJDC(3月)×4', () => {
   assert.deepStrictEqual(DT.DATA.CONTESTS.filter(c => c.type === 'ajdc').map(c => c.turn), [12, 24, 36, 48]);
 });
 
+test('DATA: 経歴は4種で初期値レンジが昇順', () => {
+  assert.strictEqual(DT.DATA.BACKGROUNDS.length, 4);
+  assert.ok(DT.DATA.BACKGROUNDS.some(b => b.id === 'highschool'));
+  for (let i = 1; i < DT.DATA.BACKGROUNDS.length; i++) {
+    assert.ok(DT.DATA.BACKGROUNDS[i].statMin > DT.DATA.BACKGROUNDS[i - 1].statMin);
+  }
+});
+
 summary();
 
 test('DATA: キャラ5人とライバル2人が定義されている', () => {

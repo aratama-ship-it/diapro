@@ -9,6 +9,7 @@
   let pendingMessages = [];
   let entrySelection = [];
   let pendingContest = null;
+  let selectedBackground = 'highschool';
 
   // --- DOMヘルパー（innerHTML不使用） ---
   function el(tag, cls, text) {
@@ -48,12 +49,25 @@
     show('#screen-title');
   }
 
-  $('#btn-new').onclick = () => renderCreate(DT.state.newCharacter());
+  $('#btn-new').onclick = () => renderCreate(DT.state.newCharacter(undefined, selectedBackground));
   $('#btn-continue').onclick = () => { state = DT.state.load(); afterTurn([]); };
 
   // --- キャラ作成（ガチャポン型） ---
+  function renderBackgroundButtons() {
+    const buttons = DT.DATA.BACKGROUNDS.map(bg => {
+      const b = el('button', bg.id === selectedBackground ? 'primary' : '', bg.label + '（' + bg.difficulty + '）');
+      b.onclick = () => {
+        selectedBackground = bg.id;
+        renderCreate(DT.state.newCharacter(undefined, selectedBackground));
+      };
+      return b;
+    });
+    $('#create-bg').replaceChildren(...buttons);
+  }
+
   function renderCreate(c) {
     candidate = c;
+    renderBackgroundButtons();
     $('#create-stats').replaceChildren(
       ...DT.DATA.STATS.map(s => statBar(s.label, c.stats[s.id])),
       statBar('学力', c.study)
@@ -61,7 +75,7 @@
     show('#screen-create');
   }
 
-  $('#btn-reroll').onclick = () => renderCreate(DT.state.newCharacter());
+  $('#btn-reroll').onclick = () => renderCreate(DT.state.newCharacter(undefined, selectedBackground));
   $('#btn-start').onclick = () => { state = candidate; DT.state.save(state); renderMain([]); };
 
   // --- メイン画面 ---
