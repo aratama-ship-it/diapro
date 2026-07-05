@@ -14,13 +14,13 @@
       { id: 'staging',     label: 'ステージング',     group: 'expr' }
     ],
     TRAININGS: [
-      { id: 'multiplex',   label: 'マルチ練習',       stat: 'multiplex',   gain: 6, fatigue: 14, risk: 6 },
-      { id: 'isolation',   label: 'アイソ練習',       stat: 'isolation',   gain: 6, fatigue: 14, risk: 6 },
-      { id: 'saisai',      label: 'サイサイド練習',   stat: 'saisai',      gain: 6, fatigue: 16, risk: 8 },
-      { id: 'basic',       label: 'ベーシック練習',   stat: 'basic',       gain: 5, fatigue: 8,  risk: 2 },
-      { id: 'composition', label: 'ルーチン構成',     stat: 'composition', gain: 5, fatigue: 8,  risk: 2 },
-      { id: 'music',       label: '曲合わせ',         stat: 'music',       gain: 5, fatigue: 6,  risk: 1 },
-      { id: 'staging',     label: 'ステージング練習', stat: 'staging',     gain: 5, fatigue: 10, risk: 3 }
+      { id: 'multiplex',   label: 'マルチ練習',       stat: 'multiplex',   gain: 9, fatigue: 14, risk: 6 },
+      { id: 'isolation',   label: 'アイソ練習',       stat: 'isolation',   gain: 9, fatigue: 14, risk: 6 },
+      { id: 'saisai',      label: 'サイサイド練習',   stat: 'saisai',      gain: 9, fatigue: 16, risk: 8 },
+      { id: 'basic',       label: 'ベーシック練習',   stat: 'basic',       gain: 8, fatigue: 8,  risk: 2 },
+      { id: 'composition', label: 'ルーチン構成',     stat: 'composition', gain: 8, fatigue: 8,  risk: 2 },
+      { id: 'music',       label: '曲合わせ',         stat: 'music',       gain: 8, fatigue: 6,  risk: 1 },
+      { id: 'staging',     label: 'ステージング練習', stat: 'staging',     gain: 8, fatigue: 10, risk: 3 }
     ],
     STUDY: { id: 'study', label: '勉強', gain: 10, fatigue: 4 },
     REST:  { id: 'rest',  label: '休養' },

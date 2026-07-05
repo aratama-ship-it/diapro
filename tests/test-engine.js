@@ -50,7 +50,7 @@ test('applyAction: 練習大成功で能力2倍伸び・やる気+1', () => {
   const s = base();
   const r = DT.engine.applyAction(s, 'multiplex', () => 0.0);
   assert.strictEqual(r.tier, '大成功');
-  assert.strictEqual(s.stats.multiplex, 22); // 10 + round(6*2.0*1.0)
+  assert.strictEqual(s.stats.multiplex, 28); // 10 + round(9*2.0*1.0)
   assert.strictEqual(s.fatigue, 14);
   assert.strictEqual(s.injuryRisk, 16); // 10 + 6
   assert.strictEqual(s.motivation, 4);
