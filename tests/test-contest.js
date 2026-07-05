@@ -67,7 +67,7 @@ test('runAll: 総合+スペシャ1部門で結果2件・疲労が演技間に加
 test('runAll: AJDCのポイントは総合100/スペシャ50', () => {
   const s = allFifty();
   DT.DATA.STATS.forEach(st => { s.stats[st.id] = 100; });
-  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[7], ['d2'], () => 0.5); // 4年AJDC 相手平均56
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[7], ['d2'], () => 0.5); // 4年AJDC 相手平均62
   assert.strictEqual(rs[0].points, 100);
   assert.strictEqual(rs[1].points, 50);
 });

@@ -51,7 +51,7 @@
   const LEVELS = {
     oidc: { base: 25, growth: 5, sd: 10, entrants: 16,
             points: { overall: [40, 25, 15, 8, 2], specialist: [20, 13, 8, 4, 1] } },
-    ajdc: { base: 35, growth: 7, sd: 12, entrants: 16,
+    ajdc: { base: 35, growth: 9, sd: 12, entrants: 16,
             points: { overall: [100, 70, 50, 20, 5], specialist: [50, 35, 25, 10, 3] } }
   };
 
