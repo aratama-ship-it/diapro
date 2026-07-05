@@ -21,7 +21,7 @@
     );
     const ajdcOverallWin = state.results.some(r => r.type === 'ajdc' && r.division === 'overall' && r.rank === 1);
     let rank;
-    if (ajdcOverallWin || points >= 900) rank = 'S';
+    if (ajdcOverallWin || points >= 850) rank = 'S';
     else if (points >= 700) rank = 'A';
     else if (points >= 450) rank = 'B';
     else if (points >= 300) rank = 'C';

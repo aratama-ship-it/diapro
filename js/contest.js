@@ -21,7 +21,8 @@
   }
 
   function missRate(state) {
-    return clamp(Math.round(25 + state.fatigue * 0.3 - state.stats.control * 0.3), 2, 60);
+    const injuryPenalty = state.injuredTurns > 0 ? 15 : 0;
+    return clamp(Math.round(25 + state.fatigue * 0.3 - state.stats.control * 0.3 + injuryPenalty), 2, 60);
   }
 
   function playerScore(state, divisionId, rng) {

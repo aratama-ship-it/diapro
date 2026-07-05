@@ -78,4 +78,10 @@ test('contestForTurn: OIDC/AJDCの月だけ返す', () => {
   assert.strictEqual(DT.contest.contestForTurn(11), null); // 旧全国大会の月は今は大会なし
 });
 
+test('missRate: 怪我中はミス率+15%', () => {
+  const s = allFifty(); // 基準はmissRate 10
+  s.injuredTurns = 1;
+  assert.strictEqual(DT.contest.missRate(s), 25);
+});
+
 summary();

@@ -29,7 +29,7 @@ test('evaluate: 退学は専用評価', () => {
 });
 
 test('evaluate: ポイント閾値でランクが決まる', () => {
-  assert.strictEqual(DT.ending.evaluate(withResults([900])).rank, 'S');
+  assert.strictEqual(DT.ending.evaluate(withResults([850])).rank, 'S');
   assert.strictEqual(DT.ending.evaluate(withResults([700])).rank, 'A');
   assert.strictEqual(DT.ending.evaluate(withResults([450])).rank, 'B');
   assert.strictEqual(DT.ending.evaluate(withResults([300])).rank, 'C');
