@@ -6,13 +6,15 @@ require('../js/state.js');
 require('../js/ending.js');
 const DT = globalThis.DT;
 
-function withResults(pointsList, nationalWin) {
+function withResults(pointsList, ajdcWin) {
   const s = DT.state.newCharacter(() => 0.5);
   s.status = 'graduated';
   s.results = pointsList.map((p, i) => ({
     name: 'test' + i,
-    type: (nationalWin && i === 0) ? 'national' : 'summer',
-    rank: (nationalWin && i === 0) ? 1 : 5,
+    type: (ajdcWin && i === 0) ? 'ajdc' : 'oidc',
+    division: 'overall',
+    divisionLabel: '個人総合部門',
+    rank: (ajdcWin && i === 0) ? 1 : 5,
     entrants: 16, score: 50, misses: 0, points: p
   }));
   return s;
@@ -35,10 +37,10 @@ test('evaluate: ポイント閾値でランクが決まる', () => {
   assert.strictEqual(DT.ending.evaluate(withResults([5])).rank, 'E');
 });
 
-test('evaluate: 全国優勝があればポイント不足でもS', () => {
+test('evaluate: AJDC総合優勝があればポイント不足でもS', () => {
   const e = DT.ending.evaluate(withResults([100], true));
   assert.strictEqual(e.rank, 'S');
-  assert.strictEqual(e.nationalWin, true);
+  assert.strictEqual(e.ajdcOverallWin, true);
 });
 
 test('evaluate: 合計ポイントと能力平均を返す', () => {

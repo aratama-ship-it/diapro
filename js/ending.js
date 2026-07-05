@@ -19,9 +19,9 @@
     const abilityAvg = Math.round(
       DT.DATA.STATS.reduce((a, s) => a + state.stats[s.id], 0) / DT.DATA.STATS.length
     );
-    const nationalWin = state.results.some(r => r.type === 'national' && r.rank === 1);
+    const ajdcOverallWin = state.results.some(r => r.type === 'ajdc' && r.division === 'overall' && r.rank === 1);
     let rank;
-    if (nationalWin || points >= 250) rank = 'S';
+    if (ajdcOverallWin || points >= 250) rank = 'S';
     else if (points >= 150) rank = 'A';
     else if (points >= 90) rank = 'B';
     else if (points >= 50) rank = 'C';
@@ -35,7 +35,7 @@
       D: 'これからのプレイヤー',
       E: 'サークルの思い出'
     };
-    return { rank, title: titles[rank], totalPoints: points, abilityAvg, nationalWin };
+    return { rank, title: titles[rank], totalPoints: points, abilityAvg, ajdcOverallWin };
   }
 
   DT.ending = { evaluate };
