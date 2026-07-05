@@ -6,6 +6,7 @@ require('../js/state.js');
 require('../js/engine.js');
 require('../js/contest.js');
 require('../js/ending.js');
+require('../js/events.js');
 const DT = globalThis.DT;
 
 function lcg(seed) {
@@ -34,9 +35,16 @@ function playThrough(rng, choose) {
   let guard = 0;
   while (state.status === 'playing' && guard < 100) {
     guard += 1;
-    DT.engine.applyAction(state, choose(state), rng);
+    const action = choose(state);
+    DT.engine.applyAction(state, action, rng);
     const contest = DT.contest.contestForTurn(state.turn);
-    if (contest) DT.contest.runAll(state, contest, specialistPick(state.turn), rng);
+    if (contest) {
+      DT.contest.runAll(state, contest, specialistPick(state.turn), rng);
+    } else if (action !== 'injured') {
+      const ev = DT.events.roll(state, rng);
+      if (ev && ev.kind === 'char') DT.events.applyChoice(state, ev.event, 0);
+      else if (ev) DT.events.applyHappening(state, ev.event);
+    }
     DT.engine.endTurn(state, rng);
   }
   return state;
@@ -75,6 +83,23 @@ test('まともな方針なら4年間でどこかの大会で3位以内に入れ
     s.results.forEach(r => { if (r.rank < bestRank) bestRank = r.rank; });
   }
   assert.ok(bestRank <= 3, '20シードの最高順位が' + bestRank + '位（勝機がなさすぎる）');
+});
+
+test('イベントは4年間で複数回発生し、特別指導も到達可能', () => {
+  let unlockedCount = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const s = playThrough(lcg(seed), chooseSensible);
+    if (s.specialUnlocked) unlockedCount += 1;
+  }
+  assert.ok(unlockedCount >= 5, '特別指導解放が少なすぎる: ' + unlockedCount + '/20');
+});
+
+test('ライバル戦績が記録される', () => {
+  const s = playThrough(lcg(3), chooseSensible);
+  const shion = s.rivalRecord.shion;
+  assert.strictEqual(shion.win + shion.lose, 8); // 志音は全8大会に出る
+  const kaito = s.rivalRecord.kaito;
+  assert.strictEqual(kaito.win + kaito.lose, 4); // 魁人はAJDCのみ
 });
 
 test('参考: 20シードの卒業ランク分布を表示', () => {
