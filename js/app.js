@@ -70,7 +70,7 @@
     $('#main-header').textContent = DT.engine.turnLabel(state.turn) +
       (nextContest ? '｜次: ' + nextContest.name + '（' + DT.engine.turnLabel(nextContest.turn) + '）' : '');
 
-    const bd = DT.contest.breakdown(state);
+    const bd = DT.contest.breakdown(state, 'overall');
     const expected = Math.round(Object.values(bd).reduce((a, v) => a + v, 0) * 10) / 10;
     const motiLabels = ['絶不調', '不調', '普通', '好調', '絶好調'];
     const condNodes = [
