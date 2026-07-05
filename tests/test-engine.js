@@ -48,21 +48,21 @@ test('rollTier: 乱数値で4段階に分かれる', () => {
 
 test('applyAction: 練習大成功で能力2倍伸び・やる気+1', () => {
   const s = base();
-  const r = DT.engine.applyAction(s, 'multiplex', () => 0.0);
+  const r = DT.engine.applyAction(s, 'difficulty', () => 0.0);
   assert.strictEqual(r.tier, '大成功');
-  assert.strictEqual(s.stats.multiplex, 28); // 10 + round(9*2.0*1.0)
-  assert.strictEqual(s.fatigue, 14);
-  assert.strictEqual(s.injuryRisk, 16); // 10 + 6
+  assert.strictEqual(s.stats.difficulty, 28); // 10 + round(9*2.0*1.0)
+  assert.strictEqual(s.fatigue, 16);
+  assert.strictEqual(s.injuryRisk, 18); // 10 + 8
   assert.strictEqual(s.motivation, 4);
   assert.strictEqual(s.didTrain, true);
 });
 
 test('applyAction: 練習失敗は伸びゼロ・疲労追加・やる気-1', () => {
   const s = base();
-  const r = DT.engine.applyAction(s, 'multiplex', () => 0.15);
+  const r = DT.engine.applyAction(s, 'difficulty', () => 0.15);
   assert.strictEqual(r.tier, '失敗');
-  assert.strictEqual(s.stats.multiplex, 10);
-  assert.strictEqual(s.fatigue, 19); // 14 + 5
+  assert.strictEqual(s.stats.difficulty, 10);
+  assert.strictEqual(s.fatigue, 21); // 16 + 5
   assert.strictEqual(s.motivation, 2);
 });
 

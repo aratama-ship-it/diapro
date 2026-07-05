@@ -1,7 +1,7 @@
 (function (global) {
   'use strict';
   const DT = global.DT = global.DT || {};
-  const SAVE_KEY = 'diabolo-trainer-save-v1';
+  const SAVE_KEY = 'diabolo-trainer-save-v2';
 
   function newCharacter(rng) {
     rng = rng || Math.random;

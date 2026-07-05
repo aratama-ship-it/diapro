@@ -3,25 +3,30 @@
   const DT = global.DT = global.DT || {};
 
   DT.DATA = {
-    // 競技能力（仮項目 — 実際の大会採点基準の入手後に差し替え予定）
+    // JDA「ディアボロ競技採点規則 第八版」オーバーオールクラス個人部門の採点項目に対応
     STATS: [
-      { id: 'multiplex',   label: 'マルチプレックス', group: 'tech' },
-      { id: 'isolation',   label: 'アイソレーション', group: 'tech' },
-      { id: 'saisai',      label: 'サイサイド系',     group: 'tech' },
-      { id: 'basic',       label: 'ベーシック安定度', group: 'tech' },
-      { id: 'composition', label: '構成力',           group: 'expr' },
-      { id: 'music',       label: '音楽との調和',     group: 'expr' },
-      { id: 'staging',     label: 'ステージング',     group: 'expr' }
+      { id: 'difficulty',   label: '難易度',     desc: '技の難易度・数' },
+      { id: 'variety',      label: '多彩性',     desc: '技の多彩さ' },
+      { id: 'control',      label: '操作安定度', desc: '巧みさ・美しさ・洗練' },
+      { id: 'novelty',      label: '新奇性',     desc: '新しい技・稀少な技' },
+      { id: 'composition',  label: '演技構成',   desc: '楽曲・衣装・順序・起承転結' },
+      { id: 'fundamentals', label: '基礎',       desc: '1D水平軸/1D垂直軸/2D/3D以上' }
     ],
     TRAININGS: [
-      { id: 'multiplex',   label: 'マルチ練習',       stat: 'multiplex',   gain: 9, fatigue: 14, risk: 6 },
-      { id: 'isolation',   label: 'アイソ練習',       stat: 'isolation',   gain: 9, fatigue: 14, risk: 6 },
-      { id: 'saisai',      label: 'サイサイド練習',   stat: 'saisai',      gain: 9, fatigue: 16, risk: 8 },
-      { id: 'basic',       label: 'ベーシック練習',   stat: 'basic',       gain: 8, fatigue: 8,  risk: 2 },
-      { id: 'composition', label: 'ルーチン構成',     stat: 'composition', gain: 8, fatigue: 8,  risk: 2 },
-      { id: 'music',       label: '曲合わせ',         stat: 'music',       gain: 8, fatigue: 6,  risk: 1 },
-      { id: 'staging',     label: 'ステージング練習', stat: 'staging',     gain: 8, fatigue: 10, risk: 3 }
+      { id: 'difficulty',   label: '高難度技練習',     stat: 'difficulty',   gain: 9, fatigue: 16, risk: 8 },
+      { id: 'variety',      label: 'レパートリー開拓', stat: 'variety',      gain: 9, fatigue: 12, risk: 5 },
+      { id: 'control',      label: '反復練習',         stat: 'control',      gain: 9, fatigue: 10, risk: 3 },
+      { id: 'novelty',      label: '新技開発',         stat: 'novelty',      gain: 9, fatigue: 14, risk: 7 },
+      { id: 'composition',  label: 'ルーチン構成',     stat: 'composition',  gain: 9, fatigue: 8,  risk: 2 },
+      { id: 'fundamentals', label: '基礎練習',         stat: 'fundamentals', gain: 9, fatigue: 8,  risk: 2 }
     ],
+    // JDA男子個人総合部門の配点（満点100点）
+    SCORING: {
+      weights: { difficulty: 30, variety: 10, control: 10, novelty: 10, composition: 20 },
+      base: { stat: 'fundamentals', elements: 4, perElement: 5 },
+      execDeductionMax: 2,
+      specialDeduction: 3
+    },
     STUDY: { id: 'study', label: '勉強', gain: 10, fatigue: 4 },
     REST:  { id: 'rest',  label: '休養' },
     // ターン1 = 1年生4月。夏大会=8月、全国大会=2月
