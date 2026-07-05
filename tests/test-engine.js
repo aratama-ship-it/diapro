@@ -168,4 +168,15 @@ test('endTurn: 48ターン目終了で卒業', () => {
   assert.strictEqual(s.status, 'graduated');
 });
 
+test('applyAction: 特別指導解放後は成功時ゲイン+1', () => {
+  const s = base();
+  s.specialUnlocked = true;
+  DT.engine.applyAction(s, 'difficulty', () => 0.0); // 大成功: 18+1
+  assert.strictEqual(s.stats.difficulty, 29);
+  const s2 = base();
+  s2.specialUnlocked = true;
+  DT.engine.applyAction(s2, 'difficulty', () => 0.15); // 失敗: +0のまま
+  assert.strictEqual(s2.stats.difficulty, 10);
+});
+
 summary();
