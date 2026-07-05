@@ -55,11 +55,20 @@ test('まともな方針なら能力は確実に成長する', () => {
 
 test('勉強を一切しないと退学になる', () => {
   const s = playThrough(lcg(7), (state) =>
-    state.injuredTurns > 0 ? 'injured' : (state.fatigue > 55 ? 'rest' : 'multiplex')
+    state.injuredTurns > 0 ? 'injured' : (state.fatigue > 55 ? 'rest' : 'difficulty')
   );
   assert.strictEqual(s.status, 'expelled');
   // 初期学力は最大60。減衰-2/月で20を割るまで最長約21ヶ月＋警告3ヶ月
   assert.ok(s.turn < 30, '退学が遅すぎる: turn=' + s.turn);
+});
+
+test('まともな方針なら4年間でどこかの大会で3位以内に入れる', () => {
+  let bestRank = 99;
+  for (let seed = 1; seed <= 20; seed++) {
+    const s = playThrough(lcg(seed), chooseSensible);
+    s.results.forEach(r => { if (r.rank < bestRank) bestRank = r.rank; });
+  }
+  assert.ok(bestRank <= 3, '20シードの最高順位が' + bestRank + '位（勝機がなさすぎる）');
 });
 
 summary();
