@@ -48,8 +48,6 @@ test('DATA: 経歴は4種で初期値レンジが昇順', () => {
   }
 });
 
-summary();
-
 test('DATA: キャラ5人とライバル2人が定義されている', () => {
   assert.strictEqual(DT.DATA.CHARACTERS.length, 5);
   assert.strictEqual(DT.DATA.RIVALS.length, 2);
@@ -72,6 +70,15 @@ test('DATA: イベント定義の整合性', () => {
     });
   });
   ev.happenings.forEach(h => assert.ok(h.text && h.effects, h.id));
+});
+
+test('DATA: 世界大会は毎年11月・魁人も出場', () => {
+  assert.deepStrictEqual(DT.DATA.WORLDS_TURNS, [8, 20, 32, 44]);
+  DT.DATA.WORLDS_TURNS.forEach(t => {
+    assert.ok(!DT.DATA.CONTESTS.some(c => c.turn === t), 'CONTESTS衝突: ' + t);
+  });
+  const kaito = DT.DATA.RIVALS.find(r => r.id === 'kaito');
+  assert.deepStrictEqual(kaito.contests, ['ajdc', 'worlds']);
 });
 
 summary();

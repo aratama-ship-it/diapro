@@ -62,8 +62,6 @@ test('evaluate: スペシャリスト部門のAJDC優勝ではSにならない',
   assert.strictEqual(e.ajdcOverallWin, false);
 });
 
-summary();
-
 test('evaluate: 世界大会優勝で世界チャンピオン（S）', () => {
   const s = DT.state.newCharacter(() => 0.5);
   s.status = 'graduated';
@@ -74,3 +72,5 @@ test('evaluate: 世界大会優勝で世界チャンピオン（S）', () => {
   assert.strictEqual(e.title, '世界チャンピオン');
   assert.strictEqual(e.worldsWin, true);
 });
+
+summary();
