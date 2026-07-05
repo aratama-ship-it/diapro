@@ -46,7 +46,7 @@
   }
 
   $('#btn-new').onclick = () => renderCreate(DT.state.newCharacter());
-  $('#btn-continue').onclick = () => { state = DT.state.load(); renderMain([]); };
+  $('#btn-continue').onclick = () => { state = DT.state.load(); afterTurn([]); };
 
   // --- キャラ作成（ガチャポン型） ---
   function renderCreate(c) {

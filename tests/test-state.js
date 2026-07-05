@@ -39,4 +39,15 @@ test('save/load/clear: ラウンドトリップできる', () => {
   assert.strictEqual(DT.state.load(store), null);
 });
 
+test('load: 壊れたセーブデータはnullを返す', () => {
+  const store = {
+    data: {},
+    setItem(k, v) { this.data[k] = v; },
+    getItem(k) { return (k in this.data) ? this.data[k] : null; },
+    removeItem(k) { delete this.data[k]; }
+  };
+  store.setItem(DT.state.SAVE_KEY, '{broken json');
+  assert.strictEqual(DT.state.load(store), null);
+});
+
 summary();

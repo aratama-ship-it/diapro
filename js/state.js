@@ -29,7 +29,12 @@
 
   function load(storage) {
     const raw = (storage || global.localStorage).getItem(SAVE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
   }
 
   function clear(storage) {
