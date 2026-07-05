@@ -41,3 +41,29 @@ test('DATA: 大会はOIDC(8月)×4とAJDC(3月)×4', () => {
 });
 
 summary();
+
+test('DATA: キャラ5人とライバル2人が定義されている', () => {
+  assert.strictEqual(DT.DATA.CHARACTERS.length, 5);
+  assert.strictEqual(DT.DATA.RIVALS.length, 2);
+  assert.deepStrictEqual(DT.DATA.RIVALS.map(r => r.id), ['shion', 'kaito']);
+  assert.deepStrictEqual(DT.DATA.RIVALS[0].contests, ['oidc', 'ajdc']);
+  assert.deepStrictEqual(DT.DATA.RIVALS[1].contests, ['ajdc']);
+});
+
+test('DATA: イベント定義の整合性', () => {
+  const ev = DT.DATA.EVENTS;
+  assert.ok(ev.charEvents.length >= 10);
+  assert.ok(ev.happenings.length >= 5);
+  const charIds = DT.DATA.CHARACTERS.map(c => c.id);
+  ev.charEvents.forEach(e => {
+    assert.ok(charIds.includes(e.char), e.id + ' のcharが未定義');
+    assert.strictEqual(e.choices.length, 2, e.id);
+    e.choices.forEach(c => {
+      assert.ok(c.label && c.result, e.id);
+      if (c.effects.stat) assert.ok(DT.DATA.STATS.some(s => s.id === c.effects.stat.id), e.id);
+    });
+  });
+  ev.happenings.forEach(h => assert.ok(h.text && h.effects, h.id));
+});
+
+summary();

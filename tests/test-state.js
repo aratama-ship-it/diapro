@@ -59,9 +59,19 @@ test('load: 旧バージョンのセーブキーを掃除する', () => {
   };
   store.setItem('diabolo-trainer-save-v1', '{}');
   store.setItem('diabolo-trainer-save-v2', '{}');
+  store.setItem('diabolo-trainer-save-v3', '{}');
   DT.state.load(store);
   assert.strictEqual(store.getItem('diabolo-trainer-save-v1'), null);
   assert.strictEqual(store.getItem('diabolo-trainer-save-v2'), null);
+  assert.strictEqual(store.getItem('diabolo-trainer-save-v3'), null);
+});
+
+test('newCharacter: v2フィールド（名前・イベント進行・ライバル戦績）', () => {
+  const c = DT.state.newCharacter(() => 0);
+  assert.strictEqual(c.name, '主人公');
+  assert.strictEqual(c.coachEvents, 0);
+  assert.strictEqual(c.specialUnlocked, false);
+  assert.deepStrictEqual(c.rivalRecord, { shion: { win: 0, lose: 0 }, kaito: { win: 0, lose: 0 } });
 });
 
 summary();

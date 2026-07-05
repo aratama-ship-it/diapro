@@ -1,8 +1,8 @@
 (function (global) {
   'use strict';
   const DT = global.DT = global.DT || {};
-  const SAVE_KEY = 'diabolo-trainer-save-v3';
-  const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2'];
+  const SAVE_KEY = 'diabolo-trainer-save-v4';
+  const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3'];
 
   function newCharacter(rng) {
     rng = rng || Math.random;
@@ -20,7 +20,11 @@
       didStudy: false,
       didTrain: false,
       results: [],
-      status: 'playing'
+      status: 'playing',
+      name: '主人公',
+      coachEvents: 0,
+      specialUnlocked: false,
+      rivalRecord: DT.DATA.RIVALS.reduce((acc, r) => { acc[r.id] = { win: 0, lose: 0 }; return acc; }, {})
     };
   }
 
