@@ -67,14 +67,16 @@
     $('#main-header').textContent = DT.engine.turnLabel(state.turn) +
       (nextContest ? '｜次: ' + nextContest.name + '（' + DT.engine.turnLabel(nextContest.turn) + '）' : '');
 
-    const d = DT.contest.derived(state);
+    const bd = DT.contest.breakdown(state);
+    const expected = Math.round(Object.values(bd).reduce((a, v) => a + v, 0) * 10) / 10;
     const motiLabels = ['絶不調', '不調', '普通', '好調', '絶好調'];
     const condNodes = [
       statBar('疲労', state.fatigue),
       statBar('怪我リスク', state.injuryRisk),
       statBar('学力', state.study),
       textRow('やる気', motiLabels[state.motivation - 1]),
-      textRow('難易度/表現/ミス率', d.difficulty + ' / ' + d.expression + ' / ' + d.missRate + '%')
+      textRow('予想スコア', expected + '点 / 100点'),
+      textRow('ミス率', DT.contest.missRate(state) + '%')
     ];
     if (state.study < DT.DATA.STUDY_MIN) {
       condNodes.push(el('div', 'cond-warn', '⚠ 学業警告中！'));
@@ -140,8 +142,10 @@
     $('#contest-name').textContent = r.name;
     $('#contest-result').replaceChildren(
       el('div', 'result-big', r.rank + '位 / ' + r.entrants + '人'),
-      textRow('スコア', String(r.score)),
-      textRow('ミス', r.misses + '回'),
+      textRow('スコア', r.score + '点'),
+      ...DT.DATA.STATS.map(s => textRow(s.label + '点', String(r.parts[s.id]))),
+      textRow('実施減点（ミス' + r.misses + '回）', '-' + r.execDeduction + '点'),
+      textRow('特別減点', '-' + r.specialDeduction + '点'),
       textRow('獲得ポイント', r.points + 'pt')
     );
     show('#screen-contest');
