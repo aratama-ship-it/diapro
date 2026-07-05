@@ -24,6 +24,11 @@ function chooseSensible(state) {
   return worst.id;
 }
 
+function specialistPick(turn) {
+  const ids = DT.DATA.DIVISIONS.filter(d => d.scoring === 'specialist').map(d => d.id);
+  return ids.slice(0, DT.contest.maxSpecialists(turn));
+}
+
 function playThrough(rng, choose) {
   const state = DT.state.newCharacter(rng);
   let guard = 0;
@@ -31,7 +36,7 @@ function playThrough(rng, choose) {
     guard += 1;
     DT.engine.applyAction(state, choose(state), rng);
     const contest = DT.contest.contestForTurn(state.turn);
-    if (contest) DT.contest.run(state, contest, rng);
+    if (contest) DT.contest.runAll(state, contest, specialistPick(state.turn), rng);
     DT.engine.endTurn(state, rng);
   }
   return state;
@@ -41,7 +46,8 @@ test('まともな方針なら20回全部卒業できる', () => {
   for (let seed = 1; seed <= 20; seed++) {
     const s = playThrough(lcg(seed), chooseSensible);
     assert.strictEqual(s.status, 'graduated', 'seed=' + seed);
-    assert.strictEqual(s.results.length, 8, 'seed=' + seed + ' 大会数');
+    // 8大会 × (総合1+スペシャ枠) = 1年2+2 + 2年3+3 + 3年4+4 + 4年4+4 = 26エントリー
+    assert.strictEqual(s.results.length, 26, 'seed=' + seed + ' エントリー数');
     const e = DT.ending.evaluate(s);
     assert.ok('SABCDE'.includes(e.rank), 'seed=' + seed + ' rank=' + e.rank);
   }
@@ -69,6 +75,17 @@ test('まともな方針なら4年間でどこかの大会で3位以内に入れ
     s.results.forEach(r => { if (r.rank < bestRank) bestRank = r.rank; });
   }
   assert.ok(bestRank <= 3, '20シードの最高順位が' + bestRank + '位（勝機がなさすぎる）');
+});
+
+test('参考: 20シードの卒業ランク分布を表示', () => {
+  const dist = {};
+  for (let seed = 1; seed <= 20; seed++) {
+    const s = playThrough(lcg(seed), chooseSensible);
+    const r = DT.ending.evaluate(s).rank;
+    dist[r] = (dist[r] || 0) + 1;
+  }
+  console.log('  ランク分布: ' + JSON.stringify(dist));
+  assert.ok(true);
 });
 
 summary();
