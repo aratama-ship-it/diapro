@@ -23,6 +23,15 @@ button {
 }
 button.primary { background: #e07a5f; font-weight: bold; }
 button:disabled { opacity: 0.4; cursor: default; }
+input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background: #11111f;
+  color: #eaeaea;
+  font-size: 1rem;
+}
 .card { background: #23233d; border-radius: 12px; padding: 12px; }
 .stat-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 0.85rem; }
 .stat-row .label { width: 9em; flex-shrink: 0; }
@@ -33,6 +42,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 #main-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 #main-actions button { font-size: 0.85rem; padding: 10px 4px; }
 #main-log { font-size: 0.85rem; line-height: 1.6; min-height: 3em; }
+#event-choices { display: flex; flex-direction: column; gap: 8px; }
 .cond-warn { color: #ff6b6b; font-weight: bold; }
 .result-big { text-align: center; font-size: 2rem; margin: 12px 0; color: #ffd166; }
 table.results { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }

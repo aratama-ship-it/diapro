@@ -76,7 +76,12 @@
   }
 
   $('#btn-reroll').onclick = () => renderCreate(DT.state.newCharacter(undefined, selectedBackground));
-  $('#btn-start').onclick = () => { state = candidate; DT.state.save(state); renderMain([]); };
+  $('#btn-start').onclick = () => {
+    state = candidate;
+    state.name = ($('#create-name').value || '').trim() || '主人公';
+    DT.state.save(state);
+    renderMain([]);
+  };
 
   // --- メイン画面 ---
   function renderMain(logs) {
@@ -139,7 +144,36 @@
       renderEntry(contest);
       return;
     }
+    if (actionId !== 'injured') {
+      const ev = DT.events.roll(state);
+      if (ev && ev.kind === 'char') {
+        pendingMessages = result.messages;
+        renderEvent(ev.event);
+        return;
+      }
+      if (ev) {
+        const h = DT.events.applyHappening(state, ev.event);
+        finishTurn(result.messages.concat(h.messages), null);
+        return;
+      }
+    }
     finishTurn(result.messages, null);
+  }
+
+  function renderEvent(event) {
+    const chara = DT.DATA.CHARACTERS.find(c => c.id === event.char);
+    $('#event-char').textContent = chara.name;
+    $('#event-text').replaceChildren(el('p', '', event.text));
+    const buttons = event.choices.map((c, i) => {
+      const b = el('button', i === 0 ? 'primary' : '', c.label);
+      b.onclick = () => {
+        const r = DT.events.applyChoice(state, event, i);
+        finishTurn(pendingMessages.concat(r.messages), null);
+      };
+      return b;
+    });
+    $('#event-choices').replaceChildren(...buttons);
+    show('#screen-event');
   }
 
   function finishTurn(messages, contestResults) {
@@ -216,6 +250,9 @@
       }
       nodes.push(textRow('スコア', r.score + '点'));
       nodes.push(textRow('獲得ポイント', r.points + 'pt'));
+      if (i === 0) {
+        (r.rivalMessages || []).forEach(m => nodes.push(el('div', 'cond-warn', m)));
+      }
     });
     $('#contest-result').replaceChildren(...nodes);
     show('#screen-contest');
@@ -250,7 +287,7 @@
 
   function renderEnding() {
     const e = DT.ending.evaluate(state);
-    $('#ending-title').textContent = state.status === 'expelled' ? 'GAME OVER' : '卒業！';
+    $('#ending-title').textContent = state.status === 'expelled' ? 'GAME OVER' : state.name + '、卒業！';
     const nodes = [
       el('div', 'result-big', e.rank),
       el('p', 'center', e.title)
@@ -259,6 +296,10 @@
     nodes.push(textRow('通算ポイント', e.totalPoints + 'pt'));
     if (e.abilityAvg !== undefined) nodes.push(textRow('最終能力平均', String(e.abilityAvg)));
     if (state.results.length > 0) nodes.push(resultsTable(state.results));
+    DT.DATA.RIVALS.forEach(rv => {
+      const rec = state.rivalRecord[rv.id];
+      nodes.push(textRow(rv.name + '戦', rec.win + '勝' + rec.lose + '敗'));
+    });
     $('#ending-detail').replaceChildren(...nodes);
     show('#screen-ending');
   }
