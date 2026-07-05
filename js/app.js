@@ -110,10 +110,77 @@
     $('#main-actions').replaceChildren(...buttons);
   }
 
-  // onAction・大会・エンディングは Task 8 で実装
+  // --- ターン実行 ---
   function onAction(actionId) {
-    console.log('action:', actionId);
+    const result = DT.engine.applyAction(state, actionId);
+    const contest = DT.contest.contestForTurn(state.turn);
+    let contestResult = null;
+    if (contest) contestResult = DT.contest.run(state, contest);
+    const end = DT.engine.endTurn(state);
+    const logs = result.messages.concat(end.events);
+    DT.state.save(state);
+    if (contestResult) {
+      pendingLogs = logs;
+      renderContest(contestResult);
+      return;
+    }
+    afterTurn(logs);
   }
+
+  function afterTurn(logs) {
+    if (state.status !== 'playing') {
+      renderEnding();
+      return;
+    }
+    renderMain(logs);
+  }
+
+  // --- 大会画面 ---
+  function renderContest(r) {
+    $('#contest-name').textContent = r.name;
+    $('#contest-result').replaceChildren(
+      el('div', 'result-big', r.rank + '位 / ' + r.entrants + '人'),
+      textRow('スコア', String(r.score)),
+      textRow('ミス', r.misses + '回'),
+      textRow('獲得ポイント', r.points + 'pt')
+    );
+    show('#screen-contest');
+  }
+
+  $('#btn-contest-ok').onclick = () => afterTurn(pendingLogs);
+
+  // --- エンディング ---
+  function resultsTable(results) {
+    const table = el('table', 'results');
+    const head = el('tr');
+    ['大会', '順位', 'pt'].forEach(h => head.appendChild(el('th', '', h)));
+    table.appendChild(head);
+    results.forEach(r => {
+      const tr = el('tr');
+      tr.appendChild(el('td', '', r.name));
+      tr.appendChild(el('td', '', r.rank + '位'));
+      tr.appendChild(el('td', '', r.points + 'pt'));
+      table.appendChild(tr);
+    });
+    return table;
+  }
+
+  function renderEnding() {
+    const e = DT.ending.evaluate(state);
+    $('#ending-title').textContent = state.status === 'expelled' ? 'GAME OVER' : '卒業！';
+    const nodes = [
+      el('div', 'result-big', e.rank),
+      el('p', 'center', e.title)
+    ];
+    if (e.comment) nodes.push(el('p', 'center', e.comment));
+    nodes.push(textRow('通算ポイント', e.totalPoints + 'pt'));
+    if (e.abilityAvg !== undefined) nodes.push(textRow('最終能力平均', String(e.abilityAvg)));
+    if (state.results.length > 0) nodes.push(resultsTable(state.results));
+    $('#ending-detail').replaceChildren(...nodes);
+    show('#screen-ending');
+  }
+
+  $('#btn-restart').onclick = () => { DT.state.clear(); state = null; initTitle(); };
 
   initTitle();
 })();
