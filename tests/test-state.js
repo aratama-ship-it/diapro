@@ -50,4 +50,18 @@ test('load: 壊れたセーブデータはnullを返す', () => {
   assert.strictEqual(DT.state.load(store), null);
 });
 
+test('load: 旧バージョンのセーブキーを掃除する', () => {
+  const store = {
+    data: {},
+    setItem(k, v) { this.data[k] = v; },
+    getItem(k) { return (k in this.data) ? this.data[k] : null; },
+    removeItem(k) { delete this.data[k]; }
+  };
+  store.setItem('diabolo-trainer-save-v1', '{}');
+  store.setItem('diabolo-trainer-save-v2', '{}');
+  DT.state.load(store);
+  assert.strictEqual(store.getItem('diabolo-trainer-save-v1'), null);
+  assert.strictEqual(store.getItem('diabolo-trainer-save-v2'), null);
+});
+
 summary();

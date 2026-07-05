@@ -1,7 +1,8 @@
 (function (global) {
   'use strict';
   const DT = global.DT = global.DT || {};
-  const SAVE_KEY = 'diabolo-trainer-save-v2';
+  const SAVE_KEY = 'diabolo-trainer-save-v3';
+  const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2'];
 
   function newCharacter(rng) {
     rng = rng || Math.random;
@@ -28,7 +29,9 @@
   }
 
   function load(storage) {
-    const raw = (storage || global.localStorage).getItem(SAVE_KEY);
+    const s = storage || global.localStorage;
+    OLD_KEYS.forEach(k => s.removeItem(k));
+    const raw = s.getItem(SAVE_KEY);
     if (!raw) return null;
     try {
       return JSON.parse(raw);

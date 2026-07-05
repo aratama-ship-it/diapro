@@ -20,26 +20,38 @@
       { id: 'composition',  label: 'ルーチン構成',     stat: 'composition',  gain: 9, fatigue: 8,  risk: 2 },
       { id: 'fundamentals', label: '基礎練習',         stat: 'fundamentals', gain: 9, fatigue: 8,  risk: 2 }
     ],
-    // JDA男子個人総合部門の配点（満点100点）
+    // 大会: 8月OIDC(大阪国際)、3月AJDC(全日本選手権=頂点)
+    CONTESTS: [
+      { turn: 5,  type: 'oidc', name: '1年 OIDC' },
+      { turn: 12, type: 'ajdc', name: '1年 AJDC' },
+      { turn: 17, type: 'oidc', name: '2年 OIDC' },
+      { turn: 24, type: 'ajdc', name: '2年 AJDC' },
+      { turn: 29, type: 'oidc', name: '3年 OIDC' },
+      { turn: 36, type: 'ajdc', name: '3年 AJDC' },
+      { turn: 41, type: 'oidc', name: '4年 OIDC' },
+      { turn: 48, type: 'ajdc', name: '4年 AJDC' }
+    ],
+    DIVISIONS: [
+      { id: 'overall', label: '個人総合部門',           scoring: 'overall' },
+      { id: 'v1d',     label: '1ディアボロ垂直軸部門',  scoring: 'specialist' },
+      { id: 'h1d',     label: '1ディアボロ水平軸部門',  scoring: 'specialist' },
+      { id: 'd2',      label: '2ディアボロ部門',        scoring: 'specialist' }
+    ],
+    // JDA採点規則: 総合=男子個人総合部門、スペシャリスト=スペシャリストクラス共通配点
     SCORING: {
-      weights: { difficulty: 30, variety: 10, control: 10, novelty: 10, composition: 20 },
-      base: { stat: 'fundamentals', elements: 4, perElement: 5 },
+      overall: {
+        weights: { difficulty: 30, variety: 10, control: 10, novelty: 10, composition: 20 },
+        base: { stat: 'fundamentals', elements: 4, perElement: 5 }
+      },
+      specialist: {
+        weights: { difficulty: 45, control: 15, novelty: 30, composition: 10 }
+      },
       execDeductionMax: 2,
-      specialDeduction: 3
+      specialDeduction: 3,
+      entryFatigue: 6
     },
     STUDY: { id: 'study', label: '勉強', gain: 10, fatigue: 4 },
     REST:  { id: 'rest',  label: '休養' },
-    // ターン1 = 1年生4月。夏大会=8月、全国大会=2月
-    CONTESTS: [
-      { turn: 5,  type: 'summer',   name: '1年 夏大会' },
-      { turn: 11, type: 'national', name: '1年 全国大会' },
-      { turn: 17, type: 'summer',   name: '2年 夏大会' },
-      { turn: 23, type: 'national', name: '2年 全国大会' },
-      { turn: 29, type: 'summer',   name: '3年 夏大会' },
-      { turn: 35, type: 'national', name: '3年 全国大会' },
-      { turn: 41, type: 'summer',   name: '4年 夏大会' },
-      { turn: 47, type: 'national', name: '4年 全国大会' }
-    ],
     TOTAL_TURNS: 48,
     STUDY_MIN: 20,          // 学力がこれ未満の月が続くと退学
     STUDY_LIMIT_MONTHS: 3,  // 退学までの連続月数
