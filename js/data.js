@@ -26,8 +26,10 @@
       methodGain: 1,
       genreGain: 1,
       routineGain: 1,
-      fatigue: { difficulty: 5, novelty: 4, control: 3, routine: 2 },
-      risk: { difficulty: 2, novelty: 2, control: 1, routine: 1 }
+      // バランス調整（スロット別疲労・怪我リスク改定）: ルーチン構成（演技構成づくり）はデスクワーク寄りの
+      // 負担が軽い枠と位置づけ、疲労・リスクとも回復（負値）に変更。高難度技は最もリスクが高い枠へ引き上げ。
+      fatigue: { difficulty: 5, novelty: 4, control: 3, routine: -2 },
+      risk: { difficulty: 3, novelty: 1, control: 1, routine: -1 }
     },
     // 大会: 8月OIDC(大阪国際)、3月AJDC(全日本選手権=頂点)
     CONTESTS: [

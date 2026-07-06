@@ -27,12 +27,21 @@ test('DATA: SLOTSは毎月4枠でゲイン/疲労/リスクを定義', () => {
   assert.strictEqual(slots.methodGain, 1);
   assert.strictEqual(slots.genreGain, 1);
   assert.strictEqual(slots.routineGain, 1);
-  assert.deepStrictEqual(slots.fatigue, { difficulty: 5, novelty: 4, control: 3, routine: 2 });
-  assert.deepStrictEqual(slots.risk, { difficulty: 2, novelty: 2, control: 1, routine: 1 });
+  // バランス調整（スロット別疲労・怪我リスク改定）: ルーチン構成を回復枠に、高難度技のリスクを引き上げ
+  assert.deepStrictEqual(slots.fatigue, { difficulty: 5, novelty: 4, control: 3, routine: -2 });
+  assert.deepStrictEqual(slots.risk, { difficulty: 3, novelty: 1, control: 1, routine: -1 });
   // fatigue/riskのキーはmethod id(3つ)+routineのみ
   const methodIds = DT.DATA.STATS.filter(s => s.id !== 'composition').map(s => s.id);
   assert.deepStrictEqual(Object.keys(slots.fatigue).sort(), methodIds.concat('routine').sort());
   assert.deepStrictEqual(Object.keys(slots.risk).sort(), methodIds.concat('routine').sort());
+});
+
+test('DATA: SLOTS新セマンティクス（ルーチン構成=回復枠、高難度技=最高リスク）', () => {
+  const slots = DT.DATA.SLOTS;
+  assert.ok(slots.fatigue.routine < 0, 'routineの疲労は回復（負値）であるべき');
+  assert.ok(slots.risk.routine < 0, 'routineのリスクは回復（負値）であるべき');
+  const riskValues = [slots.risk.difficulty, slots.risk.novelty, slots.risk.control, slots.risk.routine];
+  assert.strictEqual(slots.risk.difficulty, Math.max(...riskValues), 'difficultyのリスクが4項目中最大であるべき');
 });
 
 test('DATA: SCORINGは総合とスペシャリストの2方式・base/gate/scale追加（合計配点100維持）', () => {
