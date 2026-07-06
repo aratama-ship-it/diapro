@@ -7,7 +7,7 @@ require('../js/engine.js');
 const DT = globalThis.DT;
 
 function base() {
-  return DT.state.newCharacter(() => 0); // stats全10, genres全10, study40, fatigue0, motivation3
+  return DT.state.newCharacter(() => 0); // skills全マス10, composition10, study40, fatigue0, motivation3
 }
 
 function mk(turn) {
@@ -60,69 +60,65 @@ test('turnLabel: 4月始まりの年月表示', () => {
   assert.strictEqual(DT.engine.turnLabel(48), '4年生 3月');
 });
 
-// ---- applyTraining: 検算基準（プラン固定値） ----
-// v3バランス調整（Task4）: SLOTS.methodGain/genreGain/routineGainを3/2/3→1/1/1に縮小した（詳細は
-// .superpowers/sdd/v3-task-4-report.md）。以下のpinned値は全てこの新ゲインで再計算済み。
-// バランス調整（スロット別疲労・怪我リスク改定）: SLOTS.risk.difficultyを2→3に引き上げ（詳細はdata.js参照）
-// 全能力10・turn1・rng固定0.3（全枠成功）: [{v1d,difficulty}]×4
-// → difficulty 10+1×4=14, genres.v1d 10+1×4=14, fatigue 5×4=20
-// injuryRisk（ジャンル別怪我リスク補正）: 10 + 4×(risk.difficulty(3)+genreRisk.v1d(1)) = 10+4×4=26
-test('applyTraining: 検算基準 全枠{v1d,difficulty}・rng0.3固定', () => {
+// ---- applyTraining: 検算ピン（プラン固定値） ----
+// v4スキルグリッド化: comboスロットは単一マスskills[genre][method]にgridGain(2)を適用する
+// （旧methodGain/genreGainの二重加算は廃止）。
+// 全マス10・turn1・rng固定0.3（全枠成功）: [{h1d,control}]×4
+// 各枠: gain=round(2×1.0×growthMult(現在値))。growthMultは10→12→14→16はいずれも<40なので常に1.0。
+// → skills.h1d.control = 10 + 2×4 = 18
+// fatigue = SLOTS.fatigue.control(3) × 4 = 12
+// injuryRisk delta = (risk.control(1) + genreRisk.h1d(-1)) × 4 = 0 → 10のまま
+test('applyTraining: 検算ピン 全枠{h1d,control}・rng0.3固定', () => {
   const s = base();
-  const slots = [
-    { genre: 'v1d', method: 'difficulty' },
-    { genre: 'v1d', method: 'difficulty' },
-    { genre: 'v1d', method: 'difficulty' },
-    { genre: 'v1d', method: 'difficulty' }
-  ];
-  const r = DT.engine.applyTraining(s, slots, () => 0.3);
-  assert.strictEqual(s.stats.difficulty, 14);
-  assert.strictEqual(s.genres.v1d, 14);
-  assert.strictEqual(s.fatigue, 20);
-  assert.strictEqual(s.injuryRisk, 26);
+  const combo = { genre: 'h1d', method: 'control' };
+  const r = DT.engine.applyTraining(s, [combo, combo, combo, combo], () => 0.3);
+  assert.strictEqual(s.skills.h1d.control, 18);
+  assert.strictEqual(s.fatigue, 12);
+  assert.strictEqual(s.injuryRisk, 10);
   assert.strictEqual(s.didTrain, true);
   assert.strictEqual(r.results.length, 4);
   r.results.forEach(res => {
     assert.strictEqual(res.tier, '成功');
-    assert.strictEqual(res.methodGain, 1);
-    assert.strictEqual(res.genreGain, 1);
+    assert.strictEqual(res.gain, 2);
   });
 });
 
-test('applyTraining: 基本ゲイン（単枠・成功）', () => {
+test('applyTraining: 基本ゲイン（単枠・成功、マス以外のジャンル/methodは不変）', () => {
   const s = base();
   const r = DT.engine.applyTraining(s, [{ genre: 'h1d', method: 'control' }], () => 0.3);
-  assert.strictEqual(s.stats.control, 11); // 10 + round(1*1*1)
-  assert.strictEqual(s.genres.h1d, 11); // 10 + round(1*1*1)
+  assert.strictEqual(s.skills.h1d.control, 12); // 10 + round(2*1*1)
+  assert.strictEqual(s.skills.h1d.difficulty, 10);
+  assert.strictEqual(s.skills.v1d.control, 10);
+  assert.strictEqual(s.composition, 10);
   assert.strictEqual(s.fatigue, 3); // SLOTS.fatigue.control
   assert.strictEqual(s.injuryRisk, 10); // 10 + risk.control(1) + genreRisk.h1d(-1) = 10+0=10
   assert.strictEqual(r.results[0].tier, '成功');
-  assert.ok(r.messages[0].includes('操作安定度 +1'));
-  assert.ok(r.messages[0].includes('習熟 +1'));
+  assert.strictEqual(r.results[0].gain, 2);
+  assert.ok(r.messages[0].includes('1ディアボロ水平軸'));
+  assert.ok(r.messages[0].includes('操作安定度 +2') || r.messages[0].includes('+2'));
 });
 
 test('applyTraining: 失敗枠はゲインゼロ・疲労とリスクは通常通り加算', () => {
   const s = base(); // fatigue0,motivation3 → fail帯は r∈[0.10,0.20)
   const r = DT.engine.applyTraining(s, [{ genre: 'd2', method: 'novelty' }], () => 0.15);
   assert.strictEqual(r.results[0].tier, '失敗');
-  assert.strictEqual(r.results[0].methodGain, 0);
-  assert.strictEqual(r.results[0].genreGain, 0);
-  assert.strictEqual(s.stats.novelty, 10);
-  assert.strictEqual(s.genres.d2, 10);
+  assert.strictEqual(r.results[0].gain, 0);
+  assert.strictEqual(s.skills.d2.novelty, 10);
   assert.strictEqual(s.fatigue, 4); // SLOTS.fatigue.novelty
-  assert.strictEqual(s.injuryRisk, 11); // 10 + risk.novelty(1) + genreRisk.d2(0) = 11（d2は補正なしなので不変）
+  assert.strictEqual(s.injuryRisk, 11); // 10 + risk.novelty(1) + genreRisk.d2(0) = 11（d2は補正なし）
   assert.ok(r.messages[0].includes('失敗'));
 });
 
-test('applyTraining: routine枠はcomposition+のみ・ジャンル不変', () => {
+test('applyTraining: routine枠はcompositionのみ加算・skillsは不変', () => {
   const s = base();
   const r = DT.engine.applyTraining(s, ['routine'], () => 0.3);
-  assert.strictEqual(s.stats.composition, 11); // 10 + round(1*1*1)
-  assert.deepStrictEqual(s.genres, { v1d: 10, h1d: 10, d2: 10, d3: 10 });
+  assert.strictEqual(s.composition, 11); // 10 + round(1*1*1)
+  DT.DATA.GENRES.forEach(g => {
+    DT.DATA.METHODS.forEach(m => assert.strictEqual(s.skills[g.id][m.id], 10));
+  });
   assert.strictEqual(s.fatigue, 0); // clamp(0 + SLOTS.fatigue.routine(-2), 0, 100)
   assert.strictEqual(s.injuryRisk, 9); // 10 + SLOTS.risk.routine(-1)
   assert.strictEqual(r.results[0].tier, '成功');
-  assert.strictEqual(r.results[0].genreGain, undefined);
   assert.ok(r.messages[0].startsWith('ルーチン構成（成功）'));
   assert.ok(r.messages[0].includes('演技構成 +1'));
 });
@@ -140,7 +136,7 @@ test('applyTraining: 疲労は枠ごとに逐次加算される（次枠のrollT
   assert.strictEqual(seenFatigue[1], 53); // 2枠目: 1枠目の+5疲労が反映済み
 });
 
-test('applyTraining: 疲労逐次加算でoutcomeProbsが低下する(大成功率↓・失敗率↑)', () => {
+test('applyTraining: 疲労逐次加算でoutcomeProbsが低下する（大成功率↓・失敗率↑）', () => {
   const s = base();
   s.fatigue = 48;
   const before = DT.engine.outcomeProbs(s);
@@ -181,56 +177,54 @@ test('applyTraining: lastSlotsを保存する（参照ではなくコピー）',
 test('applyTraining: 大会月のroutineはブースト、difficultyはペナルティ+追加疲労、controlは倍化', () => {
   const sR = mk(5); // 1年OIDC月
   DT.engine.applyTraining(sR, ['routine'], () => 0.3);
-  assert.strictEqual(sR.stats.composition, 12); // round(1*1*1)=1 → ×1.5 → round(1.5)=2 → 10+2
+  assert.strictEqual(sR.composition, 12); // round(1*1*1)=1 → ×1.5 → round(1.5)=2 → 10+2
   const sD = mk(5);
   DT.engine.applyTraining(sD, [{ genre: 'v1d', method: 'difficulty' }], () => 0.3);
-  assert.strictEqual(sD.stats.difficulty, 11); // round(1*1*1)=1 → ×0.5 → round(0.5)=1 → 10+1
-  assert.strictEqual(sD.genres.v1d, 11); // genreGainはタイミング補正なし: 10+1
+  assert.strictEqual(sD.skills.v1d.difficulty, 11); // round(2*1*1)=2 → ×0.5 → round(1)=1 → 10+1
   assert.strictEqual(sD.fatigue, 6); // SLOTS.fatigue.difficulty(5) + extraFatiguePerSlot(1)
   const sC = mk(5);
   DT.engine.applyTraining(sC, [{ genre: 'v1d', method: 'control' }], () => 0.3);
-  assert.strictEqual(sC.stats.control, 12); // round(1*1*1)=1 → ×2 → 2 → 10+2
+  assert.strictEqual(sC.skills.v1d.control, 14); // round(2*1*1)=2 → ×2.0 → 4 → 10+4
 });
 
 test('applyTraining: 大会月でも失敗枠のタイミング補正はゲインに影響しない（追加疲労は乗る）', () => {
   const s = mk(5);
   const r = DT.engine.applyTraining(s, [{ genre: 'v1d', method: 'difficulty' }], () => 0.15); // 失敗
   assert.strictEqual(r.results[0].tier, '失敗');
-  assert.strictEqual(s.stats.difficulty, 10);
+  assert.strictEqual(s.skills.v1d.difficulty, 10);
   assert.strictEqual(s.fatigue, 6); // 5 + extraFatiguePerSlot(1) は失敗でも加算
 });
 
 test('applyTraining: 練習会月はroutine/noveltyの伸びが1.5倍、他は不変', () => {
   const sR = mk(3); // 練習会月
   DT.engine.applyTraining(sR, ['routine'], () => 0.3);
-  assert.strictEqual(sR.stats.composition, 12); // 1 → ×1.5 → round(1.5)=2 → 10+2
+  assert.strictEqual(sR.composition, 12); // 1 → ×1.5 → round(1.5)=2 → 10+2
   const sN = mk(3);
   DT.engine.applyTraining(sN, [{ genre: 'v1d', method: 'novelty' }], () => 0.3);
-  assert.strictEqual(sN.stats.novelty, 12); // 1 → ×1.5 → 2 → 10+2
-  assert.strictEqual(sN.genres.v1d, 11); // genreGainは補正なし
+  assert.strictEqual(sN.skills.v1d.novelty, 13); // round(2*1*1)=2 → ×1.5 → round(3)=3 → 10+3
   const sD = mk(3);
   DT.engine.applyTraining(sD, [{ genre: 'v1d', method: 'difficulty' }], () => 0.3);
-  assert.strictEqual(sD.stats.difficulty, 11); // 対象外: round(1*1*1)=1のまま
+  assert.strictEqual(sD.skills.v1d.difficulty, 12); // 対象外: round(2*1*1)=2のまま
 });
 
 test('applyTraining: 特別指導解放で成功枠ごとに+1（タイミング補正の後・フラット加算）', () => {
   const s = base();
   s.specialUnlocked = true;
   DT.engine.applyTraining(s, [{ genre: 'v1d', method: 'difficulty' }], () => 0.3);
-  assert.strictEqual(s.stats.difficulty, 12); // round(1*1*1)=1 +1 = 2 → 10+2
+  assert.strictEqual(s.skills.v1d.difficulty, 13); // round(2*1*1)=2 +1 = 3 → 10+3
   const sFail = base();
   sFail.specialUnlocked = true;
   DT.engine.applyTraining(sFail, [{ genre: 'v1d', method: 'difficulty' }], () => 0.15); // 失敗
-  assert.strictEqual(sFail.stats.difficulty, 10); // +1は乗らない
+  assert.strictEqual(sFail.skills.v1d.difficulty, 10); // +1は乗らない
 
   const sMeetup = mk(3);
   sMeetup.specialUnlocked = true;
   DT.engine.applyTraining(sMeetup, [{ genre: 'v1d', method: 'novelty' }], () => 0.3);
-  assert.strictEqual(sMeetup.stats.novelty, 13); // round(1*1.5)=2 +1 = 3 → 10+3
+  assert.strictEqual(sMeetup.skills.v1d.novelty, 14); // round(2*1.5)=3 +1 = 4 → 10+4
 });
 
 // バランス調整（スロット別疲労・怪我リスク改定）: routineは回復枠になったため、routineのみの月は
-// 疲労・怪我リスクが下がる。fatigue/riskの加算はタイヤ（成否）に関係なく一律に適用される（tier非依存）ことも
+// 疲労・怪我リスクが下がる。fatigue/riskの加算はtier（成否）に関係なく一律に適用される（tier非依存）ことも
 // 併せて検証する（1枠だけ失敗させても結果は同じ）。
 // fatigue 30, injuryRisk 20 から routine×4: 各枠 fatigue-2 / risk-1 → 30-8=22, 20-4=16
 test('applyTraining: routineのみの月は疲労・怪我リスクが回復する（tier非依存）', () => {
@@ -277,6 +271,12 @@ test('applyTraining: 大成功でやる気+1、通常成功以下は不変', () 
   const s = base();
   DT.engine.applyTraining(s, [{ genre: 'v1d', method: 'difficulty' }], () => 0.0); // 大成功
   assert.strictEqual(s.motivation, 4);
+});
+
+test('applyTraining: routineスロットのメッセージは「ルーチン構成（成功）: 演技構成 +N」形式', () => {
+  const s = base();
+  const r = DT.engine.applyTraining(s, ['routine'], () => 0.3);
+  assert.strictEqual(r.messages[0], 'ルーチン構成（成功）: 演技構成 +1');
 });
 
 // ---- applyAction: study/rest/injuredのみに縮小 ----

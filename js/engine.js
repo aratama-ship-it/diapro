@@ -33,8 +33,8 @@
     return 1.0;
   }
 
-  function statLabel(id) {
-    return DT.DATA.STATS.find(s => s.id === id).label;
+  function methodLabel(id) {
+    return DT.DATA.METHODS.find(s => s.id === id).label;
   }
 
   function genreLabel(id) {
@@ -97,7 +97,7 @@
   // Training moved to applyTraining (slot-based, below).
 
   // 1枠分のゲインを計算する。key: method id ('difficulty'/'novelty'/'control') または 'routine'
-  // baseGain: SLOTS.methodGain または SLOTS.routineGain。growthValue: growthMult計算に使う現在値（stats[method] または stats.composition）
+  // baseGain: SLOTS.gridGain または SLOTS.routineGain。growthValue: growthMult計算に使う現在値（skills[genre][method] または composition）
   function computeSlotGain(state, key, baseGain, growthValue, tier) {
     let gain = Math.round(baseGain * TIER_MULT[tier] * growthMult(growthValue));
     if (tier === '失敗') {
@@ -145,13 +145,13 @@
       const tier = rollTier(state, rng);
 
       if (isRoutine) {
-        const { gain, timingNote, extraFatigue } = computeSlotGain(state, 'routine', DT.DATA.SLOTS.routineGain, state.stats.composition, tier);
-        state.stats.composition = clamp(state.stats.composition + gain, 0, 100);
+        const { gain, timingNote, extraFatigue } = computeSlotGain(state, 'routine', DT.DATA.SLOTS.routineGain, state.composition, tier);
+        state.composition = clamp(state.composition + gain, 0, 100);
         state.fatigue = clamp(state.fatigue + DT.DATA.SLOTS.fatigue.routine + extraFatigue, 0, 100);
         state.injuryRisk = clamp(state.injuryRisk + DT.DATA.SLOTS.risk.routine, 0, 100);
         if (tier === '大成功') state.motivation = clamp(state.motivation + 1, 1, 5);
         if (tier === '失敗') state.motivation = clamp(state.motivation - 1, 1, 5);
-        results.push({ slot, tier, methodGain: gain });
+        results.push({ slot, tier, gain });
         if (tier === '失敗') {
           messages.push('ルーチン構成（失敗）: うまくいかず疲れだけが残った……' + timingNote);
         } else {
@@ -160,24 +160,17 @@
       } else {
         const method = slot.method;
         const genre = slot.genre;
-        const { gain: methodGain, timingNote, extraFatigue } = computeSlotGain(state, method, DT.DATA.SLOTS.methodGain, state.stats[method], tier);
-        let genreGain = Math.round(DT.DATA.SLOTS.genreGain * TIER_MULT[tier] * growthMult(state.genres[genre]));
-        if (tier === '失敗') {
-          genreGain = 0;
-        } else if (genreGain < 1) {
-          genreGain = 1;
-        }
-        state.stats[method] = clamp(state.stats[method] + methodGain, 0, 100);
-        state.genres[genre] = clamp(state.genres[genre] + genreGain, 0, 100);
+        const { gain, timingNote, extraFatigue } = computeSlotGain(state, method, DT.DATA.SLOTS.gridGain, state.skills[genre][method], tier);
+        state.skills[genre][method] = clamp(state.skills[genre][method] + gain, 0, 100);
         state.fatigue = clamp(state.fatigue + DT.DATA.SLOTS.fatigue[method] + extraFatigue, 0, 100);
         state.injuryRisk = clamp(state.injuryRisk + DT.DATA.SLOTS.risk[method] + DT.DATA.SLOTS.genreRisk[genre], 0, 100);
         if (tier === '大成功') state.motivation = clamp(state.motivation + 1, 1, 5);
         if (tier === '失敗') state.motivation = clamp(state.motivation - 1, 1, 5);
-        results.push({ slot, tier, methodGain, genreGain });
+        results.push({ slot, tier, gain });
         if (tier === '失敗') {
           messages.push(genreLabel(genre) + '×' + METHOD_LABEL[method] + '（失敗）: うまくいかず疲れだけが残った……' + timingNote);
         } else {
-          messages.push(genreLabel(genre) + '×' + METHOD_LABEL[method] + '（' + tier + '）: ' + statLabel(method) + ' +' + methodGain + '・習熟 +' + genreGain + timingNote);
+          messages.push(genreLabel(genre) + '×' + METHOD_LABEL[method] + '（' + tier + '）: ' + methodLabel(method) + ' +' + gain + timingNote);
         }
       }
     });
