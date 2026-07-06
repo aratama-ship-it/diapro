@@ -39,9 +39,17 @@
   function applyEffects(state, effects) {
     const messages = [];
     if (effects.stat) {
-      state.stats[effects.stat.id] = clamp(state.stats[effects.stat.id] + effects.stat.amount, 0, 100);
-      const label = DT.DATA.STATS.find(s => s.id === effects.stat.id).label;
-      messages.push(label + (effects.stat.amount >= 0 ? ' +' : ' ') + effects.stat.amount);
+      const id = effects.stat.id;
+      const amount = effects.stat.amount;
+      if (id === 'composition') {
+        state.composition = clamp(state.composition + amount, 0, 100);
+      } else {
+        DT.DATA.GENRES.forEach(g => {
+          state.skills[g.id][id] = clamp(state.skills[g.id][id] + amount, 0, 100);
+        });
+      }
+      const label = (id === 'composition' ? DT.DATA.COMPOSITION : DT.DATA.METHODS.find(s => s.id === id)).label;
+      messages.push(label + (amount >= 0 ? ' +' : ' ') + amount);
     }
     if (effects.motivation) state.motivation = clamp(state.motivation + effects.motivation, 1, 5);
     if (effects.fatigue) state.fatigue = clamp(state.fatigue + effects.fatigue, 0, 100);

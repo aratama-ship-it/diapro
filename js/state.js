@@ -1,22 +1,25 @@
 (function (global) {
   'use strict';
   const DT = global.DT = global.DT || {};
-  const SAVE_KEY = 'diabolo-trainer-save-v6';
-  const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3', 'diabolo-trainer-save-v4', 'diabolo-trainer-save-v5'];
+  const SAVE_KEY = 'diabolo-trainer-save-v7';
+  const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3', 'diabolo-trainer-save-v4', 'diabolo-trainer-save-v5', 'diabolo-trainer-save-v6'];
 
   function newCharacter(rng, backgroundId) {
     rng = rng || Math.random;
     const bg = DT.DATA.BACKGROUNDS.find(b => b.id === backgroundId) ||
                DT.DATA.BACKGROUNDS.find(b => b.id === 'highschool');
-    // rng消費順: STATS(4件)→GENRES(4件)→study の順に固定（テストでピン留め）
-    const stats = {};
-    DT.DATA.STATS.forEach(s => { stats[s.id] = bg.statMin + Math.floor(rng() * bg.statSpread); });
-    const genres = {};
-    DT.DATA.GENRES.forEach(g => { genres[g.id] = bg.statMin + Math.floor(rng() * bg.statSpread); });
+    // rng消費順: GENRES配列順×METHODS配列順（h1d.difficulty→h1d.novelty→h1d.control→v1d.difficulty→…）
+    // の12マス → composition → study の順に固定（テストでピン留め）
+    const skills = {};
+    DT.DATA.GENRES.forEach(g => {
+      skills[g.id] = {};
+      DT.DATA.METHODS.forEach(m => { skills[g.id][m.id] = bg.statMin + Math.floor(rng() * bg.statSpread); });
+    });
+    const composition = bg.statMin + Math.floor(rng() * bg.statSpread);
     return {
       turn: 1,
-      stats: stats,
-      genres: genres,
+      skills: skills,
+      composition: composition,
       study: 40 + Math.floor(rng() * 21),
       fatigue: 0,
       injuryRisk: 10,

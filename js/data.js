@@ -3,28 +3,28 @@
   const DT = global.DT = global.DT || {};
 
   DT.DATA = {
-    // v3: 練習種別スタッツ4つ（0-100）。旧variety/fundamentalsは導出値へ移行しSTATSから削除
-    STATS: [
-      { id: 'difficulty',  label: '難易度',     desc: '技の難易度・数' },
-      { id: 'novelty',     label: '新奇性',     desc: '新しい技・稀少な技' },
-      { id: 'control',     label: '操作安定度', desc: '巧みさ・美しさ・洗練' },
-      { id: 'composition', label: '演技構成',   desc: '楽曲・衣装・順序・起承転結' }
+    // v4: 練習の「技術」軸3つ（0-100）。演技構成(composition)はジャンル非依存の単一パラメータへ分離
+    METHODS: [
+      { id: 'difficulty', label: '難易度',     desc: '技の難易度・数' },
+      { id: 'novelty',    label: '新奇性',     desc: '新しい技・稀少な技' },
+      { id: 'control',    label: '操作安定度', desc: '巧みさ・美しさ・洗練' }
     ],
-    // v3: ジャンル習熟4つ（0-100）。v1d/h1d/d2はDIVISIONSのidと一致させる
+    COMPOSITION: { id: 'composition', label: '演技構成', desc: '楽曲・衣装・順序・起承転結' },
+    // v4: ジャンル表示順を「1D水平→1D垂直→2D→3D以上」に変更。v1d/h1d/d2/d3はDIVISIONSのidと一致させる
     GENRES: [
-      { id: 'v1d', label: '1ディアボロ垂直軸' },
       { id: 'h1d', label: '1ディアボロ水平軸' },
+      { id: 'v1d', label: '1ディアボロ垂直軸' },
       { id: 'd2',  label: '2ディアボロ' },
       { id: 'd3',  label: '3ディアボロ以上' }
     ],
-    // v3: 毎月4枠のスロット制練習定義。枠= {genre, method}(method∈difficulty/novelty/control) または 'routine'
+    // v4: 毎月4枠のスロット制練習定義。枠= {genre, method}(method∈difficulty/novelty/control) または 'routine'
     // バランス調整（Task4）: 「毎月弱点狙い」の合理的方針でも4年で能力が青天井近くまで伸びきってしまい
     // AJDC総合を年1で確実に制してしまう（=毎回S）問題があったため、ゲインを3/2/3→1/1/1へ縮小。
     // 詳細な反復調整記録は .superpowers/sdd/v3-task-4-report.md 参照
+    // v4: スキルグリッド化でmethodGain/genreGainを統合しgridGain（マス1つへの単一ゲイン）に一本化
     SLOTS: {
       perMonth: 4,
-      methodGain: 1,
-      genreGain: 1,
+      gridGain: 2,
       routineGain: 1,
       // バランス調整（スロット別疲労・怪我リスク改定）: ルーチン構成（演技構成づくり）はデスクワーク寄りの
       // 負担が軽い枠と位置づけ、疲労・リスクとも回復（負値）に変更。高難度技は最もリスクが高い枠へ引き上げ。
@@ -47,8 +47,8 @@
     ],
     DIVISIONS: [
       { id: 'overall', label: '個人総合部門',           scoring: 'overall' },
-      { id: 'v1d',     label: '1ディアボロ垂直軸部門',  scoring: 'specialist' },
       { id: 'h1d',     label: '1ディアボロ水平軸部門',  scoring: 'specialist' },
+      { id: 'v1d',     label: '1ディアボロ垂直軸部門',  scoring: 'specialist' },
       { id: 'd2',      label: '2ディアボロ部門',        scoring: 'specialist' },
       { id: 'd3',      label: '3ディアボロ部門',        scoring: 'specialist' }
     ],

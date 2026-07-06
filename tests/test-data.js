@@ -5,33 +5,35 @@ require('../js/data.js');
 require('../js/engine.js');
 const DT = globalThis.DT;
 
-test('DATA: 競技能力は練習種別スタッツ4項目', () => {
-  assert.strictEqual(DT.DATA.STATS.length, 4);
-  const ids = DT.DATA.STATS.map(s => s.id);
-  assert.deepStrictEqual(ids, ['difficulty', 'novelty', 'control', 'composition']);
+test('DATA: 練習の技術軸はMETHODS3項目・演技構成はCOMPOSITIONへ分離', () => {
+  assert.strictEqual(DT.DATA.METHODS.length, 3);
+  const ids = DT.DATA.METHODS.map(s => s.id);
+  assert.deepStrictEqual(ids, ['difficulty', 'novelty', 'control']);
+  assert.strictEqual(DT.DATA.COMPOSITION.id, 'composition');
+  assert.strictEqual(DT.DATA.STATS, undefined, '旧STATSは削除されている');
 });
 
-test('DATA: GENRESはジャンル習熟4項目・DIVISIONSのid(v1d/h1d/d2/d3)と一致', () => {
+test('DATA: GENRESはジャンル習熟4項目で表示順は1D水平→1D垂直→2D→3D以上・DIVISIONSのid(v1d/h1d/d2/d3)と一致', () => {
   assert.strictEqual(DT.DATA.GENRES.length, 4);
   const ids = DT.DATA.GENRES.map(g => g.id);
-  assert.deepStrictEqual(ids, ['v1d', 'h1d', 'd2', 'd3']);
+  assert.deepStrictEqual(ids, ['h1d', 'v1d', 'd2', 'd3']);
   ['v1d', 'h1d', 'd2', 'd3'].forEach(id => {
     assert.ok(DT.DATA.DIVISIONS.some(d => d.id === id), id + ' がDIVISIONSに存在しない');
   });
 });
 
-test('DATA: SLOTSは毎月4枠でゲイン/疲労/リスクを定義', () => {
+test('DATA: SLOTSは毎月4枠でゲイン/疲労/リスクを定義（v4: methodGain/genreGain→gridGainに統合）', () => {
   const slots = DT.DATA.SLOTS;
-  // v3バランス調整（Task4）: ゲインを3/2/3→1/1/1に縮小（詳細は.superpowers/sdd/v3-task-4-report.md）
   assert.strictEqual(slots.perMonth, 4);
-  assert.strictEqual(slots.methodGain, 1);
-  assert.strictEqual(slots.genreGain, 1);
+  assert.strictEqual(slots.gridGain, 2);
+  assert.strictEqual(slots.methodGain, undefined, '旧methodGainは削除されている');
+  assert.strictEqual(slots.genreGain, undefined, '旧genreGainは削除されている');
   assert.strictEqual(slots.routineGain, 1);
   // バランス調整（スロット別疲労・怪我リスク改定）: ルーチン構成を回復枠に、高難度技のリスクを引き上げ
   assert.deepStrictEqual(slots.fatigue, { difficulty: 5, novelty: 4, control: 3, routine: -2 });
   assert.deepStrictEqual(slots.risk, { difficulty: 3, novelty: 1, control: 1, routine: -1 });
   // fatigue/riskのキーはmethod id(3つ)+routineのみ
-  const methodIds = DT.DATA.STATS.filter(s => s.id !== 'composition').map(s => s.id);
+  const methodIds = DT.DATA.METHODS.map(s => s.id);
   assert.deepStrictEqual(Object.keys(slots.fatigue).sort(), methodIds.concat('routine').sort());
   assert.deepStrictEqual(Object.keys(slots.risk).sort(), methodIds.concat('routine').sort());
 });
@@ -118,18 +120,19 @@ test('DATA: キャラ5人とライバル2人が定義されている', () => {
   assert.deepStrictEqual(DT.DATA.RIVALS[1].contests, ['ajdc', 'worlds']);
 });
 
-test('DATA: イベント定義の整合性（stat参照はSTATS4項目のみ、variety/fundamentals不在）', () => {
+test('DATA: イベント定義の整合性（stat参照はMETHODS∪{composition}のみ、variety/fundamentals不在）', () => {
   const ev = DT.DATA.EVENTS;
   assert.ok(ev.charEvents.length >= 10);
   assert.ok(ev.happenings.length >= 5);
   const charIds = DT.DATA.CHARACTERS.map(c => c.id);
+  const validStatIds = DT.DATA.METHODS.map(s => s.id).concat(DT.DATA.COMPOSITION.id);
   ev.charEvents.forEach(e => {
     assert.ok(charIds.includes(e.char), e.id + ' のcharが未定義');
     assert.strictEqual(e.choices.length, 2, e.id);
     e.choices.forEach(c => {
       assert.ok(c.label && c.result, e.id);
       if (c.effects.stat) {
-        assert.ok(DT.DATA.STATS.some(s => s.id === c.effects.stat.id), e.id + ' の stat.id が未定義: ' + c.effects.stat.id);
+        assert.ok(validStatIds.includes(c.effects.stat.id), e.id + ' の stat.id が未定義: ' + c.effects.stat.id);
         assert.ok(!['variety', 'fundamentals'].includes(c.effects.stat.id), e.id + ' が廃止statを参照している');
       }
     });
@@ -137,7 +140,7 @@ test('DATA: イベント定義の整合性（stat参照はSTATS4項目のみ、v
   ev.happenings.forEach(h => {
     assert.ok(h.text && h.effects, h.id);
     if (h.effects.stat) {
-      assert.ok(DT.DATA.STATS.some(s => s.id === h.effects.stat.id), h.id + ' の stat.id が未定義: ' + h.effects.stat.id);
+      assert.ok(validStatIds.includes(h.effects.stat.id), h.id + ' の stat.id が未定義: ' + h.effects.stat.id);
     }
   });
 });
