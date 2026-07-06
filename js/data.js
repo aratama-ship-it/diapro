@@ -108,6 +108,7 @@
       { id: 'kaito',  name: '魁人',       role: 'AJDC連覇中の王者' }
     ],
     EVENTS: {
+      probs: { char: 0.15, happening: 0.05 },
       charEvents: [
         { id: 'coach1', char: 'coach', text: '「基礎ができてない奴に応用はない」剣持コーチが反復練習を命じてきた。',
           choices: [

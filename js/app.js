@@ -36,6 +36,11 @@
     return genreLabel(slot.genre) + '×' + methodLabel(slot.method);
   }
 
+  function statLabelById(id) {
+    const s = DT.DATA.STATS.find(x => x.id === id);
+    return s ? s.label : id;
+  }
+
   // 前月のスロット構成をプリフィル（不正なジャンル/メソッドは除外し空きに戻す）
   function prefillSlots() {
     const src = Array.isArray(state.lastSlots) ? state.lastSlots : [];
@@ -265,8 +270,56 @@
 
   function onTrainingSubmit() {
     const slots = slotsUI.map(s => (s === 'routine' ? 'routine' : { genre: s.genre, method: s.method }));
-    const result = DT.engine.applyTraining(state, slots);
-    continueTurn(result.messages, 'training');
+    const tr = DT.engine.applyTraining(state, slots);
+    renderTrainingResult(tr);
+  }
+
+  // --- 練習結果画面 ---
+  function trainingRowGainText(r) {
+    if (r.tier === '失敗') return 'ゼロ';
+    if (r.slot === 'routine') {
+      return '+' + r.methodGain + ' 演技構成';
+    }
+    return '+' + r.methodGain + ' ' + statLabelById(r.slot.method) + ' / +' + r.genreGain + ' 習熟';
+  }
+
+  function renderTrainingResult(tr) {
+    const rows = tr.results.map(r => {
+      const row = el('div', 'stat-row');
+      row.appendChild(el('span', 'label', slotChipLabel(r.slot)));
+      row.appendChild(el('span', r.tier === '失敗' ? 'cond-warn' : '', r.tier));
+      row.appendChild(el('span', '', trainingRowGainText(r)));
+      return row;
+    });
+    $('#training-slots').replaceChildren(...rows);
+
+    // 集計: stat/genreごとの合計デルタ（0は表示しない）
+    const statTotals = {};
+    const genreTotals = {};
+    let compositionTotal = 0;
+    tr.results.forEach(r => {
+      if (r.tier === '失敗') return;
+      if (r.slot === 'routine') {
+        compositionTotal += r.methodGain;
+      } else {
+        const method = r.slot.method;
+        statTotals[method] = (statTotals[method] || 0) + r.methodGain;
+        const genre = r.slot.genre;
+        genreTotals[genre] = (genreTotals[genre] || 0) + r.genreGain;
+      }
+    });
+    const summaryNodes = [];
+    Object.keys(statTotals).forEach(id => {
+      if (statTotals[id] !== 0) summaryNodes.push(textRow(statLabelById(id), '+' + statTotals[id]));
+    });
+    if (compositionTotal !== 0) summaryNodes.push(textRow('演技構成', '+' + compositionTotal));
+    Object.keys(genreTotals).forEach(id => {
+      if (genreTotals[id] !== 0) summaryNodes.push(textRow(genreLabel(id), '+' + genreTotals[id]));
+    });
+    $('#training-summary').replaceChildren(...summaryNodes);
+
+    $('#btn-training-ok').onclick = () => continueTurn(['練習を終えた。'], 'training');
+    show('#screen-training');
   }
 
   // --- ターン実行 ---

@@ -8,15 +8,15 @@ const DT = globalThis.DT;
 
 function base() { return DT.state.newCharacter(() => 0); }
 
-test('roll: r<0.20でキャライベント、r<0.28でハプニング、以上でnull', () => {
+test('roll: r<0.15でキャライベント、r<0.20でハプニング、以上でnull', () => {
   const s = base();
-  const seq1 = [0.1, 0.0]; let i1 = 0; // 発生roll, イベント選択roll
+  const seq1 = [0.10, 0.0]; let i1 = 0; // 発生roll, イベント選択roll
   const r1 = DT.events.roll(s, () => seq1[i1++]);
   assert.strictEqual(r1.kind, 'char');
-  const seq2 = [0.25, 0.0]; let i2 = 0;
+  const seq2 = [0.17, 0.0]; let i2 = 0;
   const r2 = DT.events.roll(s, () => seq2[i2++]);
   assert.strictEqual(r2.kind, 'happening');
-  assert.strictEqual(DT.events.roll(s, () => 0.5), null);
+  assert.strictEqual(DT.events.roll(s, () => 0.25), null);
 });
 
 test('applyChoice: 効果が適用されメッセージが返る', () => {
