@@ -81,4 +81,13 @@ test('DATA: 世界大会は毎年11月・魁人も出場', () => {
   assert.deepStrictEqual(kaito.contests, ['ajdc', 'worlds']);
 });
 
+test('DATA: TIMING補正の対象はcomposition/difficulty/control', () => {
+  const cm = DT.DATA.TIMING.contestMonth;
+  ['composition', 'difficulty', 'control'].forEach(id => {
+    assert.ok(cm[id], id);
+    assert.ok(DT.DATA.TRAININGS.some(t => t.id === id), id + 'は練習に存在');
+  });
+  assert.ok(cm.restExtra > 0 && DT.DATA.TIMING.afterContest.restExtra > cm.restExtra);
+});
+
 summary();

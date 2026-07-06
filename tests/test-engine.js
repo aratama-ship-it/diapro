@@ -179,4 +179,42 @@ test('applyAction: 特別指導解放後は成功時ゲイン+1', () => {
   assert.strictEqual(s2.stats.difficulty, 10);
 });
 
+test('大会月: ルーチン構成は伸びブースト・高難度はペナルティ・反復は倍', () => {
+  const mk = () => { const s = DT.state.newCharacter(() => 0); s.turn = 5; return s; }; // 1年OIDC月
+  const sC = mk();
+  DT.engine.applyAction(sC, 'composition', () => 0.3); // 成功: gain round(9*1*1)=9 → ×1.5 → round(13.5)=14
+  assert.strictEqual(sC.stats.composition, 24);
+  const sD = mk();
+  DT.engine.applyAction(sD, 'difficulty', () => 0.3); // 成功: 9 → ×0.5 → round(4.5)=5、疲労16+4=20
+  assert.strictEqual(sD.stats.difficulty, 15);
+  assert.strictEqual(sD.fatigue, 20);
+  const sR = mk();
+  DT.engine.applyAction(sR, 'control', () => 0.3); // 成功: 9 → ×2 → 18
+  assert.strictEqual(sR.stats.control, 28);
+});
+
+test('大会月: 休養は回復量アップ(-45)', () => {
+  const s = DT.state.newCharacter(() => 0);
+  s.turn = 5; s.fatigue = 60;
+  DT.engine.applyAction(s, 'rest');
+  assert.strictEqual(s.fatigue, 15);
+});
+
+test('大会翌月: 休養は大幅回復(-55/リスク-20)', () => {
+  const s = DT.state.newCharacter(() => 0);
+  s.turn = 6; s.fatigue = 80; s.injuryRisk = 40;
+  s.results.push({ name: '1年 OIDC', type: 'oidc', division: 'overall', rank: 5, points: 8, turn: 5 });
+  DT.engine.applyAction(s, 'rest');
+  assert.strictEqual(s.fatigue, 25);
+  assert.strictEqual(s.injuryRisk, 20);
+});
+
+test('通常月: 補正なし(-35/リスク-12)', () => {
+  const s = DT.state.newCharacter(() => 0);
+  s.turn = 7; s.fatigue = 60; s.injuryRisk = 40;
+  DT.engine.applyAction(s, 'rest');
+  assert.strictEqual(s.fatigue, 25);
+  assert.strictEqual(s.injuryRisk, 28);
+});
+
 summary();

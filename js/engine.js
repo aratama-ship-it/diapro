@@ -37,6 +37,14 @@
     return DT.DATA.STATS.find(s => s.id === id).label;
   }
 
+  function isContestMonth(state) {
+    return DT.DATA.CONTESTS.some(c => c.turn === state.turn);
+  }
+
+  function isAfterPerformance(state) {
+    return state.results.some(r => r.turn === state.turn - 1);
+  }
+
   function applyAction(state, actionId, rng) {
     rng = rng || Math.random;
     const messages = [];
@@ -48,10 +56,21 @@
       return { tier: null, messages };
     }
     if (actionId === 'rest') {
-      state.fatigue = clamp(state.fatigue - 35, 0, 100);
-      state.injuryRisk = clamp(state.injuryRisk - 12, 0, 100);
+      let recover = 35;
+      let riskRecover = 12;
+      let note = '';
+      if (isContestMonth(state)) {
+        recover += DT.DATA.TIMING.contestMonth.restExtra;
+        note = DT.DATA.TIMING.contestMonth.restNote;
+      } else if (isAfterPerformance(state)) {
+        recover += DT.DATA.TIMING.afterContest.restExtra;
+        riskRecover += DT.DATA.TIMING.afterContest.restRiskExtra;
+        note = DT.DATA.TIMING.afterContest.restNote;
+      }
+      state.fatigue = clamp(state.fatigue - recover, 0, 100);
+      state.injuryRisk = clamp(state.injuryRisk - riskRecover, 0, 100);
       state.motivation = clamp(state.motivation + 1, 1, 5);
-      messages.push('ゆっくり休んだ。疲労が回復した。');
+      messages.push('ゆっくり休んだ。疲労が回復した。' + note);
       return { tier: null, messages };
     }
     if (actionId === 'study') {
@@ -73,6 +92,22 @@
       gain = 1;
     }
     if (tier !== '失敗' && state.specialUnlocked) gain += 1;
+
+    let timingNote = '';
+    if (isContestMonth(state)) {
+      const tm = DT.DATA.TIMING.contestMonth[t.id];
+      if (tm) {
+        if (tier !== '失敗') {
+          gain = Math.round(gain * tm.gainMult);
+          timingNote = tm.note;
+        }
+        if (tm.extraFatigue) {
+          state.fatigue = clamp(state.fatigue + tm.extraFatigue, 0, 100);
+          if (tier === '失敗') timingNote = tm.note;
+        }
+      }
+    }
+
     state.stats[t.stat] = clamp(state.stats[t.stat] + gain, 0, 100);
     state.fatigue = clamp(state.fatigue + t.fatigue, 0, 100);
     state.injuryRisk = clamp(state.injuryRisk + t.risk, 0, 100);
@@ -81,10 +116,10 @@
     if (tier === '失敗') {
       state.fatigue = clamp(state.fatigue + 5, 0, 100);
       state.motivation = clamp(state.motivation - 1, 1, 5);
-      messages.push(t.label + '（失敗）: うまくいかず疲れだけが残った……');
+      messages.push(t.label + '（失敗）: うまくいかず疲れだけが残った……' + timingNote);
     } else {
       if (tier === '大成功') state.motivation = clamp(state.motivation + 1, 1, 5);
-      messages.push(t.label + '（' + tier + '）: ' + statLabel(t.stat) + ' +' + gain);
+      messages.push(t.label + '（' + tier + '）: ' + statLabel(t.stat) + ' +' + gain + timingNote);
     }
     return { tier, messages };
   }

@@ -52,6 +52,21 @@
     },
     STUDY: { id: 'study', label: '勉強', gain: 10, fatigue: 4 },
     REST:  { id: 'rest',  label: '休養' },
+    // 大会前後のタイミング補正（大会月の行動と、演技翌月の休養に適用）
+    TIMING: {
+      contestMonth: {
+        composition: { gainMult: 1.5, note: '（本番前の仕上げが効いた！）' },
+        difficulty:  { gainMult: 0.5, extraFatigue: 4, note: '（本番前に大技の詰め込みは逆効果だ…）' },
+        control:     { gainMult: 2.0, note: '（本番前の反復が効いた！）' },
+        restExtra: 10,
+        restNote: '（本番に向けて体を整えた）'
+      },
+      afterContest: {
+        restExtra: 20,
+        restRiskExtra: 8,
+        restNote: '（大会の疲れがよく抜けた）'
+      }
+    },
     TOTAL_TURNS: 48,
     WORLDS_TURNS: [8, 20, 32, 44],
     STUDY_MIN: 20,          // 学力がこれ未満の月が続くと退学
