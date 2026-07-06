@@ -41,7 +41,7 @@
     return DT.DATA.GENRES.find(g => g.id === id).label;
   }
 
-  // 枠の練習内容を表す表示専用ラベル（ログメッセージ用。データそのものはSTATSのid/labelに従う）
+  // 枠の練習内容を表す表示専用ラベル（ログメッセージ用。データそのものはMETHODSのid/labelに従う）
   const METHOD_LABEL = { difficulty: '高難度技', novelty: '新技開発', control: '反復練習' };
 
   function isContestMonth(state) {

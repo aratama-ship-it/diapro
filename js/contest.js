@@ -82,11 +82,12 @@
   }
 
   // v4新ミスモデル: rate = clamp(base − control×controlCoef + fatigue×fatigueCoef, min, max)
+  // v3で復活: 怪我中(injuredTurns>0)はミス率+15%（ユーザー指定機能。V4移行時に脱落していたため再導入）
   function missRate(state, divisionId) {
     const miss = DT.DATA.SCORING.miss;
     const control = controlRef(state, divisionId);
     const rate = miss.base - control * miss.controlCoef + state.fatigue * miss.fatigueCoef;
-    return clamp(Math.round(rate), miss.min, miss.max);
+    return clamp(Math.round(rate) + (state.injuredTurns > 0 ? miss.injuredPenalty : 0), miss.min, miss.max);
   }
 
   function missRollCount(state, divisionId) {
@@ -160,9 +161,12 @@
   }
 
   // 順位表: 全参加者をスコア降順ソートし、上位3名＋自分＋ライバル（重複除去）にrankを付与して返す
+  // rankは「自スコアより厳密に大きい人数+1」（同点は同順位）。result.rankの算出式と一致させる
   function buildStandings(entries, playerEntry) {
     const sorted = entries.slice().sort((a, b) => b.score - a.score);
-    const ranked = sorted.map((e, i) => Object.assign({}, e, { rank: i + 1 }));
+    const ranked = sorted.map(e => Object.assign({}, e, {
+      rank: 1 + entries.filter(o => o.score > e.score).length
+    }));
     const picked = [];
     const seen = new Set();
     const add = (e) => {
@@ -279,6 +283,6 @@
   DT.contest = {
     genreAvg, derivedVariety, derivedBase, breakdown, missRate, playerScore,
     maxEntries, runAll, contestForTurn, worldsContestForTurn, worldsQualified,
-    rivalScore, LEVELS
+    rivalScore, LEVELS, buildStandings
   };
 })(typeof window !== 'undefined' ? window : globalThis);

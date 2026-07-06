@@ -68,7 +68,7 @@
       // v4新ミスモデル（平均3〜4ミス/演技、ノーミスは高操作安定のみの偉業になるよう設計）
       // rate = clamp(base − control×controlCoef + fatigue×fatigueCoef, min, max)（controlは部門参照値、0-100%）
       // 判定回数 = rolls + (部門のdifficulty参照値 ≥ hardLine ? hardBonusRolls : 0)
-      miss: { rolls: 6, hardBonusRolls: 2, hardLine: 60, base: 70, controlCoef: 0.5, fatigueCoef: 0.3, min: 5, max: 90 },
+      miss: { rolls: 6, hardBonusRolls: 2, hardLine: 60, base: 70, controlCoef: 0.5, fatigueCoef: 0.3, min: 5, max: 90, injuredPenalty: 15 },
       execDeductionMax: 2,
       specialDeduction: 3,
       entryFatigue: 6

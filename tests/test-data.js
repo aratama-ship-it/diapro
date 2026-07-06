@@ -81,7 +81,7 @@ test('DATA: SCORINGは総合とスペシャリストの2方式・base/miss/scale
   assert.strictEqual(DT.DATA.SCORING.gate, undefined, 'v4でゲートは廃止されている');
 
   const miss = DT.DATA.SCORING.miss;
-  assert.deepStrictEqual(miss, { rolls: 6, hardBonusRolls: 2, hardLine: 60, base: 70, controlCoef: 0.5, fatigueCoef: 0.3, min: 5, max: 90 });
+  assert.deepStrictEqual(miss, { rolls: 6, hardBonusRolls: 2, hardLine: 60, base: 70, controlCoef: 0.5, fatigueCoef: 0.3, min: 5, max: 90, injuredPenalty: 15 });
 
   const scale = DT.DATA.SCORING.scale;
   assert.strictEqual(scale.base, 36);
