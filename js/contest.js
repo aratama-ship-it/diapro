@@ -122,15 +122,18 @@
     return { score: Math.round(total * 10) / 10, parts, rawTotal, judgeMod, misses, execDeduction, specialDeduction };
   }
 
-  // v3バランス調整（Task4）: SLOTSゲイン縮小（1/1/1）と合わせて対戦相手の成長カーブも引き上げた。
-  // oidc.baseは既存テスト固定値(25)のため不変。ajdc/worldsのbase・growth・ajdc.sdを調整し、
-  // 「毎回AJDC総合で優勝してS」にならないようにした（詳細は.superpowers/sdd/v3-task-4-report.md参照）
+  // v4バランス調整（Task4）: グリッド化でスペシャ部門のゲートが廃止された結果、総合部門との整合を取るため
+  // oidc/ajdc/worldsのbase・growthを全面的に引き下げた（argminマス狙いの合理的方針では12マスに練習が
+  // 分散し、4年でgenreAvgは30台程度にしか伸びない。旧base値は72.4〜92.7display相当の場を想定しており
+  // 高すぎたため、卒業時ランクがE/D未満に張り付いていた）。世界大会は別途キャリブレーション要件があり
+  // base 63/growth 3/sd 20（ユーザー指定の目安63/3/13からsdのみ広げ、rank6≒88-91・rank3≒93-96に整合させた）。
+  // 詳細な反復調整記録は .superpowers/sdd/v4-task-4-report.md 参照
   const LEVELS = {
-    oidc: { base: 25, growth: 15, sd: 10, entrants: 16,
+    oidc: { base: 16, growth: 8, sd: 8, entrants: 16,
             points: { overall: [40, 25, 15, 8, 2], specialist: [20, 13, 8, 4, 1] } },
-    ajdc: { base: 45, growth: 12, sd: 14, entrants: 16,
+    ajdc: { base: 24, growth: 7, sd: 10, entrants: 16,
             points: { overall: [100, 70, 50, 20, 5], specialist: [50, 35, 25, 10, 3] } },
-    worlds: { base: 60, growth: 8, sd: 8, entrants: 16,
+    worlds: { base: 63, growth: 3, sd: 20, entrants: 16,
               points: { overall: [150, 100, 70, 30, 10], specialist: [75, 50, 35, 15, 5] } }
   };
 

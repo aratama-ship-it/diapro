@@ -318,12 +318,15 @@ test('rivalScore: 成長曲線を新スケール(base36)でリマップした値
   assert.strictEqual(DT.contest.rivalScore(shion, DT.DATA.CONTESTS[7], () => 0.5), 72.4);
 });
 
-test('runDivision: 対戦相手の生成値も同一リマップ36（oidc1年・mean25・ノイズ0）', () => {
+test('runDivision: 対戦相手の生成値も同一リマップ36（oidc1年・mean16・ノイズ0）', () => {
   const s = allFifty();
-  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['overall'], () => 0.5); // 1年OIDC 相手平均25
-  // 相手の生値=mean(ノイズ0)=25 → display 36+25*0.7=53.5。全員プレイヤー81.5未満→rank1
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['overall'], () => 0.5); // 1年OIDC 相手平均16（v4バランス調整）
+  // 相手の生値=mean(ノイズ0)=16 → display 36+16*0.7=47.2。全員プレイヤー81.5未満→rank1
   assert.strictEqual(rs[0].rank, 1);
-  assert.strictEqual(rs[0].standings[1].score, 53.5); // 上位2番手の相手
+  // standings[0]=自分(81.5) standings[1]=志音(ライバル,51.4) standings[2]=モブ上位(47.2)
+  assert.strictEqual(rs[0].standings[1].name, '志音');
+  assert.strictEqual(rs[0].standings[1].score, 51.4);
+  assert.strictEqual(rs[0].standings[2].score, 47.2); // モブの生成値=mean16→display47.2
 });
 
 test('runAll: 総合部門にライバルが実在し勝敗が記録される', () => {

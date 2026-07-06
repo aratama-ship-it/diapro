@@ -20,8 +20,8 @@ function entryPick(turn) {
   return ['overall'].concat(specialistIds.slice(0, max - 1));
 }
 
-// 月頭に1回だけ方針を決定する。practiceな月は4枠 [combo, combo, combo, 'routine']
-// combo = { genre: 習熟最小のジャンル, method: スタッツ最小のメソッド(difficulty/novelty/control) }
+// 月頭に1回だけ方針を決定する。
+// 優先順: 補習中→(study/rest)、試験直前で学力不足→study、怪我→injured、学力不足→study、疲労過多→rest、それ以外→train
 function decideMonth(state) {
   if (state.injuredTurns > 0) return 'injured';
   if (state.banTurns > 0) return state.fatigue > 55 ? 'rest' : 'study';
@@ -32,15 +32,22 @@ function decideMonth(state) {
   return 'train';
 }
 
+// 練習な月は4枠 [combo, combo, combo, 'routine']。
+// combo = { genre, method } のうち、12マス中もっとも値が低いセルを狙う（argmin cell）
 function pickCombo(state) {
-  const methodIds = ['difficulty', 'novelty', 'control'];
+  const methodIds = DT.DATA.METHODS.map(m => m.id);
   let worstGenre = DT.DATA.GENRES[0].id;
-  DT.DATA.GENRES.forEach(g => {
-    if (state.genres[g.id] < state.genres[worstGenre]) worstGenre = g.id;
-  });
   let worstMethod = methodIds[0];
-  methodIds.forEach(m => {
-    if (state.stats[m] < state.stats[worstMethod]) worstMethod = m;
+  let worstValue = state.skills[worstGenre][worstMethod];
+  DT.DATA.GENRES.forEach(g => {
+    methodIds.forEach(m => {
+      const v = state.skills[g.id][m];
+      if (v < worstValue) {
+        worstValue = v;
+        worstGenre = g.id;
+        worstMethod = m;
+      }
+    });
   });
   return { genre: worstGenre, method: worstMethod };
 }
@@ -79,6 +86,14 @@ function chooseSensible(state) {
   return decideMonth(state);
 }
 
+function abilityAvg13(state) {
+  const cellSum = DT.DATA.GENRES.reduce((a, g) =>
+    a + DT.DATA.METHODS.reduce((b, m) => b + state.skills[g.id][m.id], 0), 0);
+  const abilitySum = cellSum + state.composition;
+  const cellCount = DT.DATA.GENRES.length * DT.DATA.METHODS.length + 1;
+  return abilitySum / cellCount;
+}
+
 test('まともな方針なら20回全部卒業できる', () => {
   for (let seed = 1; seed <= 20; seed++) {
     const s = playThrough(lcg(seed), chooseSensible);
@@ -92,7 +107,7 @@ test('まともな方針なら20回全部卒業できる', () => {
 
 test('まともな方針なら能力は確実に成長する', () => {
   const s = playThrough(lcg(42), chooseSensible);
-  const avg = DT.DATA.STATS.reduce((a, st) => a + s.stats[st.id], 0) / DT.DATA.STATS.length;
+  const avg = abilityAvg13(s);
   assert.ok(avg >= 40, '最終能力平均が低すぎる: ' + avg);
 });
 
@@ -170,9 +185,8 @@ test('参考: 4年目AJDC総合のdisplayスコア帯と最終能力を表示（
   } else {
     console.log('  4年AJDC総合: seed=1では未到達（学業不振等）');
   }
-  const statAvg = DT.DATA.STATS.reduce((a, st) => a + s.stats[st.id], 0) / DT.DATA.STATS.length;
-  const genreAvg = DT.DATA.GENRES.reduce((a, g) => a + s.genres[g.id], 0) / DT.DATA.GENRES.length;
-  console.log('  最終種別スタッツ平均: ' + statAvg.toFixed(1) + ' / 最終ジャンル習熟平均: ' + genreAvg.toFixed(1));
+  const avg = abilityAvg13(s);
+  console.log('  最終能力平均（13値: 12マス+composition）: ' + avg.toFixed(1));
   assert.ok(true);
 });
 
