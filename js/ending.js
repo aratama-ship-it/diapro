@@ -16,9 +16,12 @@
         comment: 'ディアボロに打ち込みすぎた。学業との両立も実力のうち。'
       };
     }
-    const abilitySum = DT.DATA.STATS.reduce((a, s) => a + state.stats[s.id], 0)
-      + DT.DATA.GENRES.reduce((a, g) => a + state.genres[g.id], 0);
-    const abilityAvg = Math.round(abilitySum / (DT.DATA.STATS.length + DT.DATA.GENRES.length));
+    // v4: abilityAvg = 13値（12マス: GENRES×METHODS + composition）の平均
+    const cellSum = DT.DATA.GENRES.reduce((a, g) =>
+      a + DT.DATA.METHODS.reduce((b, m) => b + state.skills[g.id][m.id], 0), 0);
+    const abilitySum = cellSum + state.composition;
+    const cellCount = DT.DATA.GENRES.length * DT.DATA.METHODS.length + 1;
+    const abilityAvg = Math.round(abilitySum / cellCount);
     const worldsWin = state.results.some(r => r.type === 'worlds' && r.rank === 1);
     const ajdcOverallWin = state.results.some(r => r.type === 'ajdc' && r.division === 'overall' && r.rank === 1);
     // v3バランス調整（Task4）: LEVELS成長引き上げに伴い、無冠でも中堅相応の合計点になる帯が

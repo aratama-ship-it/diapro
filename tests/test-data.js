@@ -62,7 +62,7 @@ test('DATA: SLOTS.genreRiskはv1dが最大・h1dが最小(負値)・d2/d3は0・
   assert.strictEqual(genreRisk.d3, 0, 'd3は補正なし(0)であるべき');
 });
 
-test('DATA: SCORINGは総合とスペシャリストの2方式・base/gate/scale追加（合計配点100維持）', () => {
+test('DATA: SCORINGは総合とスペシャリストの2方式・base/miss/scale追加（合計配点100維持・ゲート廃止）', () => {
   const o = DT.DATA.SCORING.overall;
   assert.deepStrictEqual(o.weights, { difficulty: 30, variety: 10, control: 10, novelty: 10, composition: 20 });
   assert.strictEqual(Object.values(o.weights).reduce((a, v) => a + v, 0), 80); // 基礎点20を足して100
@@ -78,14 +78,21 @@ test('DATA: SCORINGは総合とスペシャリストの2方式・base/gate/scale
   assert.strictEqual(base.stat, undefined, 'baseはジャンル閾値化されstat参照を持たない');
   assert.strictEqual(Object.values(o.weights).reduce((a, v) => a + v, 0) + base.elements * base.perElement, 100);
 
-  const gate = DT.DATA.SCORING.gate;
-  assert.strictEqual(gate.min, 0.4);
-  assert.strictEqual(gate.span, 0.6);
-  assert.strictEqual(gate.min + gate.span, 1); // 満習熟でゲート1.0
+  assert.strictEqual(DT.DATA.SCORING.gate, undefined, 'v4でゲートは廃止されている');
+
+  const miss = DT.DATA.SCORING.miss;
+  assert.deepStrictEqual(miss, { rolls: 6, hardBonusRolls: 2, hardLine: 60, base: 70, controlCoef: 0.5, fatigueCoef: 0.3, min: 5, max: 90 });
 
   const scale = DT.DATA.SCORING.scale;
-  assert.strictEqual(scale.base, 30);
+  assert.strictEqual(scale.base, 36);
   assert.strictEqual(scale.mult, 0.7);
+});
+
+test('DATA: OPPONENT_NAMESは24件以上の重複なし配列', () => {
+  const names = DT.DATA.OPPONENT_NAMES;
+  assert.ok(Array.isArray(names));
+  assert.ok(names.length >= 24, 'OPPONENT_NAMESは24件以上必要');
+  assert.strictEqual(new Set(names).size, names.length, '重複があってはならない');
 });
 
 test('DATA: TRAININGSは削除されている（スロット制に置換）', () => {

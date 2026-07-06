@@ -20,6 +20,13 @@ function withResults(pointsList, ajdcWin) {
   return s;
 }
 
+function zeroSkills(s) {
+  DT.DATA.GENRES.forEach(g => {
+    DT.DATA.METHODS.forEach(m => { s.skills[g.id][m.id] = 0; });
+  });
+  s.composition = 0;
+}
+
 test('evaluate: 退学は専用評価', () => {
   const s = DT.state.newCharacter(() => 0.5);
   s.status = 'expelled';
@@ -29,7 +36,6 @@ test('evaluate: 退学は専用評価', () => {
 });
 
 test('evaluate: ポイント閾値でランクが決まる', () => {
-  // v3バランス調整（Task4）: LEVELS成長引き上げに伴いC閾値を300→220に引き下げ（無冠でも中堅点に届きやすくした）
   assert.strictEqual(DT.ending.evaluate(withResults([850])).rank, 'S');
   assert.strictEqual(DT.ending.evaluate(withResults([700])).rank, 'A');
   assert.strictEqual(DT.ending.evaluate(withResults([450])).rank, 'B');
@@ -44,24 +50,34 @@ test('evaluate: AJDC総合優勝があればポイント不足でもS', () => {
   assert.strictEqual(e.ajdcOverallWin, true);
 });
 
-test('evaluate: 合計ポイントと能力平均を返す（種別スタッツ4+ジャンル習熟4の平均）', () => {
+test('evaluate: 合計ポイントと能力平均を返す（13値平均: GENRES×METHODS12マス+composition）', () => {
   const s = withResults([40, 25]);
-  // stats/genresをあえて非対称にし、8値平均であることを実際に判別できるようにする
-  s.stats = { difficulty: 80, novelty: 0, control: 0, composition: 0 };
-  s.genres = { v1d: 0, h1d: 0, d2: 0, d3: 0 };
+  zeroSkills(s);
+  s.skills.h1d.difficulty = 100;
+  s.skills.v1d.difficulty = 30; // 合計130、13値平均で丸めやすい値にする
   const e = DT.ending.evaluate(s);
   assert.strictEqual(e.totalPoints, 65);
-  // 8値平均: (80+0+0+0+0+0+0+0)/8 = 10（4値平均なら20になるはずなので区別できる）
+  // 13値平均: (100+30+0*11)/13 = 130/13 = 10.0 → round 10（12値平均なら130/12=10.83…になり区別できる）
   assert.strictEqual(e.abilityAvg, 10);
   assert.ok(e.title.length > 0);
 });
 
-test('evaluate: abilityAvgは全能力+全ジャンルが同値なら一致する', () => {
+test('evaluate: abilityAvgは12マス+compositionが全て同値なら一致する', () => {
   const s = withResults([40, 25]);
-  DT.DATA.STATS.forEach(st => { s.stats[st.id] = 60; });
-  DT.DATA.GENRES.forEach(g => { s.genres[g.id] = 60; });
+  DT.DATA.GENRES.forEach(g => {
+    DT.DATA.METHODS.forEach(m => { s.skills[g.id][m.id] = 60; });
+  });
+  s.composition = 60;
   const e = DT.ending.evaluate(s);
   assert.strictEqual(e.abilityAvg, 60);
+});
+
+test('evaluate: compositionもabilityAvgに反映される（マス側を0にしてcompositionのみ寄与）', () => {
+  const s = withResults([40, 25]);
+  zeroSkills(s);
+  s.composition = 39; // 13で割って0捨五入されるか確認: 39/13=3
+  const e = DT.ending.evaluate(s);
+  assert.strictEqual(e.abilityAvg, 3);
 });
 
 test('evaluate: スペシャリスト部門のAJDC優勝ではSにならない', () => {

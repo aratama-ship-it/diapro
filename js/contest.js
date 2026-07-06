@@ -9,20 +9,34 @@
 
   const round1 = v => Math.round(v * 10) / 10;
 
-  // 多彩性点=Σmin(genre,50)/200×満点(overall.weights.variety)。0.1点精度
+  // ジャンル習熟＝そのジャンルの3マス(difficulty/novelty/control)平均。0.1点精度で丸める
+  function genreAvg(state, genreId) {
+    const cell = state.skills[genreId];
+    const sum = DT.DATA.METHODS.reduce((a, m) => a + cell[m.id], 0);
+    return round1(sum / DT.DATA.METHODS.length);
+  }
+
+  // 多彩性点=Σmin(genreAvg,50)/200×満点(overall.weights.variety)。0.1点精度
   function derivedVariety(state) {
     const cap = DT.DATA.SCORING.overall.weights.variety;
-    const sum = DT.DATA.GENRES.reduce((a, g) => a + Math.min(state.genres[g.id], 50), 0);
+    const sum = DT.DATA.GENRES.reduce((a, g) => a + Math.min(genreAvg(state, g.id), 50), 0);
     return round1(sum / 200 * cap);
   }
 
-  // 基礎点=習熟threshold以上のジャンル数×perElement
+  // 基礎点=習熟threshold以上のジャンル数×perElement（習熟=genreAvg）
   function derivedBase(state) {
     const base = DT.DATA.SCORING.base;
-    const elements = DT.DATA.GENRES.filter(g => state.genres[g.id] >= base.threshold).length;
+    const elements = DT.DATA.GENRES.filter(g => genreAvg(state, g.id) >= base.threshold).length;
     return { elements, points: elements * base.perElement };
   }
 
+  // 総合部門の4ジャンル平均（method単位）。例: 難易度点算出用の4ジャンルdifficulty平均
+  function methodAvgAcrossGenres(state, methodId) {
+    const sum = DT.DATA.GENRES.reduce((a, g) => a + state.skills[g.id][methodId], 0);
+    return sum / DT.DATA.GENRES.length;
+  }
+
+  // v4: overall=4ジャンルのmethod平均×weight/100、specialist=skills[divisionId]の該当マス×weight/100（ゲートなし）
   function breakdown(state, divisionId) {
     const division = divisionOf(divisionId);
     const sc = DT.DATA.SCORING[division.scoring];
@@ -31,44 +45,69 @@
       Object.keys(sc.weights).forEach(id => {
         if (id === 'variety') {
           parts.variety = derivedVariety(state);
+        } else if (id === 'composition') {
+          parts.composition = round1(state.composition * sc.weights.composition / 100);
         } else {
-          parts[id] = round1(state.stats[id] * sc.weights[id] / 100);
+          parts[id] = round1(methodAvgAcrossGenres(state, id) * sc.weights[id] / 100);
         }
       });
       parts.fundamentals = derivedBase(state).points;
     } else {
+      const cell = state.skills[divisionId];
       Object.keys(sc.weights).forEach(id => {
-        parts[id] = round1(state.stats[id] * sc.weights[id] / 100);
+        if (id === 'composition') {
+          parts.composition = round1(state.composition * sc.weights.composition / 100);
+        } else {
+          parts[id] = round1(cell[id] * sc.weights[id] / 100);
+        }
       });
     }
     return parts;
   }
 
-  function missRate(state) {
-    const injuryPenalty = state.injuredTurns > 0 ? 15 : 0;
-    return clamp(Math.round(25 + state.fatigue * 0.3 - state.stats.control * 0.3 + injuryPenalty), 2, 60);
+  // 部門ごとの操作安定度参照値: overall→4ジャンルcontrol平均、specialist→skills[divisionId].control
+  function controlRef(state, divisionId) {
+    const division = divisionOf(divisionId);
+    return division.scoring === 'overall'
+      ? methodAvgAcrossGenres(state, 'control')
+      : state.skills[divisionId].control;
+  }
+
+  // 部門ごとの難易度参照値（ハードライン判定用）: overall→4ジャンルdifficulty平均、specialist→skills[divisionId].difficulty
+  function difficultyRef(state, divisionId) {
+    const division = divisionOf(divisionId);
+    return division.scoring === 'overall'
+      ? methodAvgAcrossGenres(state, 'difficulty')
+      : state.skills[divisionId].difficulty;
+  }
+
+  // v4新ミスモデル: rate = clamp(base − control×controlCoef + fatigue×fatigueCoef, min, max)
+  function missRate(state, divisionId) {
+    const miss = DT.DATA.SCORING.miss;
+    const control = controlRef(state, divisionId);
+    const rate = miss.base - control * miss.controlCoef + state.fatigue * miss.fatigueCoef;
+    return clamp(Math.round(rate), miss.min, miss.max);
+  }
+
+  function missRollCount(state, divisionId) {
+    const miss = DT.DATA.SCORING.miss;
+    const hard = difficultyRef(state, divisionId) >= miss.hardLine;
+    return miss.rolls + (hard ? miss.hardBonusRolls : 0);
   }
 
   function playerScore(state, divisionId, rng) {
     rng = rng || Math.random;
-    const division = divisionOf(divisionId);
     const parts = breakdown(state, divisionId);
-    let rawTotal = Object.values(parts).reduce((a, v) => a + v, 0);
-    let gateMult = 1;
-    if (division.scoring === 'specialist') {
-      const gate = DT.DATA.SCORING.gate;
-      const mult = gate.min + gate.span * (state.genres[divisionId] / 100);
-      rawTotal = round1(rawTotal * mult);
-      gateMult = Math.round(mult * 100) / 100;
-    }
+    const rawTotal = Object.values(parts).reduce((a, v) => a + v, 0);
+
     const scale = DT.DATA.SCORING.scale;
     let total = scale.base + rawTotal * scale.mult;
     // 調子＋審査員ぶれ（内訳表示できるよう0.1点精度で保持）
     const judgeMod = Math.round(((state.motivation - 3) * 2 + (rng() * 6 - 3)) * 10) / 10;
     total += judgeMod;
 
-    const rolls = state.stats.difficulty >= 60 ? 3 : 2;
-    const rate = missRate(state);
+    const rolls = missRollCount(state, divisionId);
+    const rate = missRate(state, divisionId);
     let misses = 0;
     let execDeduction = 0;
     for (let i = 0; i < rolls; i++) {
@@ -80,7 +119,7 @@
     const specialDeduction = rng() * 100 < 5 ? DT.DATA.SCORING.specialDeduction : 0;
 
     total -= execDeduction + specialDeduction;
-    return { score: Math.round(total * 10) / 10, parts, rawTotal, judgeMod, misses, execDeduction, specialDeduction, gateMult };
+    return { score: Math.round(total * 10) / 10, parts, rawTotal, judgeMod, misses, execDeduction, specialDeduction };
   }
 
   // v3バランス調整（Task4）: SLOTSゲイン縮小（1/1/1）と合わせて対戦相手の成長カーブも引き上げた。
@@ -111,23 +150,51 @@
     return DT.DATA.RIVALS.filter(r => r.contests.includes(contest.type));
   }
 
+  // モブ対戦相手の命名: rngを消費しない決定的割り当て（同一大会内でも式で重複を避ける）
+  function opponentName(contest, i) {
+    const names = DT.DATA.OPPONENT_NAMES;
+    return names[(contest.turn * 7 + i * 5) % names.length];
+  }
+
+  // 順位表: 全参加者をスコア降順ソートし、上位3名＋自分＋ライバル（重複除去）にrankを付与して返す
+  function buildStandings(entries, playerEntry) {
+    const sorted = entries.slice().sort((a, b) => b.score - a.score);
+    const ranked = sorted.map((e, i) => Object.assign({}, e, { rank: i + 1 }));
+    const picked = [];
+    const seen = new Set();
+    const add = (e) => {
+      const key = e.isPlayer ? 'player' : (e.rivalId ? 'rival:' + e.rivalId : 'mob:' + e.name + ':' + e.rank);
+      if (seen.has(key)) return;
+      seen.add(key);
+      picked.push(e);
+    };
+    ranked.slice(0, 3).forEach(add);
+    ranked.filter(e => e.isPlayer).forEach(add);
+    ranked.filter(e => e.rivalId).forEach(add);
+    picked.sort((a, b) => a.rank - b.rank);
+    return picked;
+  }
+
   function runDivision(state, contest, divisionId, rng) {
     const lv = LEVELS[contest.type];
     const year = Math.ceil(contest.turn / 12);
     const mean = lv.base + lv.growth * (year - 1);
 
     const rivals = divisionId === 'overall' ? rivalsFor(contest) : [];
+    // rng消費順: ライバル→モブ→プレイヤー（変更禁止）
     const rivalEntries = rivals.map(r => ({ rival: r, score: rivalScore(r, contest, rng) }));
 
     const scale = DT.DATA.SCORING.scale;
+    const opponentCount = lv.entrants - 1 - rivalEntries.length;
     const opponents = [];
-    for (let i = 0; i < lv.entrants - 1 - rivalEntries.length; i++) {
+    for (let i = 0; i < opponentCount; i++) {
       const g = (rng() + rng() + rng()) / 3;
       const raw = mean + (g - 0.5) * 2 * lv.sd * 1.8;
-      opponents.push(round1(scale.base + raw * scale.mult));
+      opponents.push({ name: opponentName(contest, i), score: round1(scale.base + raw * scale.mult) });
     }
     const p = playerScore(state, divisionId, rng);
-    const allScores = opponents.concat(rivalEntries.map(e => e.score));
+
+    const allScores = opponents.map(o => o.score).concat(rivalEntries.map(e => e.score));
     const rank = 1 + allScores.filter(o => o > p.score).length;
     const half = Math.ceil(lv.entrants / 2);
     const div = divisionOf(divisionId);
@@ -140,13 +207,19 @@
     const rivalOutcomes = rivalEntries.map(e => ({
       id: e.rival.id, name: e.rival.name, score: e.score, beat: p.score > e.score
     }));
+
+    const standingEntries = opponents.map(o => ({ name: o.name, score: o.score }))
+      .concat(rivalEntries.map(e => ({ name: e.rival.name, score: e.score, rivalId: e.rival.id })))
+      .concat([{ name: state.name, score: p.score, isPlayer: true }]);
+    const standings = buildStandings(standingEntries);
+
     return {
       name: contest.name, type: contest.type,
       division: divisionId, divisionLabel: div.label,
       rank, entrants: lv.entrants, score: p.score,
       parts: p.parts, rawTotal: p.rawTotal, judgeMod: p.judgeMod, misses: p.misses,
-      execDeduction: p.execDeduction, specialDeduction: p.specialDeduction, gateMult: p.gateMult,
-      points, rivalOutcomes, turn: contest.turn
+      execDeduction: p.execDeduction, specialDeduction: p.specialDeduction,
+      points, rivalOutcomes, standings, turn: contest.turn
     };
   }
 
@@ -200,5 +273,9 @@
     return DT.DATA.CONTESTS.find(c => c.turn === turn) || null;
   }
 
-  DT.contest = { derivedVariety, derivedBase, breakdown, missRate, playerScore, maxEntries, runAll, contestForTurn, worldsContestForTurn, worldsQualified, rivalScore, LEVELS };
+  DT.contest = {
+    genreAvg, derivedVariety, derivedBase, breakdown, missRate, playerScore,
+    maxEntries, runAll, contestForTurn, worldsContestForTurn, worldsQualified,
+    rivalScore, LEVELS
+  };
 })(typeof window !== 'undefined' ? window : globalThis);

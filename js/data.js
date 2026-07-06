@@ -53,7 +53,8 @@
       { id: 'd3',      label: '3ディアボロ部門',        scoring: 'specialist' }
     ],
     // JDA採点規則: 総合=男子個人総合部門、スペシャリスト=スペシャリストクラス共通配点
-    // variety(多彩性)・base(基礎点)は導出値。variety=Σmin(genre,50)/200×満点、base=習熟threshold以上のジャンル数×perElement
+    // variety(多彩性)・base(基礎点)は導出値。variety=Σmin(genreAvg,50)/200×満点、base=genreAvg≥thresholdのジャンル数×perElement
+    // v4: スペシャリスト部門のゲート（習熟による減衰）は廃止。スペシャは直接skills[d]の3マスを採点に使う
     SCORING: {
       overall: {
         weights: { difficulty: 30, variety: 10, control: 10, novelty: 10, composition: 20 }
@@ -62,12 +63,22 @@
         weights: { difficulty: 45, control: 15, novelty: 30, composition: 10 }
       },
       base: { elements: 4, perElement: 5, threshold: 25 },
-      gate: { min: 0.4, span: 0.6 },
-      scale: { base: 30, mult: 0.7 },
+      // v4: スケール底上げ（30→36）。ミス減点増の補償＋スコア帯を高め寄りに（mult不変）
+      scale: { base: 36, mult: 0.7 },
+      // v4新ミスモデル（平均3〜4ミス/演技、ノーミスは高操作安定のみの偉業になるよう設計）
+      // rate = clamp(base − control×controlCoef + fatigue×fatigueCoef, min, max)（controlは部門参照値、0-100%）
+      // 判定回数 = rolls + (部門のdifficulty参照値 ≥ hardLine ? hardBonusRolls : 0)
+      miss: { rolls: 6, hardBonusRolls: 2, hardLine: 60, base: 70, controlCoef: 0.5, fatigueCoef: 0.3, min: 5, max: 90 },
       execDeductionMax: 2,
       specialDeduction: 3,
       entryFatigue: 6
     },
+    // v4: モブ対戦相手の命名プール（日本人選手風）。runDivisionでrngを消費せず決定的に割り当てる
+    OPPONENT_NAMES: [
+      '蒼真', '隼人', '玲於', '悠斗', '湊', '葵', '颯太', '大和',
+      '律', '樹', '陸斗', '海翔', '俊介', '慎之介', '光希', '達也',
+      '直樹', '亮平', '拓海', '翔平', '健心', '一颯', '玄', '遼'
+    ],
     STUDY: { id: 'study', label: '勉強', gain: 10, fatigue: 4 },
     REST:  { id: 'rest',  label: '休養' },
     // 大会前後のタイミング補正（大会月の枠と、演技翌月の休養に適用）。キーはmethod id(difficulty/control)またはroutine
