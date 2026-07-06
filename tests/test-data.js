@@ -11,11 +11,11 @@ test('DATA: 競技能力は練習種別スタッツ4項目', () => {
   assert.deepStrictEqual(ids, ['difficulty', 'novelty', 'control', 'composition']);
 });
 
-test('DATA: GENRESはジャンル習熟4項目・DIVISIONSのid(v1d/h1d/d2)と一致', () => {
+test('DATA: GENRESはジャンル習熟4項目・DIVISIONSのid(v1d/h1d/d2/d3)と一致', () => {
   assert.strictEqual(DT.DATA.GENRES.length, 4);
   const ids = DT.DATA.GENRES.map(g => g.id);
   assert.deepStrictEqual(ids, ['v1d', 'h1d', 'd2', 'd3']);
-  ['v1d', 'h1d', 'd2'].forEach(id => {
+  ['v1d', 'h1d', 'd2', 'd3'].forEach(id => {
     assert.ok(DT.DATA.DIVISIONS.some(d => d.id === id), id + ' がDIVISIONSに存在しない');
   });
 });
@@ -90,9 +90,9 @@ test('DATA: TRAININGSは削除されている（スロット制に置換）', ()
   assert.strictEqual(DT.DATA.TRAININGS, undefined);
 });
 
-test('DATA: DIVISIONSは総合1＋スペシャリスト3', () => {
-  assert.strictEqual(DT.DATA.DIVISIONS.length, 4);
-  assert.strictEqual(DT.DATA.DIVISIONS.filter(d => d.scoring === 'specialist').length, 3);
+test('DATA: DIVISIONSは総合1＋スペシャリスト4', () => {
+  assert.strictEqual(DT.DATA.DIVISIONS.length, 5);
+  assert.strictEqual(DT.DATA.DIVISIONS.filter(d => d.scoring === 'specialist').length, 4);
   assert.strictEqual(DT.DATA.DIVISIONS[0].id, 'overall');
 });
 

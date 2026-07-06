@@ -14,9 +14,10 @@ function lcg(seed) {
   return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 }
 
-function specialistPick(turn) {
-  const ids = DT.DATA.DIVISIONS.filter(d => d.scoring === 'specialist').map(d => d.id);
-  return ids.slice(0, DT.contest.maxSpecialists(turn));
+function entryPick(turn) {
+  const specialistIds = DT.DATA.DIVISIONS.filter(d => d.scoring === 'specialist').map(d => d.id);
+  const max = DT.contest.maxEntries(turn);
+  return ['overall'].concat(specialistIds.slice(0, max - 1));
 }
 
 // 月頭に1回だけ方針を決定する。practiceな月は4枠 [combo, combo, combo, 'routine']
@@ -58,11 +59,11 @@ function playThrough(rng, choose) {
     }
     const contest = DT.contest.contestForTurn(state.turn);
     if (contest) {
-      DT.contest.runAll(state, contest, specialistPick(state.turn), rng);
+      DT.contest.runAll(state, contest, entryPick(state.turn), rng);
     } else {
       const wc = DT.contest.worldsContestForTurn(state.turn);
       if (wc && DT.contest.worldsQualified(state, state.turn)) {
-        DT.contest.runAll(state, wc, [], rng);
+        DT.contest.runAll(state, wc, ['overall'], rng);
       } else if (monthAction !== 'injured') {
         const ev = DT.events.roll(state, rng);
         if (ev && ev.kind === 'char') DT.events.applyChoice(state, ev.event, 0);
@@ -82,8 +83,8 @@ test('まともな方針なら20回全部卒業できる', () => {
   for (let seed = 1; seed <= 20; seed++) {
     const s = playThrough(lcg(seed), chooseSensible);
     assert.strictEqual(s.status, 'graduated', 'seed=' + seed);
-    // 8大会 × (総合1+スペシャ枠) = 1年2+2 + 2年3+3 + 3年4+4 + 4年4+4 = 26エントリー（通常大会のみ）
-    assert.strictEqual(s.results.filter(r => r.type !== 'worlds').length, 26, 'seed=' + seed + ' エントリー数');
+    // 8大会 × エントリー枠(学年+1) = 1年2×2 + 2年3×2 + 3年4×2 + 4年5×2 = 28エントリー（通常大会のみ、総合は常に含む）
+    assert.strictEqual(s.results.filter(r => r.type !== 'worlds').length, 28, 'seed=' + seed + ' エントリー数');
     const e = DT.ending.evaluate(s);
     assert.ok('SABCDE'.includes(e.rank), 'seed=' + seed + ' rank=' + e.rank);
   }
@@ -192,11 +193,11 @@ test('参考: 20シードの赤点回数を表示', () => {
       }
       const contest = DT.contest.contestForTurn(state.turn);
       if (contest) {
-        DT.contest.runAll(state, contest, specialistPick(state.turn), rng);
+        DT.contest.runAll(state, contest, entryPick(state.turn), rng);
       } else {
         const wc = DT.contest.worldsContestForTurn(state.turn);
         if (wc && DT.contest.worldsQualified(state, state.turn)) {
-          DT.contest.runAll(state, wc, [], rng);
+          DT.contest.runAll(state, wc, ['overall'], rng);
         } else if (monthAction !== 'injured') {
           const ev = DT.events.roll(state, rng);
           if (ev && ev.kind === 'char') DT.events.applyChoice(state, ev.event, 0);

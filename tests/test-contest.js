@@ -158,18 +158,19 @@ test('playerScore: 実施減点は表示スケール上で1-2点/ミス（execDe
   assert.strictEqual(r.score, Math.round((scaled + r.judgeMod - r.execDeduction) * 10) / 10);
 });
 
-test('maxSpecialists: 学年ごとに1つずつ増え3で頭打ち', () => {
-  assert.strictEqual(DT.contest.maxSpecialists(5), 1);   // 1年
-  assert.strictEqual(DT.contest.maxSpecialists(17), 2);  // 2年
-  assert.strictEqual(DT.contest.maxSpecialists(29), 3);  // 3年
-  assert.strictEqual(DT.contest.maxSpecialists(48), 3);  // 4年（cap）
+test('maxEntries: 学年+1で増え部門総数5で頭打ち', () => {
+  assert.strictEqual(DT.contest.maxEntries(5), 2);   // 1年
+  assert.strictEqual(DT.contest.maxEntries(17), 3);  // 2年
+  assert.strictEqual(DT.contest.maxEntries(29), 4);  // 3年
+  assert.strictEqual(DT.contest.maxEntries(41), 5);  // 4年
+  assert.strictEqual(DT.contest.maxEntries(48), 5);  // 4年（cap=部門総数5）
 });
 
 // ---- runAll/runDivision（相手・ライバルも同一リマップ） ----
 
 test('runAll: 総合+スペシャ1部門で結果2件・疲労が演技間に加算される', () => {
   const s = allFifty();
-  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['v1d'], () => 0.5); // 1年OIDC
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['overall', 'v1d'], () => 0.5); // 1年OIDC
   assert.strictEqual(rs.length, 2);
   assert.strictEqual(rs[0].division, 'overall');
   assert.strictEqual(rs[0].score, 75.5);
@@ -189,7 +190,7 @@ test('runAll: AJDCのポイントは総合100/スペシャ50', () => {
   const s = allFifty();
   DT.DATA.STATS.forEach(st => { s.stats[st.id] = 100; });
   DT.DATA.GENRES.forEach(g => { s.genres[g.id] = 100; });
-  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[7], ['d2'], () => 0.5); // 4年AJDC
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[7], ['overall', 'd2'], () => 0.5); // 4年AJDC
   assert.strictEqual(rs[0].points, 100);
   assert.strictEqual(rs[1].points, 50);
 });
@@ -215,7 +216,7 @@ test('rivalScore: 成長曲線をリマップした値を返す（ノイズ0）'
 
 test('runDivision: 対戦相手の生成値も同一リマップ（oidc1年・mean25・ノイズ0）', () => {
   const s = allFifty();
-  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], [], () => 0.5); // 1年OIDC 相手平均25
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['overall'], () => 0.5); // 1年OIDC 相手平均25
   // 相手の生値=mean(ノイズ0)=25 → display 30+25*0.7=47.5。全員プレイヤー75.5未満→rank1
   assert.strictEqual(rs[0].rank, 1);
 });
@@ -242,7 +243,7 @@ test('rank preservation: 同一rngならraw順とdisplay順は一致する（線
 
 test('runAll: 総合部門にライバルが実在し勝敗が記録される', () => {
   const s = allFifty(); // スコア75.5 > 志音1年45.4
-  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], [], () => 0.5); // 1年OIDC: 志音のみ
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['overall'], () => 0.5); // 1年OIDC: 志音のみ
   assert.strictEqual(rs[0].rivalOutcomes.length, 1);
   assert.strictEqual(rs[0].rivalOutcomes[0].id, 'shion');
   assert.strictEqual(rs[0].rivalOutcomes[0].score, 45.4);
@@ -254,7 +255,7 @@ test('runAll: 総合部門にライバルが実在し勝敗が記録される', 
 
 test('runAll: AJDCには魁人も出る・負けは魁人ノーペナルティ', () => {
   const s = allFifty(); // スコア75.5: 志音1年45.4に勝ち、魁人66(raw)相当のリマップ値に負ける
-  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[1], [], () => 0.5); // 1年AJDC
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[1], ['overall'], () => 0.5); // 1年AJDC
   assert.strictEqual(rs[0].rivalOutcomes.length, 2);
   assert.strictEqual(s.rivalRecord.shion.win, 1);
   assert.strictEqual(s.motivation, 4); // 志音勝ち+1のみ（魁人負けは減点なし）
@@ -262,8 +263,44 @@ test('runAll: AJDCには魁人も出る・負けは魁人ノーペナルティ',
 
 test('runAll: スペシャリスト部門にライバルは出ない', () => {
   const s = allFifty();
-  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['v1d'], () => 0.5);
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['overall', 'v1d'], () => 0.5);
   assert.deepStrictEqual(rs[1].rivalOutcomes, []);
+});
+
+test('runAll: 総合を含まないエントリー（specialistのみ）→ ライバル関与なし・motivation/rivalRecord不変', () => {
+  const s = allFifty();
+  const motivationBefore = s.motivation;
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['v1d', 'd2'], () => 0.5); // 1年OIDC
+  assert.strictEqual(rs.length, 2);
+  assert.strictEqual(rs[0].division, 'v1d');
+  assert.strictEqual(rs[1].division, 'd2');
+  assert.deepStrictEqual(rs[0].rivalOutcomes, []);
+  assert.deepStrictEqual(rs[1].rivalOutcomes, []);
+  assert.deepStrictEqual(rs[0].rivalMessages, []);
+  assert.deepStrictEqual(rs[1].rivalMessages, []);
+  assert.strictEqual(s.rivalRecord.shion.win, 0);
+  assert.strictEqual(s.rivalRecord.shion.lose, 0);
+  assert.strictEqual(s.motivation, motivationBefore); // ライバル戦がないためやる気は変化しない
+  assert.strictEqual(s.results.length, 2);
+});
+
+test('runAll: 3ディアボロ部門(d3)はv1dと同じspecialistゲート計算（all50・rng0.5→54.5）', () => {
+  const s = allFifty();
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['d3'], () => 0.5); // 1年OIDC
+  assert.strictEqual(rs.length, 1);
+  assert.strictEqual(rs[0].division, 'd3');
+  assert.strictEqual(rs[0].divisionLabel, '3ディアボロ部門');
+  // parts合計50 → gate 0.4+0.6*(genres.d3=50/100)=0.7 → rawTotal 35 → scaled 30+35*0.7=54.5
+  assert.strictEqual(rs[0].rawTotal, 35);
+  assert.strictEqual(rs[0].score, 54.5);
+});
+
+test('runAll: 空配列は何もせずstateを変更しない', () => {
+  const s = allFifty();
+  const before = JSON.stringify(s);
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], [], () => 0.5);
+  assert.deepStrictEqual(rs, []);
+  assert.strictEqual(JSON.stringify(s), before);
 });
 
 test('worldsContestForTurn: 11月だけ返す', () => {
@@ -290,7 +327,7 @@ test('runAll: 世界大会は総合のみ・魁人が出る・超高レベル', 
   DT.DATA.STATS.forEach(st => { s.stats[st.id] = 100; });
   DT.DATA.GENRES.forEach(g => { s.genres[g.id] = 100; });
   const wc = DT.contest.worldsContestForTurn(44); // 4年
-  const rs = DT.contest.runAll(s, wc, [], () => 0.5);
+  const rs = DT.contest.runAll(s, wc, ['overall'], () => 0.5);
   assert.strictEqual(rs.length, 1);
   assert.strictEqual(rs[0].rank, 1); // 全能力100(=満点130raw)なら魁人にも勝つ
   assert.strictEqual(rs[0].points, 150);
@@ -301,14 +338,14 @@ test('runAll: 世界大会は総合のみ・魁人が出る・超高レベル', 
 
 test('結果オブジェクトにturnが入る（既存大会）', () => {
   const s = allFifty();
-  DT.contest.runAll(s, DT.DATA.CONTESTS[0], [], () => 0.5);
+  DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['overall'], () => 0.5);
   assert.strictEqual(s.results[0].turn, 5);
 });
 
 test('runAll: 結果オブジェクトにrawTotalが入る・スペシャリストはゲート後の値（Σpartsと不一致）', () => {
   const s = allFifty();
   s.genres.v1d = 0; // v1d部門のゲートが最低0.4に落ちるケース（他ジャンルは50のまま）
-  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['v1d'], () => 0.5); // 1年OIDC
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['overall', 'v1d'], () => 0.5); // 1年OIDC
   assert.strictEqual(rs[0].division, 'overall');
   const overallPartsSum = Object.values(rs[0].parts).reduce((a, v) => a + v, 0);
   assert.strictEqual(rs[0].rawTotal, overallPartsSum); // overallはゲート対象外・Σpartsと一致

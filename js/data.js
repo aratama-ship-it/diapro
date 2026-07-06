@@ -49,7 +49,8 @@
       { id: 'overall', label: '個人総合部門',           scoring: 'overall' },
       { id: 'v1d',     label: '1ディアボロ垂直軸部門',  scoring: 'specialist' },
       { id: 'h1d',     label: '1ディアボロ水平軸部門',  scoring: 'specialist' },
-      { id: 'd2',      label: '2ディアボロ部門',        scoring: 'specialist' }
+      { id: 'd2',      label: '2ディアボロ部門',        scoring: 'specialist' },
+      { id: 'd3',      label: '3ディアボロ部門',        scoring: 'specialist' }
     ],
     // JDA採点規則: 総合=男子個人総合部門、スペシャリスト=スペシャリストクラス共通配点
     // variety(多彩性)・base(基礎点)は導出値。variety=Σmin(genre,50)/200×満点、base=習熟threshold以上のジャンル数×perElement

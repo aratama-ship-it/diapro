@@ -430,7 +430,7 @@
     }
     const enter = el('button', 'primary', '出場する');
     enter.onclick = () => {
-      const results = DT.contest.runAll(state, pendingContest, []);
+      const results = DT.contest.runAll(state, pendingContest, ['overall']);
       finishTurn(pendingMessages, results);
     };
     const skip = el('button', '', '見送る');
@@ -449,19 +449,17 @@
   // --- エントリー選択 ---
   function renderEntry(contest) {
     $('#btn-entry-go').classList.remove('hidden');
-    const max = DT.contest.maxSpecialists(state.turn);
+    const max = DT.contest.maxEntries(state.turn);
     entrySelection = [];
     $('#entry-title').textContent = contest.name + ' エントリー';
-    $('#entry-hint').textContent = '個人総合部門は必ず出場。スペシャリストはあと' + max + '部門まで掛け持ちできます（1演技ごとに疲労+' + DT.DATA.SCORING.entryFatigue + '）';
+    $('#entry-hint').textContent = 'エントリー枠: ' + max + '部門まで（総合は配点が高い）';
     if (state.injuredTurns > 0) {
       $('#entry-hint').textContent += '　⚠ 怪我の影響でミス率+15%！';
     }
     const rows = [];
-    const fixed = el('button', '', '個人総合部門（必須）');
-    fixed.disabled = true;
-    rows.push(fixed);
-    DT.DATA.DIVISIONS.filter(d => d.scoring === 'specialist').forEach(d => {
-      const b = el('button', '', d.label);
+    DT.DATA.DIVISIONS.forEach(d => {
+      const label = d.id === 'overall' ? '個人総合部門' : d.label;
+      const b = el('button', '', label);
       b.onclick = () => {
         const idx = entrySelection.indexOf(d.id);
         if (idx >= 0) {
@@ -474,11 +472,15 @@
       };
       rows.push(b);
     });
+    const emptyHint = el('div', 'cond-warn', '最低1部門を選択してください');
+    emptyHint.classList.toggle('hidden', entrySelection.length > 0);
+    rows.push(emptyHint);
     $('#entry-divisions').replaceChildren(...rows);
     show('#screen-entry');
   }
 
   $('#btn-entry-go').onclick = () => {
+    if (entrySelection.length === 0) return;
     const results = DT.contest.runAll(state, pendingContest, entrySelection);
     finishTurn(pendingMessages, results);
   };
@@ -492,9 +494,10 @@
   function renderContestResults(results) {
     $('#contest-name').textContent = results[0].name + ' 結果';
     const nodes = [];
-    results.forEach((r, i) => {
+    results.forEach((r) => {
+      const isOverall = r.division === 'overall';
       nodes.push(el('div', 'result-big', r.divisionLabel + ' ' + r.rank + '位 / ' + r.entrants + '人'));
-      if (i === 0) {
+      if (isOverall) {
         nodes.push(el('div', 'section-label', '内訳（素点）'));
         const div = DT.DATA.DIVISIONS.find(d => d.id === r.division);
         const weights = DT.DATA.SCORING[div.scoring].weights;
@@ -515,7 +518,7 @@
       }
       nodes.push(textRow('スコア', r.score + '点'));
       nodes.push(textRow('獲得ポイント', r.points + 'pt'));
-      if (i === 0) {
+      if (isOverall) {
         (r.rivalMessages || []).forEach(m => nodes.push(el('div', 'cond-warn', m)));
       }
     });

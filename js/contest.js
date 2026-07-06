@@ -93,9 +93,8 @@
               points: { overall: [150, 100, 70, 30, 10], specialist: [75, 50, 35, 15, 5] } }
   };
 
-  function maxSpecialists(turn) {
-    const specialistCount = DT.DATA.DIVISIONS.filter(d => d.scoring === 'specialist').length;
-    return Math.min(specialistCount, Math.ceil(turn / 12));
+  function maxEntries(turn) {
+    return Math.min(DT.DATA.DIVISIONS.length, Math.ceil(turn / 12) + 1);
   }
 
   function rivalScore(rival, contest, rng) {
@@ -149,9 +148,10 @@
     };
   }
 
-  function runAll(state, contest, specialistIds, rng) {
+  function runAll(state, contest, divisionIds, rng) {
     rng = rng || Math.random;
-    const order = ['overall'].concat(specialistIds || []);
+    const order = divisionIds || [];
+    if (order.length === 0) return [];
     const results = [];
     order.forEach((id, i) => {
       if (i > 0) state.fatigue = clamp(state.fatigue + DT.DATA.SCORING.entryFatigue, 0, 100);
@@ -198,5 +198,5 @@
     return DT.DATA.CONTESTS.find(c => c.turn === turn) || null;
   }
 
-  DT.contest = { derivedVariety, derivedBase, breakdown, missRate, playerScore, maxSpecialists, runAll, contestForTurn, worldsContestForTurn, worldsQualified, rivalScore, LEVELS };
+  DT.contest = { derivedVariety, derivedBase, breakdown, missRate, playerScore, maxEntries, runAll, contestForTurn, worldsContestForTurn, worldsQualified, rivalScore, LEVELS };
 })(typeof window !== 'undefined' ? window : globalThis);
