@@ -16,9 +16,9 @@
         comment: 'ディアボロに打ち込みすぎた。学業との両立も実力のうち。'
       };
     }
-    const abilityAvg = Math.round(
-      DT.DATA.STATS.reduce((a, s) => a + state.stats[s.id], 0) / DT.DATA.STATS.length
-    );
+    const abilitySum = DT.DATA.STATS.reduce((a, s) => a + state.stats[s.id], 0)
+      + DT.DATA.GENRES.reduce((a, g) => a + state.genres[g.id], 0);
+    const abilityAvg = Math.round(abilitySum / (DT.DATA.STATS.length + DT.DATA.GENRES.length));
     const worldsWin = state.results.some(r => r.type === 'worlds' && r.rank === 1);
     const ajdcOverallWin = state.results.some(r => r.type === 'ajdc' && r.division === 'overall' && r.rank === 1);
     let rank;

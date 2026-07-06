@@ -7,15 +7,39 @@
     return DT.DATA.DIVISIONS.find(d => d.id === divisionId);
   }
 
+  const round1 = v => Math.round(v * 10) / 10;
+
+  // 多彩性点=Σmin(genre,50)/200×満点(overall.weights.variety)。0.1点精度
+  function derivedVariety(state) {
+    const cap = DT.DATA.SCORING.overall.weights.variety;
+    const sum = DT.DATA.GENRES.reduce((a, g) => a + Math.min(state.genres[g.id], 50), 0);
+    return round1(sum / 200 * cap);
+  }
+
+  // 基礎点=習熟threshold以上のジャンル数×perElement
+  function derivedBase(state) {
+    const base = DT.DATA.SCORING.base;
+    const elements = DT.DATA.GENRES.filter(g => state.genres[g.id] >= base.threshold).length;
+    return { elements, points: elements * base.perElement };
+  }
+
   function breakdown(state, divisionId) {
-    const sc = DT.DATA.SCORING[divisionOf(divisionId).scoring];
+    const division = divisionOf(divisionId);
+    const sc = DT.DATA.SCORING[division.scoring];
     const parts = {};
-    Object.keys(sc.weights).forEach(id => {
-      parts[id] = Math.round(state.stats[id] * sc.weights[id]) / 100;
-    });
-    if (sc.base) {
-      const elements = Math.min(sc.base.elements, Math.floor(state.stats[sc.base.stat] / 25));
-      parts[sc.base.stat] = elements * sc.base.perElement;
+    if (division.scoring === 'overall') {
+      Object.keys(sc.weights).forEach(id => {
+        if (id === 'variety') {
+          parts.variety = derivedVariety(state);
+        } else {
+          parts[id] = round1(state.stats[id] * sc.weights[id] / 100);
+        }
+      });
+      parts.fundamentals = derivedBase(state).points;
+    } else {
+      Object.keys(sc.weights).forEach(id => {
+        parts[id] = round1(state.stats[id] * sc.weights[id] / 100);
+      });
     }
     return parts;
   }
@@ -27,8 +51,16 @@
 
   function playerScore(state, divisionId, rng) {
     rng = rng || Math.random;
+    const division = divisionOf(divisionId);
     const parts = breakdown(state, divisionId);
-    let total = Object.values(parts).reduce((a, v) => a + v, 0);
+    let rawTotal = Object.values(parts).reduce((a, v) => a + v, 0);
+    if (division.scoring === 'specialist') {
+      const gate = DT.DATA.SCORING.gate;
+      const mult = gate.min + gate.span * (state.genres[divisionId] / 100);
+      rawTotal = round1(rawTotal * mult);
+    }
+    const scale = DT.DATA.SCORING.scale;
+    let total = scale.base + rawTotal * scale.mult;
     // 調子＋審査員ぶれ（内訳表示できるよう0.1点精度で保持）
     const judgeMod = Math.round(((state.motivation - 3) * 2 + (rng() * 6 - 3)) * 10) / 10;
     total += judgeMod;
@@ -46,7 +78,7 @@
     const specialDeduction = rng() * 100 < 5 ? DT.DATA.SCORING.specialDeduction : 0;
 
     total -= execDeduction + specialDeduction;
-    return { score: Math.round(total * 10) / 10, parts, judgeMod, misses, execDeduction, specialDeduction };
+    return { score: Math.round(total * 10) / 10, parts, rawTotal, judgeMod, misses, execDeduction, specialDeduction };
   }
 
   const LEVELS = {
@@ -66,7 +98,9 @@
   function rivalScore(rival, contest, rng) {
     rng = rng || Math.random;
     const year = Math.ceil(contest.turn / 12);
-    return Math.round((rival.base + rival.growth * (year - 1) + (rng() - 0.5) * 2 * rival.sd) * 10) / 10;
+    const raw = rival.base + rival.growth * (year - 1) + (rng() - 0.5) * 2 * rival.sd;
+    const scale = DT.DATA.SCORING.scale;
+    return round1(scale.base + raw * scale.mult);
   }
 
   function rivalsFor(contest) {
@@ -81,10 +115,12 @@
     const rivals = divisionId === 'overall' ? rivalsFor(contest) : [];
     const rivalEntries = rivals.map(r => ({ rival: r, score: rivalScore(r, contest, rng) }));
 
+    const scale = DT.DATA.SCORING.scale;
     const opponents = [];
     for (let i = 0; i < lv.entrants - 1 - rivalEntries.length; i++) {
       const g = (rng() + rng() + rng()) / 3;
-      opponents.push(mean + (g - 0.5) * 2 * lv.sd * 1.8);
+      const raw = mean + (g - 0.5) * 2 * lv.sd * 1.8;
+      opponents.push(round1(scale.base + raw * scale.mult));
     }
     const p = playerScore(state, divisionId, rng);
     const allScores = opponents.concat(rivalEntries.map(e => e.score));
@@ -159,5 +195,5 @@
     return DT.DATA.CONTESTS.find(c => c.turn === turn) || null;
   }
 
-  DT.contest = { breakdown, missRate, playerScore, maxSpecialists, runAll, contestForTurn, worldsContestForTurn, worldsQualified, rivalScore, LEVELS };
+  DT.contest = { derivedVariety, derivedBase, breakdown, missRate, playerScore, maxSpecialists, runAll, contestForTurn, worldsContestForTurn, worldsQualified, rivalScore, LEVELS };
 })(typeof window !== 'undefined' ? window : globalThis);

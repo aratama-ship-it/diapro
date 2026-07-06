@@ -43,11 +43,24 @@ test('evaluate: AJDC総合優勝があればポイント不足でもS', () => {
   assert.strictEqual(e.ajdcOverallWin, true);
 });
 
-test('evaluate: 合計ポイントと能力平均を返す', () => {
-  const e = DT.ending.evaluate(withResults([40, 25]));
+test('evaluate: 合計ポイントと能力平均を返す（種別スタッツ4+ジャンル習熟4の平均）', () => {
+  const s = withResults([40, 25]);
+  // stats/genresをあえて非対称にし、8値平均であることを実際に判別できるようにする
+  s.stats = { difficulty: 80, novelty: 0, control: 0, composition: 0 };
+  s.genres = { v1d: 0, h1d: 0, d2: 0, d3: 0 };
+  const e = DT.ending.evaluate(s);
   assert.strictEqual(e.totalPoints, 65);
-  assert.ok(e.abilityAvg >= 10 && e.abilityAvg <= 35);
+  // 8値平均: (80+0+0+0+0+0+0+0)/8 = 10（4値平均なら20になるはずなので区別できる）
+  assert.strictEqual(e.abilityAvg, 10);
   assert.ok(e.title.length > 0);
+});
+
+test('evaluate: abilityAvgは全能力+全ジャンルが同値なら一致する', () => {
+  const s = withResults([40, 25]);
+  DT.DATA.STATS.forEach(st => { s.stats[st.id] = 60; });
+  DT.DATA.GENRES.forEach(g => { s.genres[g.id] = 60; });
+  const e = DT.ending.evaluate(s);
+  assert.strictEqual(e.abilityAvg, 60);
 });
 
 test('evaluate: スペシャリスト部門のAJDC優勝ではSにならない', () => {
