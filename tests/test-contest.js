@@ -305,4 +305,19 @@ test('結果オブジェクトにturnが入る（既存大会）', () => {
   assert.strictEqual(s.results[0].turn, 5);
 });
 
+test('runAll: 結果オブジェクトにrawTotalが入る・スペシャリストはゲート後の値（Σpartsと不一致）', () => {
+  const s = allFifty();
+  s.genres.v1d = 0; // v1d部門のゲートが最低0.4に落ちるケース（他ジャンルは50のまま）
+  const rs = DT.contest.runAll(s, DT.DATA.CONTESTS[0], ['v1d'], () => 0.5); // 1年OIDC
+  assert.strictEqual(rs[0].division, 'overall');
+  const overallPartsSum = Object.values(rs[0].parts).reduce((a, v) => a + v, 0);
+  assert.strictEqual(rs[0].rawTotal, overallPartsSum); // overallはゲート対象外・Σpartsと一致
+
+  assert.strictEqual(rs[1].division, 'v1d');
+  const partsSum = Object.values(rs[1].parts).reduce((a, v) => a + v, 0);
+  assert.strictEqual(partsSum, 50); // Σparts(素点)は50のまま
+  assert.strictEqual(rs[1].rawTotal, 20); // ゲート後(0.4倍)の値でΣpartsとは不一致
+  assert.notStrictEqual(rs[1].rawTotal, partsSum);
+});
+
 summary();

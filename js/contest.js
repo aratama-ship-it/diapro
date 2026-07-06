@@ -143,7 +143,7 @@
       name: contest.name, type: contest.type,
       division: divisionId, divisionLabel: div.label,
       rank, entrants: lv.entrants, score: p.score,
-      parts: p.parts, judgeMod: p.judgeMod, misses: p.misses,
+      parts: p.parts, rawTotal: p.rawTotal, judgeMod: p.judgeMod, misses: p.misses,
       execDeduction: p.execDeduction, specialDeduction: p.specialDeduction,
       points, rivalOutcomes, turn: contest.turn
     };

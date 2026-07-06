@@ -135,6 +135,7 @@
   // rng消費: 1枠につきrollTier用に1回のみ
   function applyTraining(state, slots, rng) {
     rng = rng || Math.random;
+    state.didStudy = false;
     const messages = [];
     const results = [];
 

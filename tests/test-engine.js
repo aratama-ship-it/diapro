@@ -360,4 +360,14 @@ test('endTurn: 48ターン目終了で卒業', () => {
   assert.strictEqual(s.status, 'graduated');
 });
 
+test('練習月はdidStudyがリセットされ学力減衰が復活する', () => {
+  const s = DT.state.newCharacter(() => 0);
+  DT.engine.applyAction(s, 'study', () => 0.3); // didStudy = true
+  const studyAfter = s.study;
+  DT.engine.applyTraining(s, ['routine', 'routine', 'routine', 'routine'], () => 0.3);
+  assert.strictEqual(s.didStudy, false);
+  DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.study, studyAfter - 2);
+});
+
 summary();
