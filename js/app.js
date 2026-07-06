@@ -156,6 +156,11 @@
     if (state.study < DT.DATA.STUDY_MIN) {
       condNodes.push(el('div', 'cond-warn', '⚠ 学業警告中！'));
     }
+    if (DT.DATA.EXAMS.turns.includes(state.turn)) {
+      condNodes.push(el('div', 'cond-warn', '⚠ 今月末は定期テスト！（学力' + DT.DATA.EXAMS.passLine + '以上で合格）'));
+    } else if (state.banTurns > 0) {
+      condNodes.push(el('div', 'cond-warn', '補習中！練習禁止（残り' + state.banTurns + 'ヶ月）'));
+    }
     $('#main-cond').replaceChildren(...condNodes);
 
     $('#main-stats').replaceChildren(
@@ -206,6 +211,17 @@
   function renderActions() {
     if (state.injuredTurns > 0) {
       $('#main-actions').replaceChildren(actionButton('injured', '療養する（怪我）', true));
+      return;
+    }
+
+    if (state.banTurns > 0) {
+      const studyRestRow = el('div', 'method-row');
+      studyRestRow.appendChild(actionButton('study', '勉強'));
+      studyRestRow.appendChild(actionButton('rest', '休養'));
+      $('#main-actions').replaceChildren(
+        el('div', 'cond-warn', '補習中！練習禁止（残り' + state.banTurns + 'ヶ月）'),
+        studyRestRow
+      );
       return;
     }
 

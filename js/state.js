@@ -1,8 +1,8 @@
 (function (global) {
   'use strict';
   const DT = global.DT = global.DT || {};
-  const SAVE_KEY = 'diabolo-trainer-save-v5';
-  const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3', 'diabolo-trainer-save-v4'];
+  const SAVE_KEY = 'diabolo-trainer-save-v6';
+  const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3', 'diabolo-trainer-save-v4', 'diabolo-trainer-save-v5'];
 
   function newCharacter(rng, backgroundId) {
     rng = rng || Math.random;
@@ -23,6 +23,7 @@
       motivation: 3,
       injuredTurns: 0,
       lowStudyMonths: 0,
+      banTurns: 0,
       didStudy: false,
       didTrain: false,
       results: [],

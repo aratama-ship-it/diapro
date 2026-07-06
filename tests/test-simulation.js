@@ -23,6 +23,9 @@ function specialistPick(turn) {
 // combo = { genre: 習熟最小のジャンル, method: スタッツ最小のメソッド(difficulty/novelty/control) }
 function decideMonth(state) {
   if (state.injuredTurns > 0) return 'injured';
+  if (state.banTurns > 0) return state.fatigue > 55 ? 'rest' : 'study';
+  const nextExam = DT.DATA.EXAMS.turns.find(t => t >= state.turn);
+  if (nextExam !== undefined && nextExam - state.turn <= 1 && state.study < 45) return 'study';
   if (state.study < 30) return 'study';
   if (state.fatigue > 55) return 'rest';
   return 'train';
@@ -169,6 +172,43 @@ test('参考: 4年目AJDC総合のdisplayスコア帯と最終能力を表示（
   const statAvg = DT.DATA.STATS.reduce((a, st) => a + s.stats[st.id], 0) / DT.DATA.STATS.length;
   const genreAvg = DT.DATA.GENRES.reduce((a, g) => a + s.genres[g.id], 0) / DT.DATA.GENRES.length;
   console.log('  最終種別スタッツ平均: ' + statAvg.toFixed(1) + ' / 最終ジャンル習熟平均: ' + genreAvg.toFixed(1));
+  assert.ok(true);
+});
+
+test('参考: 20シードの赤点回数を表示', () => {
+  let redCount = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const rng = lcg(seed);
+    const state = DT.state.newCharacter(rng);
+    let guard = 0;
+    while (state.status === 'playing' && guard < 100) {
+      guard += 1;
+      const monthAction = chooseSensible(state);
+      if (monthAction === 'train') {
+        const combo = pickCombo(state);
+        DT.engine.applyTraining(state, [combo, combo, combo, 'routine'], rng);
+      } else {
+        DT.engine.applyAction(state, monthAction, rng);
+      }
+      const contest = DT.contest.contestForTurn(state.turn);
+      if (contest) {
+        DT.contest.runAll(state, contest, specialistPick(state.turn), rng);
+      } else {
+        const wc = DT.contest.worldsContestForTurn(state.turn);
+        if (wc && DT.contest.worldsQualified(state, state.turn)) {
+          DT.contest.runAll(state, wc, [], rng);
+        } else if (monthAction !== 'injured') {
+          const ev = DT.events.roll(state, rng);
+          if (ev && ev.kind === 'char') DT.events.applyChoice(state, ev.event, 0);
+          else if (ev) DT.events.applyHappening(state, ev.event);
+        }
+      }
+      const beforeBan = state.banTurns;
+      const r = DT.engine.endTurn(state, rng);
+      if (beforeBan === 0 && r.events.some(e => e.includes('赤点'))) redCount += 1;
+    }
+  }
+  console.log('  赤点回数(20シード計): ' + redCount);
   assert.ok(true);
 });
 

@@ -92,6 +92,8 @@
     STUDY_MIN: 20,          // 学力がこれ未満の月が続くと退学
     STUDY_LIMIT_MONTHS: 3,  // 退学までの連続月数
     STUDY_BONUS: 70,        // 学力がこれ以上なら練習成功率ボーナス
+    // 定期テスト: 6月/12月の月末に学力判定。赤点で2ヶ月補習（練習禁止）
+    EXAMS: { turns: [3, 9, 15, 21, 27, 33, 39, 45], passLine: 40, banMonths: 2 },
     // 難易度調整: ディアボロを始めた時期。初期能力のロール幅が変わる（学力は共通）
     BACKGROUNDS: [
       { id: 'college',    label: '大学から始めた', difficulty: 'ハード',         statMin: 5,  statSpread: 16 },

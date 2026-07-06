@@ -370,4 +370,57 @@ test('練習月はdidStudyがリセットされ学力減衰が復活する', () 
   assert.strictEqual(s.study, studyAfter - 2);
 });
 
+// ---- 定期テスト（EXAMS） ----
+test('endTurn: 定期テスト月に学力40未満なら赤点・2ヶ月補習', () => {
+  const s = base();
+  s.turn = 3;
+  s.study = 30;
+  s.didStudy = true; // 学力減衰を無効化してピン留め
+  const r = DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.banTurns, 2);
+  assert.ok(r.events.some(e => e.includes('赤点')), JSON.stringify(r.events));
+});
+
+test('endTurn: 定期テスト月に学力40以上なら合格・補習なし', () => {
+  const s = base();
+  s.turn = 3;
+  s.study = 50;
+  s.didStudy = true;
+  const r = DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.banTurns, 0);
+  assert.ok(r.events.some(e => e.includes('合格')), JSON.stringify(r.events));
+});
+
+test('endTurn: 非テスト月は定期テスト判定なし', () => {
+  const s = base();
+  s.turn = 4;
+  s.study = 10;
+  const r = DT.engine.endTurn(s, () => 0.99);
+  assert.ok(!r.events.some(e => e.includes('赤点') || e.includes('合格')), JSON.stringify(r.events));
+});
+
+test('endTurn: banTurnsは毎ターン1ずつ減り、0になった月に終了イベントが出る', () => {
+  const s = base();
+  s.banTurns = 2;
+  const r1 = DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.banTurns, 1);
+  assert.ok(!r1.events.some(e => e.includes('補習期間が終わった')));
+  const r2 = DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.banTurns, 0);
+  assert.ok(r2.events.some(e => e.includes('補習期間が終わった')));
+});
+
+test('endTurn: 補習中でも学力減衰・退学カウントは通常どおり進む', () => {
+  const s = base();
+  s.banTurns = 2;
+  s.study = 10;
+  DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.lowStudyMonths, 1);
+  DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.lowStudyMonths, 2);
+  const r = DT.engine.endTurn(s, () => 0.99);
+  assert.strictEqual(s.status, 'expelled');
+  assert.ok(r.events.some(e => e.includes('退学')));
+});
+
 summary();

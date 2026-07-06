@@ -191,6 +191,11 @@
     rng = rng || Math.random;
     const events = [];
 
+    if (state.banTurns > 0) {
+      state.banTurns -= 1;
+      if (state.banTurns === 0) events.push('補習期間が終わった！');
+    }
+
     if (!state.didStudy) state.study = clamp(state.study - 2, 0, 100);
     state.fatigue = clamp(state.fatigue - 5, 0, 100);
     if (state.didTrain && state.fatigue >= 60) {
@@ -218,6 +223,15 @@
       events.push('学業警告！（' + state.lowStudyMonths + '/' + DT.DATA.STUDY_LIMIT_MONTHS + 'ヶ月）');
     } else {
       state.lowStudyMonths = 0;
+    }
+
+    if (DT.DATA.EXAMS.turns.includes(state.turn)) {
+      if (state.study < DT.DATA.EXAMS.passLine) {
+        state.banTurns = DT.DATA.EXAMS.banMonths;
+        events.push('定期テスト赤点！（学力' + state.study + '/' + DT.DATA.EXAMS.passLine + '）補習のため' + DT.DATA.EXAMS.banMonths + 'ヶ月間練習禁止…');
+      } else {
+        events.push('定期テスト合格！（学力' + state.study + '）');
+      }
     }
 
     state.turn += 1;

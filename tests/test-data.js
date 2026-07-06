@@ -2,6 +2,7 @@
 const assert = require('node:assert');
 const { test, summary } = require('./harness');
 require('../js/data.js');
+require('../js/engine.js');
 const DT = globalThis.DT;
 
 test('DATA: 競技能力は練習種別スタッツ4項目', () => {
@@ -146,6 +147,22 @@ test('DATA: 練習会は大会・世界大会と衝突せず、boostsはroutine/
     assert.ok(!DT.DATA.WORLDS_TURNS.includes(t), '世界大会衝突: ' + t);
   }
   assert.deepStrictEqual(mu.boosts, { routine: 1.5, novelty: 1.5 });
+});
+
+test('DATA: 定期テストは6月/12月の8回、赤点ライン40・補習2ヶ月、CONTESTS/WORLDS_TURNSと非衝突', () => {
+  const exams = DT.DATA.EXAMS;
+  assert.strictEqual(exams.turns.length, 8);
+  assert.deepStrictEqual(exams.turns, [3, 9, 15, 21, 27, 33, 39, 45]);
+  exams.turns.forEach(t => {
+    const label = DT.engine.turnLabel(t);
+    assert.ok(label.endsWith('6月') || label.endsWith('12月'), 'turn=' + t + ' は6月/12月ではない: ' + label);
+  });
+  assert.strictEqual(exams.passLine, 40);
+  assert.strictEqual(exams.banMonths, 2);
+  exams.turns.forEach(t => {
+    assert.ok(!DT.DATA.CONTESTS.some(c => c.turn === t), 'CONTESTS衝突: ' + t);
+    assert.ok(!DT.DATA.WORLDS_TURNS.includes(t), 'WORLDS_TURNS衝突: ' + t);
+  });
 });
 
 summary();
