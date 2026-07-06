@@ -15,11 +15,8 @@
   // --- 練習スロット選択（UI状態。null=空き、'routine'、または{genre,method}） ---
   let slotsUI = [null, null, null, null];
   let selectedGenre = null;
-  const METHODS = [
-    { id: 'difficulty', label: '高難度技' },
-    { id: 'novelty',    label: '新技開発' },
-    { id: 'control',    label: '反復練習' }
-  ];
+  // メソッドの練習アクション名（DT.DATA.METHODSのid/labelとは別に、練習ボタン用の表示名を持つ）
+  const METHOD_ACTION_LABEL = { difficulty: '高難度技', novelty: '新技開発', control: '反復練習' };
 
   function genreLabel(id) {
     const g = DT.DATA.GENRES.find(x => x.id === id);
@@ -27,18 +24,22 @@
   }
 
   function methodLabel(id) {
-    const m = METHODS.find(x => x.id === id);
+    const m = DT.DATA.METHODS.find(x => x.id === id);
     return m ? m.label : id;
+  }
+
+  function methodActionLabel(id) {
+    return METHOD_ACTION_LABEL[id] || id;
   }
 
   function slotChipLabel(slot) {
     if (slot === 'routine') return 'ルーチン構成';
-    return genreLabel(slot.genre) + '×' + methodLabel(slot.method);
+    return genreLabel(slot.genre) + '×' + methodActionLabel(slot.method);
   }
 
   function statLabelById(id) {
-    const s = DT.DATA.STATS.find(x => x.id === id);
-    return s ? s.label : id;
+    const m = DT.DATA.METHODS.find(x => x.id === id);
+    return m ? m.label : id;
   }
 
   // 前月のスロット構成をプリフィル（不正なジャンル/メソッドは除外し空きに戻す）
@@ -49,7 +50,7 @@
       const s = src[i];
       if (s === 'routine') {
         slotsUI[i] = 'routine';
-      } else if (s && DT.DATA.GENRES.some(g => g.id === s.genre) && METHODS.some(m => m.id === s.method)) {
+      } else if (s && DT.DATA.GENRES.some(g => g.id === s.genre) && DT.DATA.METHODS.some(m => m.id === s.method)) {
         slotsUI[i] = { genre: s.genre, method: s.method };
       }
     }
@@ -80,6 +81,24 @@
     row.appendChild(el('span', 'label', label));
     row.appendChild(el('span', '', value));
     return row;
+  }
+
+  // 「技術」テーブル: 行=ジャンル(GENRES順)、列=難/新/操の数値＋ジャンル平均
+  function skillTable(skills) {
+    const table = el('table', 'skill-table');
+    const head = el('tr');
+    head.appendChild(el('th', '', 'ジャンル'));
+    DT.DATA.METHODS.forEach(m => head.appendChild(el('th', '', m.label)));
+    head.appendChild(el('th', '', '平均'));
+    table.appendChild(head);
+    DT.DATA.GENRES.forEach(g => {
+      const tr = el('tr');
+      tr.appendChild(el('td', '', g.label));
+      DT.DATA.METHODS.forEach(m => tr.appendChild(el('td', '', String(skills[g.id][m.id]))));
+      tr.appendChild(el('td', '', String(DT.contest.genreAvg({ skills: skills }, g.id))));
+      table.appendChild(tr);
+    });
+    return table;
   }
 
   function show(id) {
@@ -114,9 +133,10 @@
     renderBackgroundButtons();
     $('#create-stats').replaceChildren(
       el('div', 'section-label', '技術'),
-      ...DT.DATA.STATS.map(s => statBar(s.label, c.stats[s.id])),
-      el('div', 'section-label', 'ジャンル習熟'),
-      ...DT.DATA.GENRES.map(g => statBar(g.label, c.genres[g.id])),
+      skillTable(c.skills),
+      el('div', 'section-label', '演技構成'),
+      statBar('演技構成', c.composition),
+      el('div', 'section-label', '学力'),
       statBar('学力', c.study)
     );
     show('#screen-create');
@@ -151,7 +171,7 @@
       statBar('学力', state.study),
       textRow('やる気', motiLabels[state.motivation - 1]),
       textRow('予想スコア', expected + '点'),
-      textRow('ミス率（1判定あたり）', DT.contest.missRate(state) + '%')
+      textRow('ミス率（1判定あたり）', DT.contest.missRate(state, 'overall') + '%')
     ];
     if (state.study < DT.DATA.STUDY_MIN) {
       condNodes.push(el('div', 'cond-warn', '⚠ 学業警告中！'));
@@ -165,9 +185,9 @@
 
     $('#main-stats').replaceChildren(
       el('div', 'section-label', '技術'),
-      ...DT.DATA.STATS.map(s => statBar(s.label, state.stats[s.id])),
-      el('div', 'section-label', 'ジャンル習熟'),
-      ...DT.DATA.GENRES.map(g => statBar(g.label, state.genres[g.id]))
+      skillTable(state.skills),
+      el('div', 'section-label', '演技構成'),
+      statBar('演技構成', state.composition)
     );
 
     if (state.injuredTurns <= 0) {
@@ -254,8 +274,8 @@
 
     // (c) メソッド行 + ルーチン構成
     const methodRow = el('div', 'method-row');
-    METHODS.forEach(m => {
-      const b = el('button', '', m.label);
+    DT.DATA.METHODS.forEach(m => {
+      const b = el('button', '', methodActionLabel(m.id));
       b.disabled = !selectedGenre || firstEmptySlot() < 0;
       b.onclick = () => {
         if (!selectedGenre) return;
@@ -294,9 +314,9 @@
   function trainingRowGainText(r) {
     if (r.tier === '失敗') return 'ゼロ';
     if (r.slot === 'routine') {
-      return '+' + r.methodGain + ' 演技構成';
+      return '+' + r.gain + ' 演技構成';
     }
-    return '+' + r.methodGain + ' ' + statLabelById(r.slot.method) + ' / +' + r.genreGain + ' 習熟';
+    return '+' + r.gain + ' ' + genreLabel(r.slot.genre) + '×' + statLabelById(r.slot.method);
   }
 
   function renderTrainingResult(tr) {
@@ -309,29 +329,25 @@
     });
     $('#training-slots').replaceChildren(...rows);
 
-    // 集計: stat/genreごとの合計デルタ（0は表示しない）
-    const statTotals = {};
-    const genreTotals = {};
+    // 集計: マス(genre×method)/compositionごとの合計デルタ（0は表示しない）
+    const cellTotals = {};
     let compositionTotal = 0;
     tr.results.forEach(r => {
       if (r.tier === '失敗') return;
       if (r.slot === 'routine') {
-        compositionTotal += r.methodGain;
+        compositionTotal += r.gain;
       } else {
-        const method = r.slot.method;
-        statTotals[method] = (statTotals[method] || 0) + r.methodGain;
-        const genre = r.slot.genre;
-        genreTotals[genre] = (genreTotals[genre] || 0) + r.genreGain;
+        const key = r.slot.genre + '.' + r.slot.method;
+        cellTotals[key] = (cellTotals[key] || 0) + r.gain;
       }
     });
     const summaryNodes = [];
-    Object.keys(statTotals).forEach(id => {
-      if (statTotals[id] !== 0) summaryNodes.push(textRow(statLabelById(id), '+' + statTotals[id]));
+    Object.keys(cellTotals).forEach(key => {
+      if (cellTotals[key] === 0) return;
+      const [genre, method] = key.split('.');
+      summaryNodes.push(textRow(genreLabel(genre) + '×' + statLabelById(method), '+' + cellTotals[key]));
     });
     if (compositionTotal !== 0) summaryNodes.push(textRow('演技構成', '+' + compositionTotal));
-    Object.keys(genreTotals).forEach(id => {
-      if (genreTotals[id] !== 0) summaryNodes.push(textRow(genreLabel(id), '+' + genreTotals[id]));
-    });
     $('#training-summary').replaceChildren(...summaryNodes);
 
     $('#btn-training-ok').onclick = () => continueTurn(['練習を終えた。'], 'training');
@@ -490,6 +506,22 @@
     novelty: '新奇性', composition: '演技構成', fundamentals: '基礎'
   };
 
+  // 順位表ミニテーブル（順位/名前/スコア）。自分の行を強調
+  function standingsTable(standings) {
+    const table = el('table', 'results');
+    const head = el('tr');
+    ['順位', '名前', 'スコア'].forEach(h => head.appendChild(el('th', '', h)));
+    table.appendChild(head);
+    standings.forEach(s => {
+      const tr = el('tr', s.isPlayer ? 'me-row' : '');
+      tr.appendChild(el('td', '', s.rank + '位'));
+      tr.appendChild(el('td', '', s.name + (s.isPlayer ? '（あなた）' : '')));
+      tr.appendChild(el('td', '', String(s.score)));
+      table.appendChild(tr);
+    });
+    return table;
+  }
+
   // --- 大会結果 ---
   function renderContestResults(results) {
     $('#contest-name').textContent = results[0].name + ' 結果';
@@ -508,11 +540,6 @@
         const max = maxFor(id);
         nodes.push(textRow((PARTS_LABELS[id] || id) + '点', String(value) + '/' + max));
       });
-      if (!isOverall) {
-        const genre = DT.DATA.GENRES.find(g => g.id === r.division);
-        const genreLabel = genre ? genre.label : r.division;
-        nodes.push(textRow('習熟ゲート', '×' + r.gateMult + '（' + genreLabel + '習熟' + state.genres[r.division] + '）'));
-      }
       const scale = DT.DATA.SCORING.scale;
       const scaled = Math.round((scale.base + r.rawTotal * scale.mult) * 10) / 10;
       nodes.push(textRow('スケール換算', '素点 ' + r.rawTotal + ' → ' + scaled + '点'));
@@ -523,6 +550,10 @@
       nodes.push(textRow('獲得ポイント', r.points + 'pt'));
       if (isOverall) {
         (r.rivalMessages || []).forEach(m => nodes.push(el('div', 'cond-warn', m)));
+      }
+      if (Array.isArray(r.standings) && r.standings.length > 0) {
+        nodes.push(el('div', 'section-label', '順位表'));
+        nodes.push(standingsTable(r.standings));
       }
     });
     $('#contest-result').replaceChildren(...nodes);
