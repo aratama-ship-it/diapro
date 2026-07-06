@@ -15,7 +15,9 @@
 - genreAvg(state, g) = round((3マス平均)×10)/10。基礎点=genreAvg≥25のジャンル数×5。多彩性=Σmin(genreAvg,50)/200×10
 - 総合部門: 難易度点=(4ジャンルのdifficulty平均)×30/100、操作安定度点・新奇性点も同様、演技構成=composition×20/100、多彩性・基礎は導出。ミス率=controlの4ジャンル平均で計算
 - スペシャリスト部門d: skills[d].difficulty×45/100＋skills[d].control×15/100＋skills[d].novelty×30/100＋composition×10/100。**ゲートなし（gateMult削除）**。ミス率=skills[d].controlで計算
-- スコアリマップ(30+raw×0.7)・減点・judgeMod・ポイント表・ライバル・世界大会・定期テスト・タイミング補正/練習会（method-idキー）はすべて現行どおり
+- **新ミスモデル（ユーザー指定: 平均3〜4ミス/演技、ノーミスは高操作安定のみの偉業）**: `DT.DATA.SCORING.miss = { rolls: 6, hardBonusRolls: 2, hardLine: 60, base: 70, controlCoef: 0.5, fatigueCoef: 0.3, min: 5, max: 90 }`。missRate(state, divisionId) = clamp(base − control×controlCoef ＋ fatigue×fatigueCoef, min, max)（controlは部門参照値）。判定回数 = rolls ＋（当該部門のdifficulty参照値≥hardLineならhardBonusRolls）。ミス毎減点1〜2点は現行どおり
+- **スケール底上げ**: scale.base 30→36（mult 0.7不変）。ミス減点増の補償＋ユーザー要望の「予想スコア高め」。プレイヤー・相手・ライバル全員同一（順位不変）
+- judgeMod・ポイント表・ライバル・世界大会・定期テスト・タイミング補正/練習会（method-idキー）はすべて現行どおり
 - スロット: {genre, method}→skills[genre][method]に `SLOTS.gridGain: 2` ×tier×growthMult(そのマス)（非失敗min1、タイミング/練習会/特別指導の適用順は現行パイプラインどおり）。routine→composition（routineGain現行値）。疲労/リスク表・genreRisk不変
 - イベントのstat効果: difficulty/novelty/control → **全4ジャンルの該当マスに同量**適用。composition→compositionへ。（EVENTSデータのidはそのまま）
 - ending: abilityAvg = 13値（12マス+composition）の平均。ajdcOverallWin/worldsWin/閾値は不変
@@ -43,7 +45,15 @@
 - 検算基準例（テストでピン）: 全マス10・turn1・rng0.3: [{h1d,control}]×4 → skills.h1d.control 10+round(2×1×1)×4=18、疲労3×4=12、リスク(1-1)×4=0
 - コミット: `feat: グリッド対応の練習エンジン`
 
-### Task 3: contest.js/ending.js — 部門別採点
+### Task 3: contest.js/ending.js — 部門別採点＋順位表（standings）
+
+**追加要件（ユーザー指定）**: 各部門結果に順位表データを持たせる。
+- `DT.DATA.OPPONENT_NAMES`: 日本人選手風の名前プール24件以上（例: 蒼真、隼人、玲於、悠斗、湊、葵、颯太、大和、律、樹、陸斗、海翔、俊介、慎之介、光希、達也、直樹、亮平、拓海、翔平、健心、一颯、玄、遼）
+- モブ相手の命名は**rngを消費しない**決定的割り当て: `OPPONENT_NAMES[(contest.turn * 7 + i * 5) % OPPONENT_NAMES.length]`（i=相手インデックス。同一大会内の重複は許容だが式を工夫して名簿長と互いに素なストライドを選ぶこと）
+- runDivision: 全参加者 `{name, score, isPlayer?, rivalId?}` をスコア降順ソートし、`result.standings` に**上位3名＋自分＋ライバル**（重複除去、各行に rank を付与）を格納。rng消費順は現行（ライバル→モブ→プレイヤー）から**一切変更しない**
+- テスト: standingsの構成（top3+self+rival、rank整合、自分のrankがresult.rankと一致）、命名がrngを消費しないこと（rng呼び出し回数ピンが不変であること）
+
+### Task 3（続き）: 部門別採点本体
 
 **Files:** js/contest.js, js/ending.js, tests/test-contest.js（全面改訂）, tests/test-ending.js（追随）
 
@@ -66,6 +76,8 @@
 
 - ステータス: ジャンル別セクション（GENRES順）に3技術の数値を並べたコンパクト表（バー12本は縦に長すぎるため、`技術`テーブル: 行=ジャンル、列=難/新/操の数値＋ジャンル平均）＋演技構成バー＋学力バー。キャラ作成画面も同構成
 - 大会結果: 習熟ゲート行を削除（廃止）。スペシャ部門の内訳はそのジャンルのマス由来の項目点/満点（breakdownが返すので表示は現行ロジックのまま）。ミス率表示（メイン画面）は総合基準
+- **順位表の表示**: 各部門結果に standings のミニ表（順位/名前/スコア）。自分の行を強調（例: 名前に「（あなた）」付与＋強調色）。ライバル行はrivalMessagesと重複してよい（表で順位、メッセージで因縁）
+- 練習結果画面（renderTrainingResult）: エンジンのresults新形状 {slot, tier, gain} に適応（methodGain/genreGain廃止。ゲイン表示は1本化、集計はマス/compositionごと）
 - スロットピッカー/エントリー画面: 表示順がGENRES/DIVISIONS新順序に自動追随することを確認
 - ブラウザ検証はコントローラー
 - コミット: `feat: スキルグリッドUI（ジャンル×技術テーブル）`
