@@ -37,6 +37,13 @@
     return DT.DATA.STATS.find(s => s.id === id).label;
   }
 
+  function genreLabel(id) {
+    return DT.DATA.GENRES.find(g => g.id === id).label;
+  }
+
+  // 枠の練習内容を表す表示専用ラベル（ログメッセージ用。データそのものはSTATSのid/labelに従う）
+  const METHOD_LABEL = { difficulty: '高難度技', novelty: '新技開発', control: '反復練習' };
+
   function isContestMonth(state) {
     return DT.DATA.CONTESTS.some(c => c.turn === state.turn);
   }
@@ -77,61 +84,106 @@
       messages.push('ゆっくり休んだ。疲労が回復した。' + note);
       return { tier: null, messages };
     }
-    if (actionId === 'study') {
-      const tier = rollTier(state, rng);
-      const gain = Math.round(DT.DATA.STUDY.gain * TIER_MULT[tier]);
-      state.study = clamp(state.study + gain, 0, 100);
-      state.fatigue = clamp(state.fatigue + DT.DATA.STUDY.fatigue, 0, 100);
-      state.didStudy = true;
-      messages.push('勉強（' + tier + '）: 学力 +' + gain);
-      return { tier, messages };
-    }
-
-    const t = DT.DATA.TRAININGS.find(x => x.id === actionId);
+    // actionId === 'study'
     const tier = rollTier(state, rng);
-    let gain = Math.round(t.gain * TIER_MULT[tier] * growthMult(state.stats[t.stat]));
+    const gain = Math.round(DT.DATA.STUDY.gain * TIER_MULT[tier]);
+    state.study = clamp(state.study + gain, 0, 100);
+    state.fatigue = clamp(state.fatigue + DT.DATA.STUDY.fatigue, 0, 100);
+    state.didStudy = true;
+    messages.push('勉強（' + tier + '）: 学力 +' + gain);
+    return { tier, messages };
+  }
+  // Note: applyAction is now scoped to 'study'/'rest'/'injured' only (per v3 plan Task 2).
+  // Training moved to applyTraining (slot-based, below).
+
+  // 1枠分のゲインを計算する。key: method id ('difficulty'/'novelty'/'control') または 'routine'
+  // baseGain: SLOTS.methodGain または SLOTS.routineGain。growthValue: growthMult計算に使う現在値（stats[method] または stats.composition）
+  function computeSlotGain(state, key, baseGain, growthValue, tier) {
+    let gain = Math.round(baseGain * TIER_MULT[tier] * growthMult(growthValue));
     if (tier === '失敗') {
       gain = 0;
     } else if (gain < 1) {
       gain = 1;
     }
     let timingNote = '';
+    let extraFatigue = 0;
     if (isContestMonth(state)) {
-      const tm = DT.DATA.TIMING.contestMonth[t.id];
+      const tm = DT.DATA.TIMING.contestMonth[key];
       if (tm) {
         if (tier !== '失敗') {
           gain = Math.round(gain * tm.gainMult);
           timingNote = tm.note;
         }
-        if (tm.extraFatigue) {
-          state.fatigue = clamp(state.fatigue + tm.extraFatigue, 0, 100);
+        if (tm.extraFatiguePerSlot) {
+          extraFatigue = tm.extraFatiguePerSlot;
           if (tier === '失敗') timingNote = tm.note;
         }
       }
     }
     if (isMeetupMonth(state.turn)) {
-      const boost = DT.DATA.MEETUP.boosts[t.id];
+      const boost = DT.DATA.MEETUP.boosts[key];
       if (boost && tier !== '失敗') {
         gain = Math.round(gain * boost);
         timingNote = timingNote + DT.DATA.MEETUP.note;
       }
     }
     if (tier !== '失敗' && state.specialUnlocked) gain += 1;
+    return { gain, timingNote, extraFatigue };
+  }
 
-    state.stats[t.stat] = clamp(state.stats[t.stat] + gain, 0, 100);
-    state.fatigue = clamp(state.fatigue + t.fatigue, 0, 100);
-    state.injuryRisk = clamp(state.injuryRisk + t.risk, 0, 100);
+  // 疲労は枠ごとに逐次state.fatigueへ加算する（後続枠のrollTier/growthMultは前枠の結果を反映した状態で評価される）
+  // rng消費: 1枠につきrollTier用に1回のみ
+  function applyTraining(state, slots, rng) {
+    rng = rng || Math.random;
+    const messages = [];
+    const results = [];
+
+    slots.forEach(slot => {
+      const isRoutine = slot === 'routine';
+      const key = isRoutine ? 'routine' : slot.method;
+      const tier = rollTier(state, rng);
+
+      if (isRoutine) {
+        const { gain, timingNote, extraFatigue } = computeSlotGain(state, 'routine', DT.DATA.SLOTS.routineGain, state.stats.composition, tier);
+        state.stats.composition = clamp(state.stats.composition + gain, 0, 100);
+        state.fatigue = clamp(state.fatigue + DT.DATA.SLOTS.fatigue.routine + extraFatigue, 0, 100);
+        state.injuryRisk = clamp(state.injuryRisk + DT.DATA.SLOTS.risk.routine, 0, 100);
+        if (tier === '大成功') state.motivation = clamp(state.motivation + 1, 1, 5);
+        if (tier === '失敗') state.motivation = clamp(state.motivation - 1, 1, 5);
+        results.push({ slot, tier, methodGain: gain });
+        if (tier === '失敗') {
+          messages.push('ルーチン構成（失敗）: うまくいかず疲れだけが残った……' + timingNote);
+        } else {
+          messages.push('ルーチン構成（' + tier + '）: 演技構成 +' + gain + timingNote);
+        }
+      } else {
+        const method = slot.method;
+        const genre = slot.genre;
+        const { gain: methodGain, timingNote, extraFatigue } = computeSlotGain(state, method, DT.DATA.SLOTS.methodGain, state.stats[method], tier);
+        let genreGain = Math.round(DT.DATA.SLOTS.genreGain * TIER_MULT[tier] * growthMult(state.genres[genre]));
+        if (tier === '失敗') {
+          genreGain = 0;
+        } else if (genreGain < 1) {
+          genreGain = 1;
+        }
+        state.stats[method] = clamp(state.stats[method] + methodGain, 0, 100);
+        state.genres[genre] = clamp(state.genres[genre] + genreGain, 0, 100);
+        state.fatigue = clamp(state.fatigue + DT.DATA.SLOTS.fatigue[method] + extraFatigue, 0, 100);
+        state.injuryRisk = clamp(state.injuryRisk + DT.DATA.SLOTS.risk[method], 0, 100);
+        if (tier === '大成功') state.motivation = clamp(state.motivation + 1, 1, 5);
+        if (tier === '失敗') state.motivation = clamp(state.motivation - 1, 1, 5);
+        results.push({ slot, tier, methodGain, genreGain });
+        if (tier === '失敗') {
+          messages.push(genreLabel(genre) + '×' + METHOD_LABEL[method] + '（失敗）: うまくいかず疲れだけが残った……' + timingNote);
+        } else {
+          messages.push(genreLabel(genre) + '×' + METHOD_LABEL[method] + '（' + tier + '）: ' + statLabel(method) + ' +' + methodGain + '・習熟 +' + genreGain + timingNote);
+        }
+      }
+    });
+
     state.didTrain = true;
-
-    if (tier === '失敗') {
-      state.fatigue = clamp(state.fatigue + 5, 0, 100);
-      state.motivation = clamp(state.motivation - 1, 1, 5);
-      messages.push(t.label + '（失敗）: うまくいかず疲れだけが残った……' + timingNote);
-    } else {
-      if (tier === '大成功') state.motivation = clamp(state.motivation + 1, 1, 5);
-      messages.push(t.label + '（' + tier + '）: ' + statLabel(t.stat) + ' +' + gain + timingNote);
-    }
-    return { tier, messages };
+    state.lastSlots = slots.map(slot => (slot === 'routine' ? 'routine' : { genre: slot.genre, method: slot.method }));
+    return { results, messages };
   }
 
   function endTurn(state, rng) {
@@ -178,5 +230,5 @@
     return year + '年生 ' + month + '月';
   }
 
-  DT.engine = { outcomeProbs, rollTier, growthMult, applyAction, endTurn, turnLabel, isMeetupMonth, TIER_MULT };
+  DT.engine = { outcomeProbs, rollTier, growthMult, applyAction, applyTraining, endTurn, turnLabel, isMeetupMonth, TIER_MULT };
 })(typeof window !== 'undefined' ? window : globalThis);
