@@ -416,7 +416,7 @@
 
   const PARTS_LABELS = {
     difficulty: '難易度', variety: '多彩性', control: '操作安定度',
-    novelty: '新奇性', composition: '演技構成', fundamentals: '基礎点'
+    novelty: '新奇性', composition: '演技構成', fundamentals: '基礎'
   };
 
   // --- 大会結果 ---
