@@ -480,8 +480,15 @@
       nodes.push(el('div', 'result-big', r.divisionLabel + ' ' + r.rank + '位 / ' + r.entrants + '人'));
       if (i === 0) {
         nodes.push(el('div', 'section-label', '内訳（素点）'));
+        const div = DT.DATA.DIVISIONS.find(d => d.id === r.division);
+        const weights = DT.DATA.SCORING[div.scoring].weights;
+        const maxFor = (key) => key === 'fundamentals'
+          ? DT.DATA.SCORING.base.elements * DT.DATA.SCORING.base.perElement
+          : weights[key];
         Object.keys(r.parts).forEach(id => {
-          nodes.push(textRow((PARTS_LABELS[id] || id) + '点', String(r.parts[id])));
+          const value = r.parts[id];
+          const max = maxFor(id);
+          nodes.push(textRow((PARTS_LABELS[id] || id) + '点', String(value) + '/' + max));
         });
         const scale = DT.DATA.SCORING.scale;
         const scaled = Math.round((scale.base + r.rawTotal * scale.mult) * 10) / 10;
