@@ -14,20 +14,31 @@ function lcg(seed) {
   return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 }
 
-function chooseSensible(state) {
-  if (state.injuredTurns > 0) return 'injured';
-  if (state.study < 30) return 'study';
-  if (state.fatigue > 55) return 'rest';
-  let worst = DT.DATA.TRAININGS[0];
-  DT.DATA.TRAININGS.forEach(t => {
-    if (state.stats[t.stat] < state.stats[worst.stat]) worst = t;
-  });
-  return worst.id;
-}
-
 function specialistPick(turn) {
   const ids = DT.DATA.DIVISIONS.filter(d => d.scoring === 'specialist').map(d => d.id);
   return ids.slice(0, DT.contest.maxSpecialists(turn));
+}
+
+// 月頭に1回だけ方針を決定する。practiceな月は4枠 [combo, combo, combo, 'routine']
+// combo = { genre: 習熟最小のジャンル, method: スタッツ最小のメソッド(difficulty/novelty/control) }
+function decideMonth(state) {
+  if (state.injuredTurns > 0) return 'injured';
+  if (state.study < 30) return 'study';
+  if (state.fatigue > 55) return 'rest';
+  return 'train';
+}
+
+function pickCombo(state) {
+  const methodIds = ['difficulty', 'novelty', 'control'];
+  let worstGenre = DT.DATA.GENRES[0].id;
+  DT.DATA.GENRES.forEach(g => {
+    if (state.genres[g.id] < state.genres[worstGenre]) worstGenre = g.id;
+  });
+  let worstMethod = methodIds[0];
+  methodIds.forEach(m => {
+    if (state.stats[m] < state.stats[worstMethod]) worstMethod = m;
+  });
+  return { genre: worstGenre, method: worstMethod };
 }
 
 function playThrough(rng, choose) {
@@ -35,8 +46,13 @@ function playThrough(rng, choose) {
   let guard = 0;
   while (state.status === 'playing' && guard < 100) {
     guard += 1;
-    const action = choose(state);
-    DT.engine.applyAction(state, action, rng);
+    const monthAction = choose(state);
+    if (monthAction === 'train') {
+      const combo = pickCombo(state);
+      DT.engine.applyTraining(state, [combo, combo, combo, 'routine'], rng);
+    } else {
+      DT.engine.applyAction(state, monthAction, rng);
+    }
     const contest = DT.contest.contestForTurn(state.turn);
     if (contest) {
       DT.contest.runAll(state, contest, specialistPick(state.turn), rng);
@@ -44,7 +60,7 @@ function playThrough(rng, choose) {
       const wc = DT.contest.worldsContestForTurn(state.turn);
       if (wc && DT.contest.worldsQualified(state, state.turn)) {
         DT.contest.runAll(state, wc, [], rng);
-      } else if (action !== 'injured') {
+      } else if (monthAction !== 'injured') {
         const ev = DT.events.roll(state, rng);
         if (ev && ev.kind === 'char') DT.events.applyChoice(state, ev.event, 0);
         else if (ev) DT.events.applyHappening(state, ev.event);
@@ -53,6 +69,10 @@ function playThrough(rng, choose) {
     DT.engine.endTurn(state, rng);
   }
   return state;
+}
+
+function chooseSensible(state) {
+  return decideMonth(state);
 }
 
 test('まともな方針なら20回全部卒業できる', () => {
@@ -74,7 +94,7 @@ test('まともな方針なら能力は確実に成長する', () => {
 
 test('勉強を一切しないと退学になる', () => {
   const s = playThrough(lcg(7), (state) =>
-    state.injuredTurns > 0 ? 'injured' : (state.fatigue > 55 ? 'rest' : 'difficulty')
+    state.injuredTurns > 0 ? 'injured' : (state.fatigue > 55 ? 'rest' : 'train')
   );
   assert.strictEqual(s.status, 'expelled');
   // 初期学力は最大60。減衰-2/月で20を割るまで最長約21ヶ月＋警告3ヶ月
@@ -130,6 +150,25 @@ test('参考: 20シードの卒業ランク分布を表示', () => {
     dist[r] = (dist[r] || 0) + 1;
   }
   console.log('  ランク分布: ' + JSON.stringify(dist));
+  assert.ok(true);
+});
+
+test('参考: 4年目AJDC総合のdisplayスコア帯と最終能力を表示（seed=1）', () => {
+  const s = playThrough(lcg(1), chooseSensible);
+  const year4ajdc = s.results.find(r => r.type === 'ajdc' && r.division === 'overall' && r.turn === 48);
+  if (year4ajdc) {
+    console.log('  4年AJDC総合 プレイヤーdisplayスコア: ' + year4ajdc.score);
+    const lv = DT.contest.LEVELS.ajdc;
+    const meanRaw = lv.base + lv.growth * 3; // year=4
+    const scale = DT.DATA.SCORING.scale;
+    const meanDisplay = Math.round((scale.base + meanRaw * scale.mult) * 10) / 10;
+    console.log('  4年AJDC 場のmean相当display: ' + meanDisplay);
+  } else {
+    console.log('  4年AJDC総合: seed=1では未到達（学業不振等）');
+  }
+  const statAvg = DT.DATA.STATS.reduce((a, st) => a + s.stats[st.id], 0) / DT.DATA.STATS.length;
+  const genreAvg = DT.DATA.GENRES.reduce((a, g) => a + s.genres[g.id], 0) / DT.DATA.GENRES.length;
+  console.log('  最終種別スタッツ平均: ' + statAvg.toFixed(1) + ' / 最終ジャンル習熟平均: ' + genreAvg.toFixed(1));
   assert.ok(true);
 });
 

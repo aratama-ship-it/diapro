@@ -18,11 +18,14 @@
       { id: 'd3',  label: '3ディアボロ以上' }
     ],
     // v3: 毎月4枠のスロット制練習定義。枠= {genre, method}(method∈difficulty/novelty/control) または 'routine'
+    // バランス調整（Task4）: 「毎月弱点狙い」の合理的方針でも4年で能力が青天井近くまで伸びきってしまい
+    // AJDC総合を年1で確実に制してしまう（=毎回S）問題があったため、ゲインを3/2/3→1/1/1へ縮小。
+    // 詳細な反復調整記録は .superpowers/sdd/v3-task-4-report.md 参照
     SLOTS: {
       perMonth: 4,
-      methodGain: 3,
-      genreGain: 2,
-      routineGain: 3,
+      methodGain: 1,
+      genreGain: 1,
+      routineGain: 1,
       fatigue: { difficulty: 5, novelty: 4, control: 3, routine: 2 },
       risk: { difficulty: 2, novelty: 2, control: 1, routine: 1 }
     },

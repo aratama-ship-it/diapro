@@ -81,12 +81,15 @@
     return { score: Math.round(total * 10) / 10, parts, rawTotal, judgeMod, misses, execDeduction, specialDeduction };
   }
 
+  // v3バランス調整（Task4）: SLOTSゲイン縮小（1/1/1）と合わせて対戦相手の成長カーブも引き上げた。
+  // oidc.baseは既存テスト固定値(25)のため不変。ajdc/worldsのbase・growth・ajdc.sdを調整し、
+  // 「毎回AJDC総合で優勝してS」にならないようにした（詳細は.superpowers/sdd/v3-task-4-report.md参照）
   const LEVELS = {
-    oidc: { base: 25, growth: 5, sd: 10, entrants: 16,
+    oidc: { base: 25, growth: 15, sd: 10, entrants: 16,
             points: { overall: [40, 25, 15, 8, 2], specialist: [20, 13, 8, 4, 1] } },
-    ajdc: { base: 35, growth: 9, sd: 12, entrants: 16,
+    ajdc: { base: 45, growth: 12, sd: 14, entrants: 16,
             points: { overall: [100, 70, 50, 20, 5], specialist: [50, 35, 25, 10, 3] } },
-    worlds: { base: 58, growth: 5, sd: 8, entrants: 16,
+    worlds: { base: 60, growth: 8, sd: 8, entrants: 16,
               points: { overall: [150, 100, 70, 30, 10], specialist: [75, 50, 35, 15, 5] } }
   };
 

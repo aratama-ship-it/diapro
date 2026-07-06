@@ -29,10 +29,11 @@ test('evaluate: 退学は専用評価', () => {
 });
 
 test('evaluate: ポイント閾値でランクが決まる', () => {
+  // v3バランス調整（Task4）: LEVELS成長引き上げに伴いC閾値を300→220に引き下げ（無冠でも中堅点に届きやすくした）
   assert.strictEqual(DT.ending.evaluate(withResults([850])).rank, 'S');
   assert.strictEqual(DT.ending.evaluate(withResults([700])).rank, 'A');
   assert.strictEqual(DT.ending.evaluate(withResults([450])).rank, 'B');
-  assert.strictEqual(DT.ending.evaluate(withResults([300])).rank, 'C');
+  assert.strictEqual(DT.ending.evaluate(withResults([220])).rank, 'C');
   assert.strictEqual(DT.ending.evaluate(withResults([90])).rank, 'D');
   assert.strictEqual(DT.ending.evaluate(withResults([89])).rank, 'E');
 });
