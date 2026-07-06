@@ -39,8 +39,13 @@ input {
 .stat-row .bar { height: 100%; background: linear-gradient(90deg, #4ecdc4, #ffd166); display: block; }
 .stat-row .val { width: 2.5em; text-align: right; }
 #main-header { text-align: center; font-size: 1.05rem; color: #ffd166; }
-#main-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#main-actions { display: flex; flex-direction: column; gap: 8px; }
 #main-actions button { font-size: 0.85rem; padding: 10px 4px; }
+.section-label { color: #aaa; font-size: 0.75rem; margin: 6px 0 2px; letter-spacing: 0.05em; }
+.slot-row, .genre-row, .method-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.slot-chip { background: #11111f; border: 1px dashed #444; }
+.slot-chip.filled { background: #2e2e4e; border: 1px solid #4ecdc4; }
+.slot-chip.empty { opacity: 0.5; }
 #main-log { font-size: 0.85rem; line-height: 1.6; min-height: 3em; }
 #event-choices { display: flex; flex-direction: column; gap: 8px; }
 .cond-warn { color: #ff6b6b; font-weight: bold; }
