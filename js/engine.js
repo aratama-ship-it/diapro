@@ -91,8 +91,6 @@
     } else if (gain < 1) {
       gain = 1;
     }
-    if (tier !== '失敗' && state.specialUnlocked) gain += 1;
-
     let timingNote = '';
     if (isContestMonth(state)) {
       const tm = DT.DATA.TIMING.contestMonth[t.id];
@@ -107,6 +105,7 @@
         }
       }
     }
+    if (tier !== '失敗' && state.specialUnlocked) gain += 1;
 
     state.stats[t.stat] = clamp(state.stats[t.stat] + gain, 0, 100);
     state.fatigue = clamp(state.fatigue + t.fatigue, 0, 100);

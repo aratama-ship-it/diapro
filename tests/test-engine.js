@@ -217,4 +217,11 @@ test('通常月: 補正なし(-35/リスク-12)', () => {
   assert.strictEqual(s.injuryRisk, 28);
 });
 
+test('大会月でも特別指導ボーナスはフラット+1', () => {
+  const s = DT.state.newCharacter(() => 0);
+  s.turn = 5; s.specialUnlocked = true;
+  DT.engine.applyAction(s, 'control', () => 0.3); // 成功: round(9*1*1)=9 → ×2=18 → +1=19
+  assert.strictEqual(s.stats.control, 29);
+});
+
 summary();

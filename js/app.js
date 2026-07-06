@@ -10,6 +10,7 @@
   let entrySelection = [];
   let pendingContest = null;
   let selectedBackground = 'highschool';
+  let pendingActionId = null;
 
   // --- DOMヘルパー（innerHTML不使用） ---
   function el(tag, cls, text) {
@@ -138,6 +139,21 @@
   }
 
   // --- ターン実行 ---
+  function proceedWithEvents(messages) {
+    const ev = DT.events.roll(state);
+    if (ev && ev.kind === 'char') {
+      pendingMessages = messages;
+      renderEvent(ev.event);
+      return;
+    }
+    if (ev) {
+      const h = DT.events.applyHappening(state, ev.event);
+      finishTurn(messages.concat(h.messages), null);
+      return;
+    }
+    finishTurn(messages, null);
+  }
+
   function onAction(actionId) {
     const result = DT.engine.applyAction(state, actionId);
     const contest = DT.contest.contestForTurn(state.turn);
@@ -151,21 +167,13 @@
     if (wc && DT.contest.worldsQualified(state, state.turn)) {
       pendingMessages = result.messages;
       pendingContest = wc;
+      pendingActionId = actionId;
       renderWorldsEntry(wc);
       return;
     }
     if (actionId !== 'injured') {
-      const ev = DT.events.roll(state);
-      if (ev && ev.kind === 'char') {
-        pendingMessages = result.messages;
-        renderEvent(ev.event);
-        return;
-      }
-      if (ev) {
-        const h = DT.events.applyHappening(state, ev.event);
-        finishTurn(result.messages.concat(h.messages), null);
-        return;
-      }
+      proceedWithEvents(result.messages);
+      return;
     }
     finishTurn(result.messages, null);
   }
@@ -212,13 +220,22 @@
   function renderWorldsEntry(wc) {
     $('#entry-title').textContent = wc.name + ' 出場権獲得！';
     $('#entry-hint').textContent = '直近1年の優勝実績により出場できます。相手は世界トップレベル（王者・魁人も出場）。';
+    if (state.injuredTurns > 0) {
+      $('#entry-hint').textContent += '　⚠ 怪我の影響でミス率+15%！';
+    }
     const enter = el('button', 'primary', '出場する');
     enter.onclick = () => {
       const results = DT.contest.runAll(state, pendingContest, []);
       finishTurn(pendingMessages, results);
     };
     const skip = el('button', '', '見送る');
-    skip.onclick = () => finishTurn(pendingMessages, null);
+    skip.onclick = () => {
+      if (pendingActionId !== 'injured') {
+        proceedWithEvents(pendingMessages);
+      } else {
+        finishTurn(pendingMessages, null);
+      }
+    };
     $('#entry-divisions').replaceChildren(enter, skip);
     $('#btn-entry-go').classList.add('hidden');
     show('#screen-entry');
