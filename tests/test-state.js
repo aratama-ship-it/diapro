@@ -63,7 +63,7 @@ test('newCharacter: 初期状態が正しい（lastSlotsは空配列）', () => 
   assert.strictEqual(c.turn, 1);
   assert.strictEqual(c.fatigue, 0);
   assert.strictEqual(c.injuryRisk, 10);
-  assert.strictEqual(c.motivation, 3);
+  assert.strictEqual(c.motivation, 50);
   assert.strictEqual(c.injuredTurns, 0);
   assert.strictEqual(c.lowStudyMonths, 0);
   assert.strictEqual(c.banTurns, 0);
@@ -97,11 +97,11 @@ test('load: 壊れたセーブデータはnullを返す', () => {
   assert.strictEqual(DT.state.load(store), null);
 });
 
-test('SAVE_KEYはv7・OLD_KEYSにv1〜v6を含む', () => {
-  assert.strictEqual(DT.state.SAVE_KEY, 'diabolo-trainer-save-v7');
+test('SAVE_KEYはv8・OLD_KEYSにv1〜v7を含む', () => {
+  assert.strictEqual(DT.state.SAVE_KEY, 'diabolo-trainer-save-v8');
 });
 
-test('load: 旧バージョン(v1〜v6)のセーブキーを掃除する', () => {
+test('load: 旧バージョン(v1〜v7)のセーブキーを掃除する', () => {
   const store = {
     data: {},
     setItem(k, v) { this.data[k] = v; },
@@ -114,6 +114,7 @@ test('load: 旧バージョン(v1〜v6)のセーブキーを掃除する', () =>
   store.setItem('diabolo-trainer-save-v4', '{}');
   store.setItem('diabolo-trainer-save-v5', '{}');
   store.setItem('diabolo-trainer-save-v6', '{}');
+  store.setItem('diabolo-trainer-save-v7', '{}');
   DT.state.load(store);
   assert.strictEqual(store.getItem('diabolo-trainer-save-v1'), null);
   assert.strictEqual(store.getItem('diabolo-trainer-save-v2'), null);
@@ -121,6 +122,7 @@ test('load: 旧バージョン(v1〜v6)のセーブキーを掃除する', () =>
   assert.strictEqual(store.getItem('diabolo-trainer-save-v4'), null);
   assert.strictEqual(store.getItem('diabolo-trainer-save-v5'), null);
   assert.strictEqual(store.getItem('diabolo-trainer-save-v6'), null);
+  assert.strictEqual(store.getItem('diabolo-trainer-save-v7'), null);
 });
 
 test('newCharacter: v2フィールド（名前・イベント進行・ライバル戦績）', () => {

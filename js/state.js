@@ -1,8 +1,8 @@
 (function (global) {
   'use strict';
   const DT = global.DT = global.DT || {};
-  const SAVE_KEY = 'diabolo-trainer-save-v7';
-  const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3', 'diabolo-trainer-save-v4', 'diabolo-trainer-save-v5', 'diabolo-trainer-save-v6'];
+  const SAVE_KEY = 'diabolo-trainer-save-v8';
+  const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3', 'diabolo-trainer-save-v4', 'diabolo-trainer-save-v5', 'diabolo-trainer-save-v6', 'diabolo-trainer-save-v7'];
 
   function newCharacter(rng, backgroundId) {
     rng = rng || Math.random;
@@ -23,7 +23,7 @@
       study: 40 + Math.floor(rng() * 21),
       fatigue: 0,
       injuryRisk: 10,
-      motivation: 3,
+      motivation: DT.DATA.MOTIVATION.initial,
       injuredTurns: 0,
       lowStudyMonths: 0,
       banTurns: 0,

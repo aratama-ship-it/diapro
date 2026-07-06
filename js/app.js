@@ -164,12 +164,13 @@
     const rawTotal = Object.values(bd).reduce((a, v) => a + v, 0);
     const scale = DT.DATA.SCORING.scale;
     const expected = Math.round((scale.base + rawTotal * scale.mult) * 10) / 10;
-    const motiLabels = ['絶不調', '不調', '普通', '好調', '絶好調'];
+    const motiRow = statBar('やる気', state.motivation);
+    motiRow.querySelector('.val').textContent = state.motivation + '（' + DT.engine.motivationLabel(state.motivation) + '）';
     const condNodes = [
       statBar('疲労', state.fatigue),
       statBar('怪我リスク', state.injuryRisk),
       statBar('学力', state.study),
-      textRow('やる気', motiLabels[state.motivation - 1]),
+      motiRow,
       textRow('予想スコア', expected + '点'),
       textRow('ミス率（1判定あたり）', DT.contest.missRate(state, 'overall') + '%')
     ];

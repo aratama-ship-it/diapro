@@ -104,7 +104,7 @@
     const scale = DT.DATA.SCORING.scale;
     let total = scale.base + rawTotal * scale.mult;
     // 調子＋審査員ぶれ（内訳表示できるよう0.1点精度で保持）
-    const judgeMod = Math.round(((state.motivation - 3) * 2 + (rng() * 6 - 3)) * 10) / 10;
+    const judgeMod = Math.round(((state.motivation - 50) * DT.DATA.MOTIVATION.judgeCoef + (rng() * 6 - 3)) * 10) / 10;
     total += judgeMod;
 
     const rolls = missRollCount(state, divisionId);
@@ -250,10 +250,10 @@
           } else {
             state.rivalRecord[o.id].lose += 1;
             rivalMessages.push(o.name + 'に敗れた…（' + o.score + '点）');
-            if (o.id === 'shion') state.motivation = clamp(state.motivation - 1, 1, 5);
+            if (o.id === 'shion') state.motivation = clamp(state.motivation - 8, 0, 100);
           }
         });
-        if (beatAny) state.motivation = clamp(state.motivation + 1, 1, 5);
+        if (beatAny) state.motivation = clamp(state.motivation + 8, 0, 100);
         r.rivalMessages = rivalMessages;
       } else {
         r.rivalMessages = [];

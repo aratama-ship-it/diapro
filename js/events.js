@@ -51,7 +51,7 @@
       const label = (id === 'composition' ? DT.DATA.COMPOSITION : DT.DATA.METHODS.find(s => s.id === id)).label;
       messages.push(label + (amount >= 0 ? ' +' : ' ') + amount);
     }
-    if (effects.motivation) state.motivation = clamp(state.motivation + effects.motivation, 1, 5);
+    if (effects.motivation) state.motivation = clamp(state.motivation + effects.motivation, 0, 100);
     if (effects.fatigue) state.fatigue = clamp(state.fatigue + effects.fatigue, 0, 100);
     if (effects.study) state.study = clamp(state.study + effects.study, 0, 100);
     return messages;

@@ -200,4 +200,36 @@ test('DATA: 定期テストは6月/12月の8回、赤点ライン40・補習2ヶ
   });
 });
 
+// やる気の0-100グラデーション化: MOTIVATION定義の形状・帯の網羅性を検証
+test('DATA: MOTIVATIONは初期値50・帯は降順(min大→小)でsort済み・0〜100を隙間なく網羅', () => {
+  const mot = DT.DATA.MOTIVATION;
+  assert.strictEqual(mot.initial, 50);
+  assert.ok(Array.isArray(mot.bands) && mot.bands.length === 5);
+  for (let i = 1; i < mot.bands.length; i++) {
+    assert.ok(mot.bands[i - 1].min > mot.bands[i].min, '帯はmin降順であるべき');
+  }
+  assert.strictEqual(mot.bands[mot.bands.length - 1].min, 0, '最下帯のminは0であるべき（0-100を隙間なく網羅）');
+  assert.deepStrictEqual(mot.bands.map(b => b.label), ['絶好調', '好調', '普通', '不調', '絶不調']);
+  assert.strictEqual(mot.greatCoef, 0.003);
+  assert.strictEqual(mot.failCoef, 0.0015);
+  assert.strictEqual(mot.judgeCoef, 0.08);
+  assert.strictEqual(mot.hotLine, 80);
+  assert.strictEqual(mot.hotBonus, 1);
+  assert.strictEqual(mot.reversion, 0.1);
+});
+
+// EVENTSのmotivation効果値は0-100スケールへ再スケール済み（±1/±2だと旧1-5スケールの名残なので禁止）
+test('DATA: EVENTSのmotivation効果値は新スケール（|value|<=2は残っていない）', () => {
+  const ev = DT.DATA.EVENTS;
+  const values = [];
+  ev.charEvents.forEach(e => e.choices.forEach(c => {
+    if (typeof c.effects.motivation === 'number') values.push(c.effects.motivation);
+  }));
+  ev.happenings.forEach(h => {
+    if (typeof h.effects.motivation === 'number') values.push(h.effects.motivation);
+  });
+  assert.ok(values.length > 0, 'motivation効果を持つイベントが見つからない');
+  values.forEach(v => assert.ok(Math.abs(v) > 2, 'motivation効果が旧スケールのまま残っている: ' + v));
+});
+
 summary();

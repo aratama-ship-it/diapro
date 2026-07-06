@@ -23,9 +23,9 @@ test('applyChoice: 効果が適用されメッセージが返る', () => {
   const s = base();
   const ev = DT.DATA.EVENTS.charEvents.find(e => e.id === 'yota1');
   const before = s.fatigue = 30;
-  const r = DT.events.applyChoice(s, ev, 0); // 付き合う: fatigue-15, motivation+1
+  const r = DT.events.applyChoice(s, ev, 0); // 付き合う: fatigue-15, motivation+8
   assert.strictEqual(s.fatigue, 15);
-  assert.strictEqual(s.motivation, 4);
+  assert.strictEqual(s.motivation, 58); // 50 + 8
   assert.ok(r.messages.some(m => m.includes('心が軽く')));
 });
 
@@ -55,9 +55,9 @@ test('コーチイベント2回で特別指導解放（一度きり）', () => {
 test('applyHappening: 効果適用', () => {
   const s = base();
   const h = DT.DATA.EVENTS.happenings.find(e => e.id === 'hap2');
-  const r = DT.events.applyHappening(s, h); // fatigue+15, motivation-1
+  const r = DT.events.applyHappening(s, h); // fatigue+15, motivation-8
   assert.strictEqual(s.fatigue, 15);
-  assert.strictEqual(s.motivation, 2);
+  assert.strictEqual(s.motivation, 42); // 50 - 8
   assert.ok(r.messages.length >= 1);
 });
 

@@ -6,12 +6,13 @@
   const TIER_MULT = { '大成功': 2.0, '成功': 1.0, '普通': 0.5, '失敗': 0 };
 
   function outcomeProbs(state) {
-    const boost = (state.motivation - 3) * 0.05
+    const mot = DT.DATA.MOTIVATION;
+    const boost = (state.motivation - 50) * mot.greatCoef
       + (state.study >= DT.DATA.STUDY_BONUS ? 0.05 : 0)
       - Math.max(0, state.fatigue - 50) * 0.004;
     const great = clamp(0.10 + boost, 0.02, 0.30);
     const fail = clamp(
-      0.10 + Math.max(0, state.fatigue - 50) * 0.006 - (state.motivation - 3) * 0.03,
+      0.10 + Math.max(0, state.fatigue - 50) * 0.006 - (state.motivation - 50) * mot.failCoef,
       0.03, 0.40
     );
     return { great, fail };
@@ -80,7 +81,7 @@
       }
       state.fatigue = clamp(state.fatigue - recover, 0, 100);
       state.injuryRisk = clamp(state.injuryRisk - riskRecover, 0, 100);
-      state.motivation = clamp(state.motivation + 1, 1, 5);
+      state.motivation = clamp(state.motivation + 8, 0, 100);
       messages.push('ゆっくり休んだ。疲労が回復した。' + note);
       return { tier: null, messages };
     }
@@ -128,6 +129,7 @@
       }
     }
     if (tier !== '失敗' && state.specialUnlocked) gain += 1;
+    if (tier !== '失敗' && state.motivation >= DT.DATA.MOTIVATION.hotLine) gain += DT.DATA.MOTIVATION.hotBonus;
     return { gain, timingNote, extraFatigue };
   }
 
@@ -149,8 +151,8 @@
         state.composition = clamp(state.composition + gain, 0, 100);
         state.fatigue = clamp(state.fatigue + DT.DATA.SLOTS.fatigue.routine + extraFatigue, 0, 100);
         state.injuryRisk = clamp(state.injuryRisk + DT.DATA.SLOTS.risk.routine, 0, 100);
-        if (tier === '大成功') state.motivation = clamp(state.motivation + 1, 1, 5);
-        if (tier === '失敗') state.motivation = clamp(state.motivation - 1, 1, 5);
+        if (tier === '大成功') state.motivation = clamp(state.motivation + 3, 0, 100);
+        if (tier === '失敗') state.motivation = clamp(state.motivation - 3, 0, 100);
         results.push({ slot, tier, gain });
         if (tier === '失敗') {
           messages.push('ルーチン構成（失敗）: うまくいかず疲れだけが残った……' + timingNote);
@@ -164,8 +166,8 @@
         state.skills[genre][method] = clamp(state.skills[genre][method] + gain, 0, 100);
         state.fatigue = clamp(state.fatigue + DT.DATA.SLOTS.fatigue[method] + extraFatigue, 0, 100);
         state.injuryRisk = clamp(state.injuryRisk + DT.DATA.SLOTS.risk[method] + DT.DATA.SLOTS.genreRisk[genre], 0, 100);
-        if (tier === '大成功') state.motivation = clamp(state.motivation + 1, 1, 5);
-        if (tier === '失敗') state.motivation = clamp(state.motivation - 1, 1, 5);
+        if (tier === '大成功') state.motivation = clamp(state.motivation + 3, 0, 100);
+        if (tier === '失敗') state.motivation = clamp(state.motivation - 3, 0, 100);
         results.push({ slot, tier, gain });
         if (tier === '失敗') {
           messages.push(genreLabel(genre) + '×' + METHOD_LABEL[method] + '（失敗）: うまくいかず疲れだけが残った……' + timingNote);
@@ -184,6 +186,10 @@
     rng = rng || Math.random;
     const events = [];
 
+    // やる気の平均回帰: 毎月、初期値50へreversion率で引き戻す（整数丸めで0→+5, 100→-5, 50→0）。
+    // 絶好調ボーナス×成功連鎖の正のフィードバックによる0/100二極化を防ぐ減衰項
+    state.motivation = clamp(state.motivation + Math.round((DT.DATA.MOTIVATION.initial - state.motivation) * DT.DATA.MOTIVATION.reversion), 0, 100);
+
     if (state.banTurns > 0) {
       state.banTurns -= 1;
       if (state.banTurns === 0) events.push('補習期間が終わった！');
@@ -198,7 +204,7 @@
     if (state.didTrain && rng() < state.injuryRisk / 500) {
       state.injuredTurns = 1;
       state.injuryRisk = 25;
-      state.motivation = clamp(state.motivation - 1, 1, 5);
+      state.motivation = clamp(state.motivation - 8, 0, 100);
       events.push('怪我をしてしまった！ 来月は療養が必要だ。');
     } else if (state.injuredTurns > 0) {
       state.injuredTurns -= 1;
@@ -232,11 +238,17 @@
     return { events };
   }
 
+  // やる気帯ラベル: MOTIVATION.bandsは降順(min大→小)に並んでいる前提。値以下となる最初の帯を返す
+  function motivationLabel(value) {
+    const band = DT.DATA.MOTIVATION.bands.find(b => value >= b.min);
+    return band ? band.label : DT.DATA.MOTIVATION.bands[DT.DATA.MOTIVATION.bands.length - 1].label;
+  }
+
   function turnLabel(turn) {
     const year = Math.ceil(turn / 12);
     const month = ((turn - 1) % 12 + 3) % 12 + 1;
     return year + '年生 ' + month + '月';
   }
 
-  DT.engine = { outcomeProbs, rollTier, growthMult, applyAction, applyTraining, endTurn, turnLabel, isMeetupMonth, TIER_MULT };
+  DT.engine = { outcomeProbs, rollTier, growthMult, applyAction, applyTraining, endTurn, turnLabel, isMeetupMonth, TIER_MULT, motivationLabel };
 })(typeof window !== 'undefined' ? window : globalThis);

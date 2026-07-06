@@ -79,6 +79,23 @@
       '律', '樹', '陸斗', '海翔', '俊介', '慎之介', '光希', '達也',
       '直樹', '亮平', '拓海', '翔平', '健心', '一颯', '玄', '遼'
     ],
+    // やる気: 0-100の連続値。帯ラベルと寄与係数
+    MOTIVATION: {
+      initial: 50,
+      bands: [
+        { min: 80, label: '絶好調' },
+        { min: 60, label: '好調' },
+        { min: 40, label: '普通' },
+        { min: 20, label: '不調' },
+        { min: 0,  label: '絶不調' }
+      ],
+      greatCoef: 0.003,   // outcomeProbs: (motivation-50)*greatCoef → ±0.15
+      failCoef: 0.0015,   // fail側: -(motivation-50)*failCoef → ∓0.075
+      judgeCoef: 0.08,    // judgeMod: (motivation-50)*judgeCoef → ±4
+      hotLine: 80,        // 絶好調帯
+      hotBonus: 1,        // 絶好調時、成功スロットのゲイン+1
+      reversion: 0.1      // 毎月、50への平均回帰率（0/100張り付きの二極化を防ぐ減衰項）
+    },
     STUDY: { id: 'study', label: '勉強', gain: 10, fatigue: 4 },
     REST:  { id: 'rest',  label: '休養' },
     // 大会前後のタイミング補正（大会月の枠と、演技翌月の休養に適用）。キーはmethod id(difficulty/control)またはroutine
@@ -132,15 +149,15 @@
         { id: 'coach1', char: 'coach', text: '「基礎ができてない奴に応用はない」剣持コーチが反復練習を命じてきた。',
           choices: [
             { label: '黙って従う',       effects: { stat: { id: 'control', amount: 3 }, fatigue: 8 },       result: '地味な反復の先に、確かな手応えがあった。' },
-            { label: '自分の練習を主張', effects: { stat: { id: 'novelty', amount: 2 }, motivation: 1 },     result: '「…好きにしろ」意外にも認めてくれた。' } ] },
+            { label: '自分の練習を主張', effects: { stat: { id: 'novelty', amount: 2 }, motivation: 8 },     result: '「…好きにしろ」意外にも認めてくれた。' } ] },
         { id: 'coach2', char: 'coach', text: '剣持コーチが自分の現役時代の映像を見せてくれた。',
           choices: [
             { label: '技術を盗む',       effects: { stat: { id: 'difficulty', amount: 3 } },                  result: '世界レベルの技術を目に焼き付けた。' },
             { label: '見せ方を学ぶ',     effects: { stat: { id: 'composition', amount: 3 } },                 result: '「魅せて初めて点になる」深い言葉だった。' } ] },
         { id: 'yota1', char: 'yota', text: '陽太が「息抜きしようぜ！」とゲームセンターに誘ってきた。',
           choices: [
-            { label: '付き合う',         effects: { fatigue: -15, motivation: 1 },                            result: '思い切り笑って、心が軽くなった。' },
-            { label: '練習を優先',       effects: { stat: { id: 'control', amount: 2 }, motivation: -1 },     result: '断った罪悪感はあるが、腕は上がった。' } ] },
+            { label: '付き合う',         effects: { fatigue: -15, motivation: 8 },                            result: '思い切り笑って、心が軽くなった。' },
+            { label: '練習を優先',       effects: { stat: { id: 'control', amount: 2 }, motivation: -8 },     result: '断った罪悪感はあるが、腕は上がった。' } ] },
         { id: 'yota2', char: 'yota', text: '陽太が動画撮影を手伝ってくれると言う。',
           choices: [
             { label: '演技を撮ってもらう', effects: { stat: { id: 'composition', amount: 2 } },               result: '客観的に見ると構成の粗がよく分かった。' },
@@ -152,29 +169,29 @@
         { id: 'mikoto2', char: 'mikoto', text: '美琴先輩が「あなたの演技、もったいないのよね」と呟いた。',
           choices: [
             { label: '詳しく聞く',       effects: { stat: { id: 'novelty', amount: 3 } },                     result: '技の引き出しの偏りを指摘され、新しい技を開拓したくなった。' },
-            { label: '聞き流す',         effects: { motivation: 1 },                                          result: '自分のスタイルを貫くのも大事だ。' } ] },
+            { label: '聞き流す',         effects: { motivation: 8 },                                          result: '自分のスタイルを貫くのも大事だ。' } ] },
         { id: 'shion1', char: 'shion', text: '志音の練習を偶然見てしまった。異次元の完成度だった。',
           choices: [
-            { label: '闘志を燃やす',     effects: { motivation: 2 },                                          result: '「次の大会で絶対に勝つ」' },
+            { label: '闘志を燃やす',     effects: { motivation: 15 },                                          result: '「次の大会で絶対に勝つ」' },
             { label: '技を研究する',     effects: { stat: { id: 'novelty', amount: 2 }, fatigue: 5 },         result: '深夜まで分析ノートを書き込んだ。' } ] },
         { id: 'shion2', char: 'shion', text: '志音に「お前、最近ちょっと面白いな」と声をかけられた。',
           choices: [
             { label: '勝負を挑む',       effects: { stat: { id: 'difficulty', amount: 2 }, fatigue: 8 },      result: '即席の技比べ。負けたが、得るものがあった。' },
-            { label: '素直に喜ぶ',       effects: { motivation: 1, study: -3 },                               result: '浮かれてその日は勉強が手につかなかった。' } ] },
+            { label: '素直に喜ぶ',       effects: { motivation: 8, study: -3 },                               result: '浮かれてその日は勉強が手につかなかった。' } ] },
         { id: 'kaito1', char: 'kaito', text: 'SNSで王者・魁人の新技映像が流れてきた。世界が違う。',
           choices: [
             { label: '何度も見返す',     effects: { stat: { id: 'difficulty', amount: 2 } },                  result: '理屈は分かった。あとは体で覚えるだけだ。' },
             { label: '自分の道を行く',   effects: { stat: { id: 'composition', amount: 2 } },                 result: '同じ土俵で戦わない。それも戦略だ。' } ] },
         { id: 'kaito2', char: 'kaito', text: '大会会場で魁人に「学生で面白いのが居ると聞いた」と話しかけられた。',
           choices: [
-            { label: '目標です、と言う', effects: { motivation: 2 },                                          result: '「なら早く上がってこい」胸が熱くなった。' },
-            { label: '倒す相手です、と言う', effects: { stat: { id: 'control', amount: 2 }, motivation: 1 },  result: '「…いい目だ」王者は笑った。' } ] }
+            { label: '目標です、と言う', effects: { motivation: 15 },                                          result: '「なら早く上がってこい」胸が熱くなった。' },
+            { label: '倒す相手です、と言う', effects: { stat: { id: 'control', amount: 2 }, motivation: 8 },  result: '「…いい目だ」王者は笑った。' } ] }
       ],
       happenings: [
         { id: 'hap1', text: 'バイト代で新しいディアボロを購入した！', effects: { stat: { id: 'control', amount: 2 } } },
-        { id: 'hap2', text: '風邪をひいてしまった……', effects: { fatigue: 15, motivation: -1 } },
-        { id: 'hap3', text: '文化祭で演技を披露して大ウケだった！', effects: { stat: { id: 'composition', amount: 2 }, motivation: 1 } },
-        { id: 'hap4', text: '練習動画がSNSで少しバズった！', effects: { motivation: 2 } },
+        { id: 'hap2', text: '風邪をひいてしまった……', effects: { fatigue: 15, motivation: -8 } },
+        { id: 'hap3', text: '文化祭で演技を披露して大ウケだった！', effects: { stat: { id: 'composition', amount: 2 }, motivation: 8 } },
+        { id: 'hap4', text: '練習動画がSNSで少しバズった！', effects: { motivation: 15 } },
         { id: 'hap5', text: '大雨で体育館が使えず、家でゆっくり過ごした。', effects: { fatigue: -10 } }
       ]
     },
