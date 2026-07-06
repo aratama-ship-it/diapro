@@ -170,7 +170,7 @@
         state.stats[method] = clamp(state.stats[method] + methodGain, 0, 100);
         state.genres[genre] = clamp(state.genres[genre] + genreGain, 0, 100);
         state.fatigue = clamp(state.fatigue + DT.DATA.SLOTS.fatigue[method] + extraFatigue, 0, 100);
-        state.injuryRisk = clamp(state.injuryRisk + DT.DATA.SLOTS.risk[method], 0, 100);
+        state.injuryRisk = clamp(state.injuryRisk + DT.DATA.SLOTS.risk[method] + DT.DATA.SLOTS.genreRisk[genre], 0, 100);
         if (tier === '大成功') state.motivation = clamp(state.motivation + 1, 1, 5);
         if (tier === '失敗') state.motivation = clamp(state.motivation - 1, 1, 5);
         results.push({ slot, tier, methodGain, genreGain });
