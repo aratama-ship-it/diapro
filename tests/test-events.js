@@ -35,8 +35,8 @@ test('applyChoice: statとstudyの効果・クランプ', () => {
   DT.events.applyChoice(s, ev, 1); // study+8
   assert.strictEqual(s.study, 48);
   const ev2 = DT.DATA.EVENTS.charEvents.find(e => e.id === 'coach1');
-  DT.events.applyChoice(s, ev2, 0); // fundamentals+3, fatigue+8
-  assert.strictEqual(s.stats.fundamentals, 13);
+  DT.events.applyChoice(s, ev2, 0); // control+3, fatigue+8（反復練習はcontrolに再配線）
+  assert.strictEqual(s.stats.control, 13);
 });
 
 test('コーチイベント2回で特別指導解放（一度きり）', () => {

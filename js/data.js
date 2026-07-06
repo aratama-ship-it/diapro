@@ -3,23 +3,29 @@
   const DT = global.DT = global.DT || {};
 
   DT.DATA = {
-    // JDA「ディアボロ競技採点規則 第八版」オーバーオールクラス個人部門の採点項目に対応
+    // v3: 練習種別スタッツ4つ（0-100）。旧variety/fundamentalsは導出値へ移行しSTATSから削除
     STATS: [
-      { id: 'difficulty',   label: '難易度',     desc: '技の難易度・数' },
-      { id: 'variety',      label: '多彩性',     desc: '技の多彩さ' },
-      { id: 'control',      label: '操作安定度', desc: '巧みさ・美しさ・洗練' },
-      { id: 'novelty',      label: '新奇性',     desc: '新しい技・稀少な技' },
-      { id: 'composition',  label: '演技構成',   desc: '楽曲・衣装・順序・起承転結' },
-      { id: 'fundamentals', label: '基礎',       desc: '1D水平軸/1D垂直軸/2D/3D以上' }
+      { id: 'difficulty',  label: '難易度',     desc: '技の難易度・数' },
+      { id: 'novelty',     label: '新奇性',     desc: '新しい技・稀少な技' },
+      { id: 'control',     label: '操作安定度', desc: '巧みさ・美しさ・洗練' },
+      { id: 'composition', label: '演技構成',   desc: '楽曲・衣装・順序・起承転結' }
     ],
-    TRAININGS: [
-      { id: 'difficulty',   label: '高難度技練習',     stat: 'difficulty',   gain: 9, fatigue: 16, risk: 8 },
-      { id: 'variety',      label: 'レパートリー開拓', stat: 'variety',      gain: 9, fatigue: 12, risk: 5 },
-      { id: 'control',      label: '反復練習',         stat: 'control',      gain: 9, fatigue: 10, risk: 3 },
-      { id: 'novelty',      label: '新技開発',         stat: 'novelty',      gain: 9, fatigue: 14, risk: 7 },
-      { id: 'composition',  label: 'ルーチン構成',     stat: 'composition',  gain: 9, fatigue: 8,  risk: 2 },
-      { id: 'fundamentals', label: '基礎練習',         stat: 'fundamentals', gain: 9, fatigue: 8,  risk: 2 }
+    // v3: ジャンル習熟4つ（0-100）。v1d/h1d/d2はDIVISIONSのidと一致させる
+    GENRES: [
+      { id: 'v1d', label: '1ディアボロ垂直軸' },
+      { id: 'h1d', label: '1ディアボロ水平軸' },
+      { id: 'd2',  label: '2ディアボロ' },
+      { id: 'd3',  label: '3ディアボロ以上' }
     ],
+    // v3: 毎月4枠のスロット制練習定義。枠= {genre, method}(method∈difficulty/novelty/control) または 'routine'
+    SLOTS: {
+      perMonth: 4,
+      methodGain: 3,
+      genreGain: 2,
+      routineGain: 3,
+      fatigue: { difficulty: 5, novelty: 4, control: 3, routine: 2 },
+      risk: { difficulty: 2, novelty: 2, control: 1, routine: 1 }
+    },
     // 大会: 8月OIDC(大阪国際)、3月AJDC(全日本選手権=頂点)
     CONTESTS: [
       { turn: 5,  type: 'oidc', name: '1年 OIDC' },
@@ -38,26 +44,29 @@
       { id: 'd2',      label: '2ディアボロ部門',        scoring: 'specialist' }
     ],
     // JDA採点規則: 総合=男子個人総合部門、スペシャリスト=スペシャリストクラス共通配点
+    // variety(多彩性)・base(基礎点)は導出値。variety=Σmin(genre,50)/200×満点、base=習熟threshold以上のジャンル数×perElement
     SCORING: {
       overall: {
-        weights: { difficulty: 30, variety: 10, control: 10, novelty: 10, composition: 20 },
-        base: { stat: 'fundamentals', elements: 4, perElement: 5 }
+        weights: { difficulty: 30, variety: 10, control: 10, novelty: 10, composition: 20 }
       },
       specialist: {
         weights: { difficulty: 45, control: 15, novelty: 30, composition: 10 }
       },
+      base: { elements: 4, perElement: 5, threshold: 25 },
+      gate: { min: 0.4, span: 0.6 },
+      scale: { base: 30, mult: 0.7 },
       execDeductionMax: 2,
       specialDeduction: 3,
       entryFatigue: 6
     },
     STUDY: { id: 'study', label: '勉強', gain: 10, fatigue: 4 },
     REST:  { id: 'rest',  label: '休養' },
-    // 大会前後のタイミング補正（大会月の行動と、演技翌月の休養に適用）
+    // 大会前後のタイミング補正（大会月の枠と、演技翌月の休養に適用）。キーはmethod id(difficulty/control)またはroutine
     TIMING: {
       contestMonth: {
-        composition: { gainMult: 1.5, note: '（本番前の仕上げが効いた！）' },
-        difficulty:  { gainMult: 0.5, extraFatigue: 4, note: '（本番前に大技の詰め込みは逆効果だ…）' },
-        control:     { gainMult: 2.0, note: '（本番前の反復が効いた！）' },
+        routine:    { gainMult: 1.5, note: '（本番前の仕上げが効いた！）' },
+        difficulty: { gainMult: 0.5, extraFatiguePerSlot: 1, note: '（本番前に大技の詰め込みは逆効果だ…）' },
+        control:    { gainMult: 2.0, note: '（本番前の反復が効いた！）' },
         restExtra: 10,
         restNote: '（本番に向けて体を整えた）'
       },
@@ -67,13 +76,13 @@
         restNote: '（大会の疲れがよく抜けた）'
       }
     },
-    // 練習会: 4ヶ月ごとの定期イベント月。対象練習の伸びがブーストされる
+    // 練習会: 4ヶ月ごとの定期イベント月。対象枠の伸びがブーストされる
     MEETUP: {
       interval: 4,
       offset: 3, // turn % interval === offset の月に開催（6月/10月/2月）
-      boosts: { composition: 1.5, novelty: 1.5 },
+      boosts: { routine: 1.5, novelty: 1.5 },
       note: '（練習会で磨かれた！）',
-      label: '今月は練習会！（構成・新技開発が伸びやすい）'
+      label: '今月は練習会！（ルーチン構成・新技開発が伸びやすい）'
     },
     TOTAL_TURNS: 48,
     WORLDS_TURNS: [8, 20, 32, 44],
@@ -97,9 +106,9 @@
     ],
     EVENTS: {
       charEvents: [
-        { id: 'coach1', char: 'coach', text: '「基礎ができてない奴に応用はない」剣持コーチが基礎の反復を命じてきた。',
+        { id: 'coach1', char: 'coach', text: '「基礎ができてない奴に応用はない」剣持コーチが反復練習を命じてきた。',
           choices: [
-            { label: '黙って従う',       effects: { stat: { id: 'fundamentals', amount: 3 }, fatigue: 8 },  result: '地味な反復の先に、確かな手応えがあった。' },
+            { label: '黙って従う',       effects: { stat: { id: 'control', amount: 3 }, fatigue: 8 },       result: '地味な反復の先に、確かな手応えがあった。' },
             { label: '自分の練習を主張', effects: { stat: { id: 'novelty', amount: 2 }, motivation: 1 },     result: '「…好きにしろ」意外にも認めてくれた。' } ] },
         { id: 'coach2', char: 'coach', text: '剣持コーチが自分の現役時代の映像を見せてくれた。',
           choices: [
@@ -119,7 +128,7 @@
             { label: '試験勉強も教わる', effects: { study: 8 },                                               result: 'ついでに レポートの書き方まで教わった。' } ] },
         { id: 'mikoto2', char: 'mikoto', text: '美琴先輩が「あなたの演技、もったいないのよね」と呟いた。',
           choices: [
-            { label: '詳しく聞く',       effects: { stat: { id: 'variety', amount: 3 } },                     result: '技の引き出しの偏りを指摘された。' },
+            { label: '詳しく聞く',       effects: { stat: { id: 'novelty', amount: 3 } },                     result: '技の引き出しの偏りを指摘され、新しい技を開拓したくなった。' },
             { label: '聞き流す',         effects: { motivation: 1 },                                          result: '自分のスタイルを貫くのも大事だ。' } ] },
         { id: 'shion1', char: 'shion', text: '志音の練習を偶然見てしまった。異次元の完成度だった。',
           choices: [

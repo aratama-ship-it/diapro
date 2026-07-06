@@ -4,34 +4,69 @@ const { test, summary } = require('./harness');
 require('../js/data.js');
 const DT = globalThis.DT;
 
-test('DATA: 競技能力はJDA採点6項目', () => {
-  assert.strictEqual(DT.DATA.STATS.length, 6);
+test('DATA: 競技能力は練習種別スタッツ4項目', () => {
+  assert.strictEqual(DT.DATA.STATS.length, 4);
   const ids = DT.DATA.STATS.map(s => s.id);
-  assert.deepStrictEqual(ids, ['difficulty', 'variety', 'control', 'novelty', 'composition', 'fundamentals']);
+  assert.deepStrictEqual(ids, ['difficulty', 'novelty', 'control', 'composition']);
 });
 
-test('DATA: SCORINGは総合とスペシャリストの2方式（各100点）', () => {
+test('DATA: GENRESはジャンル習熟4項目・DIVISIONSのid(v1d/h1d/d2)と一致', () => {
+  assert.strictEqual(DT.DATA.GENRES.length, 4);
+  const ids = DT.DATA.GENRES.map(g => g.id);
+  assert.deepStrictEqual(ids, ['v1d', 'h1d', 'd2', 'd3']);
+  ['v1d', 'h1d', 'd2'].forEach(id => {
+    assert.ok(DT.DATA.DIVISIONS.some(d => d.id === id), id + ' がDIVISIONSに存在しない');
+  });
+});
+
+test('DATA: SLOTSは毎月4枠でゲイン/疲労/リスクを定義', () => {
+  const slots = DT.DATA.SLOTS;
+  assert.strictEqual(slots.perMonth, 4);
+  assert.strictEqual(slots.methodGain, 3);
+  assert.strictEqual(slots.genreGain, 2);
+  assert.strictEqual(slots.routineGain, 3);
+  assert.deepStrictEqual(slots.fatigue, { difficulty: 5, novelty: 4, control: 3, routine: 2 });
+  assert.deepStrictEqual(slots.risk, { difficulty: 2, novelty: 2, control: 1, routine: 1 });
+  // fatigue/riskのキーはmethod id(3つ)+routineのみ
+  const methodIds = DT.DATA.STATS.filter(s => s.id !== 'composition').map(s => s.id);
+  assert.deepStrictEqual(Object.keys(slots.fatigue).sort(), methodIds.concat('routine').sort());
+  assert.deepStrictEqual(Object.keys(slots.risk).sort(), methodIds.concat('routine').sort());
+});
+
+test('DATA: SCORINGは総合とスペシャリストの2方式・base/gate/scale追加（合計配点100維持）', () => {
   const o = DT.DATA.SCORING.overall;
   assert.deepStrictEqual(o.weights, { difficulty: 30, variety: 10, control: 10, novelty: 10, composition: 20 });
-  assert.strictEqual(o.base.elements * o.base.perElement, 20);
+  assert.strictEqual(Object.values(o.weights).reduce((a, v) => a + v, 0), 80); // 基礎点20を足して100
+
   const s = DT.DATA.SCORING.specialist;
   assert.deepStrictEqual(s.weights, { difficulty: 45, control: 15, novelty: 30, composition: 10 });
-  assert.strictEqual(s.base, undefined); // スペシャリストに基礎点はない
   assert.strictEqual(Object.values(s.weights).reduce((a, v) => a + v, 0), 100);
+
+  const base = DT.DATA.SCORING.base;
+  assert.strictEqual(base.elements, 4);
+  assert.strictEqual(base.perElement, 5);
+  assert.strictEqual(base.threshold, 25);
+  assert.strictEqual(base.stat, undefined, 'baseはジャンル閾値化されstat参照を持たない');
+  assert.strictEqual(Object.values(o.weights).reduce((a, v) => a + v, 0) + base.elements * base.perElement, 100);
+
+  const gate = DT.DATA.SCORING.gate;
+  assert.strictEqual(gate.min, 0.4);
+  assert.strictEqual(gate.span, 0.6);
+  assert.strictEqual(gate.min + gate.span, 1); // 満習熟でゲート1.0
+
+  const scale = DT.DATA.SCORING.scale;
+  assert.strictEqual(scale.base, 30);
+  assert.strictEqual(scale.mult, 0.7);
+});
+
+test('DATA: TRAININGSは削除されている（スロット制に置換）', () => {
+  assert.strictEqual(DT.DATA.TRAININGS, undefined);
 });
 
 test('DATA: DIVISIONSは総合1＋スペシャリスト3', () => {
   assert.strictEqual(DT.DATA.DIVISIONS.length, 4);
   assert.strictEqual(DT.DATA.DIVISIONS.filter(d => d.scoring === 'specialist').length, 3);
   assert.strictEqual(DT.DATA.DIVISIONS[0].id, 'overall');
-});
-
-test('DATA: 練習メニューは競技能力と1対1対応', () => {
-  assert.strictEqual(DT.DATA.TRAININGS.length, 6);
-  DT.DATA.TRAININGS.forEach(t => {
-    assert.ok(DT.DATA.STATS.some(s => s.id === t.stat), t.id + ' のstatが未定義');
-    assert.ok(t.gain > 0 && t.fatigue >= 0 && t.risk >= 0);
-  });
 });
 
 test('DATA: 大会はOIDC(8月)×4とAJDC(3月)×4', () => {
@@ -56,7 +91,7 @@ test('DATA: キャラ5人とライバル2人が定義されている', () => {
   assert.deepStrictEqual(DT.DATA.RIVALS[1].contests, ['ajdc', 'worlds']);
 });
 
-test('DATA: イベント定義の整合性', () => {
+test('DATA: イベント定義の整合性（stat参照はSTATS4項目のみ、variety/fundamentals不在）', () => {
   const ev = DT.DATA.EVENTS;
   assert.ok(ev.charEvents.length >= 10);
   assert.ok(ev.happenings.length >= 5);
@@ -66,10 +101,18 @@ test('DATA: イベント定義の整合性', () => {
     assert.strictEqual(e.choices.length, 2, e.id);
     e.choices.forEach(c => {
       assert.ok(c.label && c.result, e.id);
-      if (c.effects.stat) assert.ok(DT.DATA.STATS.some(s => s.id === c.effects.stat.id), e.id);
+      if (c.effects.stat) {
+        assert.ok(DT.DATA.STATS.some(s => s.id === c.effects.stat.id), e.id + ' の stat.id が未定義: ' + c.effects.stat.id);
+        assert.ok(!['variety', 'fundamentals'].includes(c.effects.stat.id), e.id + ' が廃止statを参照している');
+      }
     });
   });
-  ev.happenings.forEach(h => assert.ok(h.text && h.effects, h.id));
+  ev.happenings.forEach(h => {
+    assert.ok(h.text && h.effects, h.id);
+    if (h.effects.stat) {
+      assert.ok(DT.DATA.STATS.some(s => s.id === h.effects.stat.id), h.id + ' の stat.id が未定義: ' + h.effects.stat.id);
+    }
+  });
 });
 
 test('DATA: 世界大会は毎年11月・魁人も出場', () => {
@@ -81,23 +124,27 @@ test('DATA: 世界大会は毎年11月・魁人も出場', () => {
   assert.deepStrictEqual(kaito.contests, ['ajdc', 'worlds']);
 });
 
-test('DATA: TIMING補正の対象はcomposition/difficulty/control', () => {
+test('DATA: TIMING補正のキーはmethod id(difficulty/control)とroutine', () => {
   const cm = DT.DATA.TIMING.contestMonth;
-  ['composition', 'difficulty', 'control'].forEach(id => {
-    assert.ok(cm[id], id);
-    assert.ok(DT.DATA.TRAININGS.some(t => t.id === id), id + 'は練習に存在');
-  });
+  assert.ok(cm.routine, 'routine');
+  assert.strictEqual(cm.routine.gainMult, 1.5);
+  assert.ok(cm.difficulty, 'difficulty');
+  assert.strictEqual(cm.difficulty.gainMult, 0.5);
+  assert.ok(cm.difficulty.extraFatiguePerSlot > 0);
+  assert.ok(cm.control, 'control');
+  assert.strictEqual(cm.control.gainMult, 2.0);
+  assert.strictEqual(cm.novelty, undefined, 'noveltyは大会月補正の対象外');
   assert.ok(cm.restExtra > 0 && DT.DATA.TIMING.afterContest.restExtra > cm.restExtra);
 });
 
-test('DATA: 練習会は大会・世界大会と衝突しない', () => {
+test('DATA: 練習会は大会・世界大会と衝突せず、boostsはroutine/noveltyのみ', () => {
   const mu = DT.DATA.MEETUP;
   for (let t = 1; t <= DT.DATA.TOTAL_TURNS; t++) {
     if (t % mu.interval !== mu.offset) continue;
     assert.ok(!DT.DATA.CONTESTS.some(c => c.turn === t), '大会衝突: ' + t);
     assert.ok(!DT.DATA.WORLDS_TURNS.includes(t), '世界大会衝突: ' + t);
   }
-  Object.keys(mu.boosts).forEach(id => assert.ok(DT.DATA.TRAININGS.some(tr => tr.id === id), id));
+  assert.deepStrictEqual(mu.boosts, { routine: 1.5, novelty: 1.5 });
 });
 
 summary();
