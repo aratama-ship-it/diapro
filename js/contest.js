@@ -54,10 +54,12 @@
     const division = divisionOf(divisionId);
     const parts = breakdown(state, divisionId);
     let rawTotal = Object.values(parts).reduce((a, v) => a + v, 0);
+    let gateMult = 1;
     if (division.scoring === 'specialist') {
       const gate = DT.DATA.SCORING.gate;
       const mult = gate.min + gate.span * (state.genres[divisionId] / 100);
       rawTotal = round1(rawTotal * mult);
+      gateMult = Math.round(mult * 100) / 100;
     }
     const scale = DT.DATA.SCORING.scale;
     let total = scale.base + rawTotal * scale.mult;
@@ -78,7 +80,7 @@
     const specialDeduction = rng() * 100 < 5 ? DT.DATA.SCORING.specialDeduction : 0;
 
     total -= execDeduction + specialDeduction;
-    return { score: Math.round(total * 10) / 10, parts, rawTotal, judgeMod, misses, execDeduction, specialDeduction };
+    return { score: Math.round(total * 10) / 10, parts, rawTotal, judgeMod, misses, execDeduction, specialDeduction, gateMult };
   }
 
   // v3バランス調整（Task4）: SLOTSゲイン縮小（1/1/1）と合わせて対戦相手の成長カーブも引き上げた。
@@ -143,7 +145,7 @@
       division: divisionId, divisionLabel: div.label,
       rank, entrants: lv.entrants, score: p.score,
       parts: p.parts, rawTotal: p.rawTotal, judgeMod: p.judgeMod, misses: p.misses,
-      execDeduction: p.execDeduction, specialDeduction: p.specialDeduction,
+      execDeduction: p.execDeduction, specialDeduction: p.specialDeduction, gateMult: p.gateMult,
       points, rivalOutcomes, turn: contest.turn
     };
   }

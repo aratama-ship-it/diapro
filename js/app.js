@@ -497,25 +497,28 @@
     results.forEach((r) => {
       const isOverall = r.division === 'overall';
       nodes.push(el('div', 'result-big', r.divisionLabel + ' ' + r.rank + '位 / ' + r.entrants + '人'));
-      if (isOverall) {
-        nodes.push(el('div', 'section-label', '内訳（素点）'));
-        const div = DT.DATA.DIVISIONS.find(d => d.id === r.division);
-        const weights = DT.DATA.SCORING[div.scoring].weights;
-        const maxFor = (key) => key === 'fundamentals'
-          ? DT.DATA.SCORING.base.elements * DT.DATA.SCORING.base.perElement
-          : weights[key];
-        Object.keys(r.parts).forEach(id => {
-          const value = r.parts[id];
-          const max = maxFor(id);
-          nodes.push(textRow((PARTS_LABELS[id] || id) + '点', String(value) + '/' + max));
-        });
-        const scale = DT.DATA.SCORING.scale;
-        const scaled = Math.round((scale.base + r.rawTotal * scale.mult) * 10) / 10;
-        nodes.push(textRow('スケール換算', '素点 ' + r.rawTotal + ' → ' + scaled + '点'));
-        nodes.push(textRow('調子・審査', (r.judgeMod >= 0 ? '+' : '') + r.judgeMod + '点'));
-        nodes.push(textRow('実施減点（ミス' + r.misses + '回）', '-' + r.execDeduction + '点'));
-        nodes.push(textRow('特別減点', '-' + r.specialDeduction + '点'));
+      nodes.push(el('div', 'section-label', '内訳（素点）'));
+      const div = DT.DATA.DIVISIONS.find(d => d.id === r.division);
+      const weights = DT.DATA.SCORING[div.scoring].weights;
+      const maxFor = (key) => key === 'fundamentals'
+        ? DT.DATA.SCORING.base.elements * DT.DATA.SCORING.base.perElement
+        : weights[key];
+      Object.keys(r.parts).forEach(id => {
+        const value = r.parts[id];
+        const max = maxFor(id);
+        nodes.push(textRow((PARTS_LABELS[id] || id) + '点', String(value) + '/' + max));
+      });
+      if (!isOverall) {
+        const genre = DT.DATA.GENRES.find(g => g.id === r.division);
+        const genreLabel = genre ? genre.label : r.division;
+        nodes.push(textRow('習熟ゲート', '×' + r.gateMult + '（' + genreLabel + '習熟' + state.genres[r.division] + '）'));
       }
+      const scale = DT.DATA.SCORING.scale;
+      const scaled = Math.round((scale.base + r.rawTotal * scale.mult) * 10) / 10;
+      nodes.push(textRow('スケール換算', '素点 ' + r.rawTotal + ' → ' + scaled + '点'));
+      nodes.push(textRow('調子・審査', (r.judgeMod >= 0 ? '+' : '') + r.judgeMod + '点'));
+      nodes.push(textRow('実施減点（ミス' + r.misses + '回）', '-' + r.execDeduction + '点'));
+      nodes.push(textRow('特別減点', '-' + r.specialDeduction + '点'));
       nodes.push(textRow('スコア', r.score + '点'));
       nodes.push(textRow('獲得ポイント', r.points + 'pt'));
       if (isOverall) {
