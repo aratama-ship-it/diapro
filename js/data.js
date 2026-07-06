@@ -67,6 +67,14 @@
         restNote: '（大会の疲れがよく抜けた）'
       }
     },
+    // 練習会: 4ヶ月ごとの定期イベント月。対象練習の伸びがブーストされる
+    MEETUP: {
+      interval: 4,
+      offset: 3, // turn % interval === offset の月に開催（6月/10月/2月）
+      boosts: { composition: 1.5, novelty: 1.5 },
+      note: '（練習会で磨かれた！）',
+      label: '今月は練習会！（構成・新技開発が伸びやすい）'
+    },
     TOTAL_TURNS: 48,
     WORLDS_TURNS: [8, 20, 32, 44],
     STUDY_MIN: 20,          // 学力がこれ未満の月が続くと退学

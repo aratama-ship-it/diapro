@@ -89,9 +89,10 @@
     const nextContest = DT.DATA.CONTESTS.find(c => c.turn >= state.turn);
     const nextWorlds = DT.DATA.WORLDS_TURNS.find(t => t >= state.turn);
     const worldsNote = (nextWorlds && DT.contest.worldsQualified(state, nextWorlds)) ? '｜世界大会出場権あり！' : '';
+    const meetupNote = DT.engine.isMeetupMonth(state.turn) ? '｜' + DT.DATA.MEETUP.label : '';
     $('#main-header').textContent = DT.engine.turnLabel(state.turn) +
       (nextContest ? '｜次: ' + nextContest.name + '（' + DT.engine.turnLabel(nextContest.turn) + '）' : '') +
-      worldsNote;
+      worldsNote + meetupNote;
 
     const bd = DT.contest.breakdown(state, 'overall');
     const expected = Math.round(Object.values(bd).reduce((a, v) => a + v, 0) * 10) / 10;

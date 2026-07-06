@@ -224,4 +224,28 @@ test('大会月でも特別指導ボーナスはフラット+1', () => {
   assert.strictEqual(s.stats.control, 29);
 });
 
+test('練習会月: 構成と新技開発の伸びが1.5倍、他は不変', () => {
+  const mk = () => { const s = DT.state.newCharacter(() => 0); s.turn = 3; return s; };
+  const sC = mk();
+  DT.engine.applyAction(sC, 'composition', () => 0.3); // 成功: round(9*1*1)=9 → ×1.5 → round(13.5)=14
+  assert.strictEqual(sC.stats.composition, 24);
+  const sN = mk();
+  DT.engine.applyAction(sN, 'novelty', () => 0.3);
+  assert.strictEqual(sN.stats.novelty, 24);
+  const sD = mk();
+  DT.engine.applyAction(sD, 'difficulty', () => 0.3); // 対象外: 9のまま
+  assert.strictEqual(sD.stats.difficulty, 19);
+});
+
+test('練習会月: 失敗はゼロのまま・特別指導+1はブースト後にフラット加算', () => {
+  const sF = DT.state.newCharacter(() => 0);
+  sF.turn = 3;
+  DT.engine.applyAction(sF, 'composition', () => 0.15); // 失敗
+  assert.strictEqual(sF.stats.composition, 10);
+  const sU = DT.state.newCharacter(() => 0);
+  sU.turn = 3; sU.specialUnlocked = true;
+  DT.engine.applyAction(sU, 'novelty', () => 0.3); // 14 + 1 = 15
+  assert.strictEqual(sU.stats.novelty, 25);
+});
+
 summary();

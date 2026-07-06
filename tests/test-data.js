@@ -90,4 +90,14 @@ test('DATA: TIMING補正の対象はcomposition/difficulty/control', () => {
   assert.ok(cm.restExtra > 0 && DT.DATA.TIMING.afterContest.restExtra > cm.restExtra);
 });
 
+test('DATA: 練習会は大会・世界大会と衝突しない', () => {
+  const mu = DT.DATA.MEETUP;
+  for (let t = 1; t <= DT.DATA.TOTAL_TURNS; t++) {
+    if (t % mu.interval !== mu.offset) continue;
+    assert.ok(!DT.DATA.CONTESTS.some(c => c.turn === t), '大会衝突: ' + t);
+    assert.ok(!DT.DATA.WORLDS_TURNS.includes(t), '世界大会衝突: ' + t);
+  }
+  Object.keys(mu.boosts).forEach(id => assert.ok(DT.DATA.TRAININGS.some(tr => tr.id === id), id));
+});
+
 summary();

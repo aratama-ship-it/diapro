@@ -45,6 +45,10 @@
     return state.results.some(r => r.turn === state.turn - 1);
   }
 
+  function isMeetupMonth(turn) {
+    return turn % DT.DATA.MEETUP.interval === DT.DATA.MEETUP.offset;
+  }
+
   function applyAction(state, actionId, rng) {
     rng = rng || Math.random;
     const messages = [];
@@ -103,6 +107,13 @@
           state.fatigue = clamp(state.fatigue + tm.extraFatigue, 0, 100);
           if (tier === '失敗') timingNote = tm.note;
         }
+      }
+    }
+    if (isMeetupMonth(state.turn)) {
+      const boost = DT.DATA.MEETUP.boosts[t.id];
+      if (boost && tier !== '失敗') {
+        gain = Math.round(gain * boost);
+        timingNote = timingNote + DT.DATA.MEETUP.note;
       }
     }
     if (tier !== '失敗' && state.specialUnlocked) gain += 1;
@@ -167,5 +178,5 @@
     return year + '年生 ' + month + '月';
   }
 
-  DT.engine = { outcomeProbs, rollTier, growthMult, applyAction, endTurn, turnLabel, TIER_MULT };
+  DT.engine = { outcomeProbs, rollTier, growthMult, applyAction, endTurn, turnLabel, isMeetupMonth, TIER_MULT };
 })(typeof window !== 'undefined' ? window : globalThis);
