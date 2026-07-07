@@ -36,29 +36,43 @@
     return sum / DT.DATA.GENRES.length;
   }
 
-  // v4: overall=4ジャンルのmethod平均×weight/100、specialist=skills[divisionId]の該当マス×weight/100（ゲートなし）
+  // 各項目の満点。stat系はweight、多彩性はweights.variety、基礎は elements×perElement。
+  function partMaxOf(scoring, id) {
+    if (id === 'fundamentals') return DT.DATA.SCORING.base.elements * DT.DATA.SCORING.base.perElement;
+    return DT.DATA.SCORING[scoring].weights[id];
+  }
+  // 40%下限リマップ（v6, 2026-07-07 実プレイ反映）: どの項目も最低でも満点の componentFloor(40%) 出るようにし、
+  // 能力0で40%、能力100で100%になる線形リマップ。floored = floor×max + (1-floor)×raw。
+  // これで素点合計が既に妥当な帯(40〜100)になるため、旧スケール換算(base+raw×mult)は廃止した（scale={base:0,mult:1}）。
+  function floorPart(scoring, id, raw) {
+    const floor = DT.DATA.SCORING.componentFloor;
+    return round1(floor * partMaxOf(scoring, id) + (1 - floor) * raw);
+  }
+
+  // v6: 各採点項目に40%下限を適用。overall=4ジャンルmethod平均×weight/100、specialist=該当マス×weight/100（ゲートなし）
   function breakdown(state, divisionId) {
     const division = divisionOf(divisionId);
-    const sc = DT.DATA.SCORING[division.scoring];
+    const scoring = division.scoring;
+    const sc = DT.DATA.SCORING[scoring];
     const parts = {};
-    if (division.scoring === 'overall') {
+    if (scoring === 'overall') {
       Object.keys(sc.weights).forEach(id => {
         if (id === 'variety') {
-          parts.variety = derivedVariety(state);
+          parts.variety = floorPart(scoring, 'variety', derivedVariety(state));
         } else if (id === 'composition') {
-          parts.composition = round1(state.composition * sc.weights.composition / 100);
+          parts.composition = floorPart(scoring, 'composition', state.composition * sc.weights.composition / 100);
         } else {
-          parts[id] = round1(methodAvgAcrossGenres(state, id) * sc.weights[id] / 100);
+          parts[id] = floorPart(scoring, id, methodAvgAcrossGenres(state, id) * sc.weights[id] / 100);
         }
       });
-      parts.fundamentals = derivedBase(state).points;
+      parts.fundamentals = floorPart(scoring, 'fundamentals', derivedBase(state).points);
     } else {
       const cell = state.skills[divisionId];
       Object.keys(sc.weights).forEach(id => {
         if (id === 'composition') {
-          parts.composition = round1(state.composition * sc.weights.composition / 100);
+          parts.composition = floorPart(scoring, 'composition', state.composition * sc.weights.composition / 100);
         } else {
-          parts[id] = round1(cell[id] * sc.weights[id] / 100);
+          parts[id] = floorPart(scoring, id, cell[id] * sc.weights[id] / 100);
         }
       });
     }
@@ -130,12 +144,17 @@
   // 検証：turn5勝率0/30・turn5平均順位14.0位、AJDC総合(4年)優勝3/30、世界大会出場17/30（詳細tests/参照）。
   // 世界大会はユーザー指定の「90点・8割以上で戦える」という目標に既に合致していたため変更なし
   // （base 63/growth 3/sd 20、詳細は .superpowers/sdd/v4-task-4-report.md 参照）。
+  // v6（2026-07-07 スケール廃止に伴う再設定）: スケール換算を廃止したため、相手レベルは
+  // 「表示スコアそのもの」の空間で定義する（display = base + growth×(年-1) + ノイズ）。
+  // 目標: 1位は突出して80点以上（勝者はほぼ確実に80台）、中央は下げてばらつきを持たせ下位は戦える。
+  //   OIDC(mean72/sd12): 1位平均≒84（約9割が80以上）・中プレイヤーは約7位。AJDC/世界大会はさらに高帯。
+  //   実乱数のため個々の大会では稀に80をわずかに下回る（壁化を避けるためsdを残す）。ポイント配分は不変。
   const LEVELS = {
-    oidc: { base: 35, growth: 4, sd: 11, entrants: 16,
+    oidc: { base: 72, growth: 1, sd: 12, entrants: 16,
             points: { overall: [40, 25, 15, 8, 2], specialist: [20, 13, 8, 4, 1] } },
-    ajdc: { base: 42, growth: 5, sd: 12, entrants: 16,
+    ajdc: { base: 76, growth: 1.5, sd: 12, entrants: 16,
             points: { overall: [100, 70, 50, 20, 5], specialist: [50, 35, 25, 10, 3] } },
-    worlds: { base: 63, growth: 3, sd: 20, entrants: 16,
+    worlds: { base: 85, growth: 1, sd: 11, entrants: 16,
               points: { overall: [150, 100, 70, 30, 10], specialist: [75, 50, 35, 15, 5] } }
   };
 

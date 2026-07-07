@@ -641,9 +641,6 @@
         const max = maxFor(id);
         nodes.push(textRow((PARTS_LABELS[id] || id) + '点', String(value) + '/' + max));
       });
-      const scale = DT.DATA.SCORING.scale;
-      const scaled = Math.round((scale.base + r.rawTotal * scale.mult) * 10) / 10;
-      nodes.push(textRow('スケール換算', '素点 ' + r.rawTotal + ' → ' + scaled + '点'));
       nodes.push(textRow('調子・審査', (r.judgeMod >= 0 ? '+' : '') + r.judgeMod + '点'));
       nodes.push(textRow('実施減点（ミス' + r.misses + '回）', '-' + r.execDeduction + '点'));
       nodes.push(textRow('特別減点', '-' + r.specialDeduction + '点'));

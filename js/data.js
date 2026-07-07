@@ -24,8 +24,10 @@
     //   1年目のうちにh1dを伸ばして2D/1D垂直の解禁に届きやすくする狙い。数値は暫定、最終バランスは後日再調整。
     SLOTS: {
       perMonth: 3,
-      gridGain: 2,
-      routineGain: 1,
+      // v6(2026-07-07): スケール廃止＋相手80超に合わせ、努力で追いつけるよう練習ゲインを増量（2→4/1→2）。
+      //   最終能力avg~59・卒業ランク分布がE偏重{E:19}→{D:10,E:9,C:1}に改善。1位80超は維持。
+      gridGain: 4,
+      routineGain: 2,
       // 1年目(1〜12ターン)は練習ゲインをこの倍率で底上げ（ルーチン含む全練習枠に適用、失敗枠は対象外）。
       yearOneGrowthBonus: 1.5,
       // バランス調整（スロット別疲労・怪我リスク改定）: ルーチン構成（演技構成づくり）はデスクワーク寄りの
@@ -73,8 +75,10 @@
         weights: { difficulty: 45, control: 15, novelty: 30, composition: 10 }
       },
       base: { elements: 4, perElement: 5, threshold: 25 },
-      // v4: スケール底上げ（30→36）。ミス減点増の補償＋スコア帯を高め寄りに（mult不変）
-      scale: { base: 36, mult: 0.7 },
+      // v6（2026-07-07 実プレイ反映）: 各採点項目に40%下限を導入（能力0で満点の40%、能力100で100%）。
+      componentFloor: 0.4,
+      // v6: 40%下限で素点合計が既に妥当な帯(40〜100)になるため旧スケール換算を廃止（base:0/mult:1＝素点そのまま表示）。
+      scale: { base: 0, mult: 1 },
       // v4新ミスモデル（平均3〜4ミス/演技、ノーミスは高操作安定のみの偉業になるよう設計）
       // rate = clamp(base − control×controlCoef + fatigue×fatigueCoef, min, max)（controlは部門参照値、0-100%）
       // 判定回数 = rolls + (部門のdifficulty参照値 ≥ hardLine ? hardBonusRolls : 0)
@@ -212,9 +216,10 @@
       ]
     },
     // v2: ライバル（総合部門に実在する対戦相手）
+    // v6: スケール廃止に伴い表示スコア空間で再設定。志音=同学年の強豪(上位帯76→82)、魁人=王者の壁(88→92.5)。
     RIVALS: [
-      { id: 'shion', name: '志音', contests: ['oidc', 'ajdc'], base: 22, growth: 10, sd: 4 },
-      { id: 'kaito', name: '魁人', contests: ['ajdc', 'worlds'],         base: 66, growth: 2.5, sd: 4 }
+      { id: 'shion', name: '志音', contests: ['oidc', 'ajdc'], base: 76, growth: 2, sd: 5 },
+      { id: 'kaito', name: '魁人', contests: ['ajdc', 'worlds'],         base: 88, growth: 1.5, sd: 4 }
     ]
   };
 })(typeof window !== 'undefined' ? window : globalThis);

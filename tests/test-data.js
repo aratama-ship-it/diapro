@@ -25,11 +25,11 @@ test('DATA: GENRESはジャンル習熟4項目で表示順は1D水平→1D垂直
 test('DATA: SLOTSは毎月3枠でゲイン/疲労/リスク/1年目ボーナスを定義（v4: methodGain/genreGain→gridGainに統合）', () => {
   const slots = DT.DATA.SLOTS;
   assert.strictEqual(slots.perMonth, 3); // 2026-07-07: 4→3に削減
-  assert.strictEqual(slots.gridGain, 2);
+  assert.strictEqual(slots.gridGain, 4); // v6: 2→4（相手80超に努力で追いつけるよう増量）
   assert.strictEqual(slots.yearOneGrowthBonus, 1.5); // 1年目(1〜12ターン)の練習ゲイン倍率
   assert.strictEqual(slots.methodGain, undefined, '旧methodGainは削除されている');
   assert.strictEqual(slots.genreGain, undefined, '旧genreGainは削除されている');
-  assert.strictEqual(slots.routineGain, 1);
+  assert.strictEqual(slots.routineGain, 2); // v6: 1→2
   // バランス調整（スロット別疲労・怪我リスク改定）: ルーチン構成を回復枠に、高難度技のリスクを引き上げ
   assert.deepStrictEqual(slots.fatigue, { difficulty: 5, novelty: 4, control: 3, routine: -2 });
   assert.deepStrictEqual(slots.risk, { difficulty: 3, novelty: 1, control: 1, routine: -1 });
@@ -85,8 +85,9 @@ test('DATA: SCORINGは総合とスペシャリストの2方式・base/miss/scale
   assert.deepStrictEqual(miss, { rolls: 6, hardBonusRolls: 2, hardLine: 60, base: 70, controlCoef: 0.5, fatigueCoef: 0.3, min: 5, max: 90, injuredPenalty: 15 });
 
   const scale = DT.DATA.SCORING.scale;
-  assert.strictEqual(scale.base, 36);
-  assert.strictEqual(scale.mult, 0.7);
+  assert.strictEqual(scale.base, 0);  // v6: スケール換算廃止（素点そのまま表示）
+  assert.strictEqual(scale.mult, 1);
+  assert.strictEqual(DT.DATA.SCORING.componentFloor, 0.4); // v6: 各項目40%下限
 });
 
 test('DATA: OPPONENT_NAMESは24件以上の重複なし配列', () => {
