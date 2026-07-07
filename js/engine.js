@@ -184,6 +184,14 @@
       }
     });
 
+    // 解禁演出（練習直後）: 今回の練習で新しく解禁されたジャンルを一度だけ告知する。
+    // イベント等で先に解禁されていた分も、未告知ならここで拾われる（単調性で重複しない）。
+    state.announcedUnlocks = state.announcedUnlocks || [];
+    DT.contest.newlyUnlockedGenres(state).forEach(id => {
+      state.announcedUnlocks.push(id);
+      messages.push('🎉 ' + genreLabel(id) + 'が解禁された！新しいジャンルを練習できる。');
+    });
+
     state.didTrain = true;
     state.lastSlots = slots.map(slot => (slot === 'routine' ? 'routine' : { genre: slot.genre, method: slot.method }));
     return { results, messages };
