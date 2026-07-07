@@ -52,6 +52,14 @@
       { id: 'd2',      label: '2ディアボロ部門',        scoring: 'specialist' },
       { id: 'd3',      label: '3ディアボロ部門',        scoring: 'specialist' }
     ],
+    // 技術解禁ツリー: ジャンルは基礎ジャンルの習熟(genreAvg)がthresholdを「超える」と解禁される。
+    // requires=null は根（常時解禁）。h1d→{v1d,d2}→d3。閾値は厳密に > threshold。
+    SKILL_TREE: {
+      h1d: { requires: null },
+      v1d: { requires: { genre: 'h1d', threshold: 20 } },
+      d2:  { requires: { genre: 'h1d', threshold: 20 } },
+      d3:  { requires: { genre: 'd2',  threshold: 20 } }
+    },
     // JDA採点規則: 総合=男子個人総合部門、スペシャリスト=スペシャリストクラス共通配点
     // variety(多彩性)・base(基礎点)は導出値。variety=Σmin(genreAvg,50)/200×満点、base=genreAvg≥thresholdのジャンル数×perElement
     // v4: スペシャリスト部門のゲート（習熟による減衰）は廃止。スペシャは直接skills[d]の3マスを採点に使う

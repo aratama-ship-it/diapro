@@ -139,6 +139,37 @@
               points: { overall: [150, 100, 70, 30, 10], specialist: [75, 50, 35, 15, 5] } }
   };
 
+  // 技術解禁ツリー: genreId が現在解禁されているか。requires=null（根）は常にtrue。
+  // スキルは単調増加なので、都度genreAvgで判定すれば永続フラグ無しで常に正しい。
+  function isGenreUnlocked(state, genreId) {
+    const node = DT.DATA.SKILL_TREE[genreId];
+    const req = node ? node.requires : null;
+    if (!req) return true;
+    return genreAvg(state, req.genre) > req.threshold;
+  }
+
+  // 今解禁済みで state.announcedUnlocks に未登録のジャンルid（解禁演出用）
+  function newlyUnlockedGenres(state) {
+    const announced = state.announcedUnlocks || [];
+    return DT.DATA.GENRES.map(g => g.id)
+      .filter(id => isGenreUnlocked(state, id) && announced.indexOf(id) < 0);
+  }
+
+  // UI「次の解禁」表示用: 前提ジャンルが解禁済みの未解禁ジャンルのうち、残り習熟が最小のもの。無ければnull。
+  function nextUnlockTarget(state) {
+    const targets = DT.DATA.GENRES.map(g => g.id)
+      .filter(id => !isGenreUnlocked(state, id))
+      .map(id => {
+        const req = DT.DATA.SKILL_TREE[id].requires;
+        return { id: id, reqGenre: req.genre,
+                 remaining: Math.max(1, Math.ceil((req.threshold + 0.1) - genreAvg(state, req.genre))) };
+      })
+      .filter(t => isGenreUnlocked(state, t.reqGenre));
+    if (targets.length === 0) return null;
+    targets.sort((a, b) => a.remaining - b.remaining);
+    return targets[0];
+  }
+
   function maxEntries(turn) {
     return Math.min(DT.DATA.DIVISIONS.length, Math.ceil(turn / 12) + 1);
   }
@@ -284,6 +315,7 @@
   DT.contest = {
     genreAvg, derivedVariety, derivedBase, breakdown, missRate, playerScore,
     maxEntries, runAll, contestForTurn, worldsContestForTurn, worldsQualified,
-    rivalScore, LEVELS, buildStandings
+    rivalScore, LEVELS, buildStandings,
+    isGenreUnlocked, newlyUnlockedGenres, nextUnlockTarget
   };
 })(typeof window !== 'undefined' ? window : globalThis);
