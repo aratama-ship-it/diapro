@@ -474,6 +474,7 @@
       $('#entry-hint').textContent += '　⚠ 怪我の影響でミス率+15%！';
     }
     const rows = [];
+    const emptyHint = el('div', 'cond-warn', '最低1部門を選択してください');
     DT.DATA.DIVISIONS.forEach(d => {
       const label = d.id === 'overall' ? '個人総合部門' : d.label;
       const b = el('button', '', label);
@@ -486,10 +487,10 @@
           entrySelection.push(d.id);
           b.classList.add('primary');
         }
+        emptyHint.classList.toggle('hidden', entrySelection.length > 0);
       };
       rows.push(b);
     });
-    const emptyHint = el('div', 'cond-warn', '最低1部門を選択してください');
     emptyHint.classList.toggle('hidden', entrySelection.length > 0);
     rows.push(emptyHint);
     $('#entry-divisions').replaceChildren(...rows);

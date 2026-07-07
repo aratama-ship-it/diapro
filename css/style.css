@@ -33,11 +33,11 @@ input {
   font-size: 1rem;
 }
 .card { background: #23233d; border-radius: 12px; padding: 12px; }
-.stat-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 0.85rem; }
-.stat-row .label { width: 9em; flex-shrink: 0; }
-.stat-row .bar-bg { flex: 1; height: 10px; background: #11111f; border-radius: 5px; overflow: hidden; display: block; }
+.stat-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 0.85rem; flex-wrap: wrap; }
+.stat-row .label { min-width: 6em; flex-shrink: 0; word-break: break-word; }
+.stat-row .bar-bg { flex: 1; height: 10px; background: #11111f; border-radius: 5px; overflow: hidden; display: block; min-width: 40px; }
 .stat-row .bar { height: 100%; background: linear-gradient(90deg, #4ecdc4, #ffd166); display: block; }
-.stat-row .val { width: 2.5em; text-align: right; }
+.stat-row .val { flex-shrink: 0; text-align: right; }
 #main-header { text-align: center; font-size: 1.05rem; color: #ffd166; }
 #main-actions { display: flex; flex-direction: column; gap: 8px; }
 #main-actions button { font-size: 0.85rem; padding: 10px 4px; }
