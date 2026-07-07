@@ -483,6 +483,13 @@
       renderWorldsEntry(wc);
       return;
     }
+    // 定期イベント（固定・非ランダム。turn1の新入生歓迎会など）。発生時はランダムイベントを回さない
+    const sched = DT.events.scheduledEventFor(state);
+    if (sched) {
+      const sr = DT.events.applyScheduled(state, sched);
+      finishTurn(messages.concat(sr.messages), null);
+      return;
+    }
     if (actionId !== 'injured') {
       proceedWithEvents(messages);
       return;

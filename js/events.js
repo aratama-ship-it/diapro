@@ -75,5 +75,30 @@
     return { messages };
   }
 
-  DT.events = { roll, applyChoice, applyHappening };
+  // 定期イベント（固定・非ランダム）: 現在のturnに一致する定義を返す。無ければnull。
+  function scheduledEventFor(state) {
+    return DT.DATA.SCHEDULED_EVENTS.find(e => e.turn === state.turn) || null;
+  }
+
+  // 定期イベントの効果を適用しメッセージを返す。
+  // welcome=新入生歓迎会: 現在解禁済みジャンルの全技術(難易度/新奇性/操作安定度)を +gain（clamp 0-100）。
+  //   未解禁ジャンル・演技構成は対象外。解禁判定は DT.contest.isGenreUnlocked を使う。
+  function applyScheduled(state, event) {
+    const messages = [];
+    if (event.id === 'welcome') {
+      const gain = DT.DATA.SCHEDULED_WELCOME_GAIN;
+      const boosted = [];
+      DT.DATA.GENRES.forEach(g => {
+        if (!DT.contest.isGenreUnlocked(state, g.id)) return;
+        DT.DATA.METHODS.forEach(m => {
+          state.skills[g.id][m.id] = clamp(state.skills[g.id][m.id] + gain, 0, 100);
+        });
+        boosted.push(g.label);
+      });
+      messages.push(event.text + '（' + boosted.join('・') + ' の各技術 +' + gain + '）');
+    }
+    return { messages };
+  }
+
+  DT.events = { roll, applyChoice, applyHappening, scheduledEventFor, applyScheduled };
 })(typeof window !== 'undefined' ? window : globalThis);

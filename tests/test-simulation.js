@@ -70,10 +70,15 @@ function playThrough(rng, choose) {
       const wc = DT.contest.worldsContestForTurn(state.turn);
       if (wc && DT.contest.worldsQualified(state, state.turn)) {
         DT.contest.runAll(state, wc, ['overall'], rng);
-      } else if (monthAction !== 'injured') {
-        const ev = DT.events.roll(state, rng);
-        if (ev && ev.kind === 'char') DT.events.applyChoice(state, ev.event, 0);
-        else if (ev) DT.events.applyHappening(state, ev.event);
+      } else {
+        const sched = DT.events.scheduledEventFor(state);
+        if (sched) {
+          DT.events.applyScheduled(state, sched); // 定期イベント（turn1新入生歓迎会等）はランダムより優先
+        } else if (monthAction !== 'injured') {
+          const ev = DT.events.roll(state, rng);
+          if (ev && ev.kind === 'char') DT.events.applyChoice(state, ev.event, 0);
+          else if (ev) DT.events.applyHappening(state, ev.event);
+        }
       }
     }
     DT.engine.endTurn(state, rng);

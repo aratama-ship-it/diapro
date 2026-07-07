@@ -62,4 +62,36 @@ test('applyHappening: 効果適用', () => {
   assert.ok(r.messages.length >= 1);
 });
 
+// 定期イベント（固定・非ランダム）: 新入生歓迎会
+test('scheduledEventFor: turn1は新入生歓迎会イベント、他ターンはnull', () => {
+  const s = base();
+  s.turn = 1;
+  const ev = DT.events.scheduledEventFor(s);
+  assert.ok(ev && ev.id === 'welcome', 'turn1でwelcomeイベント');
+  s.turn = 2;
+  assert.strictEqual(DT.events.scheduledEventFor(s), null, 'turn2ではnull');
+});
+
+test('applyScheduled(新入生歓迎会): 解禁済みジャンルの全技術+10・未解禁は不変', () => {
+  const s = DT.state.newCharacter(() => 0, 'college'); // 技術全0 → h1dのみ解禁
+  s.turn = 1;
+  const ev = DT.events.scheduledEventFor(s);
+  const r = DT.events.applyScheduled(s, ev);
+  // h1d(解禁済み)の3技術は+10、v1d/d2/d3(未解禁)は0のまま
+  DT.DATA.METHODS.forEach(m => assert.strictEqual(s.skills.h1d[m.id], 10, 'h1d.' + m.id));
+  ['v1d', 'd2', 'd3'].forEach(g =>
+    DT.DATA.METHODS.forEach(m => assert.strictEqual(s.skills[g][m.id], 0, g + '.' + m.id + 'は未解禁なので不変')));
+  assert.strictEqual(s.composition, 3, '演技構成は対象外で不変(college compMin3)');
+  assert.ok(r.messages.length >= 1 && r.messages[0].indexOf('+10') >= 0, 'メッセージに+10');
+});
+
+test('applyScheduled(新入生歓迎会): +10はclamp(0,100)される', () => {
+  const s = DT.state.newCharacter(() => 0, 'college');
+  s.turn = 1;
+  DT.DATA.METHODS.forEach(m => { s.skills.h1d[m.id] = 95; }); // 95+10=105 → 100にclamp
+  const ev = DT.events.scheduledEventFor(s);
+  DT.events.applyScheduled(s, ev);
+  DT.DATA.METHODS.forEach(m => assert.strictEqual(s.skills.h1d[m.id], 100, 'h1d.' + m.id + 'は100でclamp'));
+});
+
 summary();
