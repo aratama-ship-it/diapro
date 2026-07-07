@@ -84,6 +84,71 @@
     return row;
   }
 
+  // SVG要素生成ヘルパー（HTML用のel()は名前空間が違うため使えない）
+  function svgEl(tag, attrs, children) {
+    const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    if (attrs) Object.keys(attrs).forEach(k => n.setAttribute(k, attrs[k]));
+    if (children) children.forEach(c => n.appendChild(c));
+    return n;
+  }
+
+  // 1ジャンル分の三角レーダーカード。cell={difficulty,novelty,control}, avg=習熟平均, unlocked=解禁済みか
+  function genreRadar(genreId, cell, avg, unlocked) {
+    const CX = 50, CY = 52, R = 30;
+    const rp = (v, a) => DT.radar.radarPoint(v, a, CX, CY, R);
+    const ptStr = pts => pts.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
+    const svg = svgEl('svg', { viewBox: '0 0 100 100', class: 'radar-svg' });
+
+    // グリッド（外枠100・中間50の三角）
+    [100, 50].forEach(level => {
+      const ring = [rp(level, 0), rp(level, 1), rp(level, 2)];
+      svg.appendChild(svgEl('polygon', { points: ptStr(ring), fill: 'none', stroke: '#4a4a63', 'stroke-width': '0.6' }));
+    });
+    // 軸線（中心→各頂点）
+    [0, 1, 2].forEach(a => {
+      const o = rp(100, a);
+      svg.appendChild(svgEl('line', { x1: CX, y1: CY, x2: o.x.toFixed(1), y2: o.y.toFixed(1), stroke: '#3a3a52', 'stroke-width': '0.5' }));
+    });
+    // 値ポリゴン（解禁時のみ）
+    if (unlocked) {
+      const vpts = [rp(cell.difficulty, 0), rp(cell.novelty, 1), rp(cell.control, 2)];
+      svg.appendChild(svgEl('polygon', { points: ptStr(vpts), fill: 'rgba(78,205,196,0.35)', stroke: '#4ecdc4', 'stroke-width': '1' }));
+    }
+    // 頂点ラベル＋数値（100より少し外側に配置）
+    const anchors = ['middle', 'end', 'start'];
+    const dys = ['-1.2', '3.2', '3.2'];
+    const labels = [['難', cell.difficulty, 0], ['新', cell.novelty, 1], ['操', cell.control, 2]];
+    labels.forEach(function (lv) {
+      const lab = lv[0], val = lv[1], a = lv[2];
+      const o = DT.radar.radarPoint(100, a, CX, CY, R + 9);
+      const t = svgEl('text', { x: o.x.toFixed(1), y: o.y.toFixed(1), 'text-anchor': anchors[a], dy: dys[a], fill: '#cfcfe0', 'font-size': '7' });
+      t.textContent = unlocked ? (lab + val) : lab;
+      svg.appendChild(t);
+    });
+    // 未解禁は中央に🔒
+    if (!unlocked) {
+      const t = svgEl('text', { x: CX, y: CY + 3, 'text-anchor': 'middle', 'font-size': '10' });
+      t.textContent = '🔒';
+      svg.appendChild(t);
+    }
+
+    const card = el('div', 'radar-card');
+    card.appendChild(el('div', 'radar-title', genreLabel(genreId) + (unlocked ? ' ' + avg : '（未解禁）')));
+    card.appendChild(svg);
+    return card;
+  }
+
+  // 4ジャンルの三角レーダーを2×2グリッドで返す。skillsだけ渡せばメイン/スカウト両方で使える。
+  function skillRadarGrid(skills) {
+    const grid = el('div', 'radar-grid');
+    DT.DATA.GENRES.forEach(function (g) {
+      const unlocked = DT.contest.isGenreUnlocked({ skills: skills }, g.id);
+      const avg = DT.contest.genreAvg({ skills: skills }, g.id);
+      grid.appendChild(genreRadar(g.id, skills[g.id], avg, unlocked));
+    });
+    return grid;
+  }
+
   // 「技術」テーブル: 行=ジャンル(GENRES順)、列=難/新/操の数値＋ジャンル平均
   function skillTable(skills) {
     const table = el('table', 'skill-table');
@@ -135,6 +200,7 @@
     $('#create-stats').replaceChildren(
       el('div', 'section-label', '技術'),
       skillTable(c.skills),
+      skillRadarGrid(c.skills),
       el('div', 'section-label', '演技構成'),
       statBar('演技構成', c.composition),
       el('div', 'section-label', '学力'),
@@ -193,6 +259,7 @@
     $('#main-stats').replaceChildren(
       el('div', 'section-label', '技術'),
       skillTable(state.skills),
+      skillRadarGrid(state.skills),
       el('div', 'section-label', '演技構成'),
       statBar('演技構成', state.composition)
     );
