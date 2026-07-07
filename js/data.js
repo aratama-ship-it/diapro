@@ -52,6 +52,14 @@
       { id: 'd2',      label: '2ディアボロ部門',        scoring: 'specialist' },
       { id: 'd3',      label: '3ディアボロ部門',        scoring: 'specialist' }
     ],
+    // 技術解禁ツリー: ジャンルは基礎ジャンルの習熟(genreAvg)がthresholdを「超える」と解禁される。
+    // requires=null は根（常時解禁）。h1d→{v1d,d2}→d3。閾値は厳密に > threshold。
+    SKILL_TREE: {
+      h1d: { requires: null },
+      v1d: { requires: { genre: 'h1d', threshold: 20 } },
+      d2:  { requires: { genre: 'h1d', threshold: 20 } },
+      d3:  { requires: { genre: 'd2',  threshold: 20 } }
+    },
     // JDA採点規則: 総合=男子個人総合部門、スペシャリスト=スペシャリストクラス共通配点
     // variety(多彩性)・base(基礎点)は導出値。variety=Σmin(genreAvg,50)/200×満点、base=genreAvg≥thresholdのジャンル数×perElement
     // v4: スペシャリスト部門のゲート（習熟による減衰）は廃止。スペシャは直接skills[d]の3マスを採点に使う
@@ -130,7 +138,7 @@
     EXAMS: { turns: [3, 9, 15, 21, 27, 33, 39, 45], passLine: 40, banMonths: 2 },
     // 難易度調整: ディアボロを始めた時期。初期能力のロール幅が変わる（学力は共通）
     BACKGROUNDS: [
-      { id: 'college',    label: '大学から始めた', difficulty: 'ハード',         statMin: 5,  statSpread: 16 },
+      { id: 'college',    label: '大学から始めた', difficulty: 'ハード',         statMin: 0,  statSpread: 0, compMin: 3, compSpread: 8 },
       { id: 'highschool', label: '高校から始めた', difficulty: 'ノーマル',       statMin: 10, statSpread: 26 },
       { id: 'juniorhigh', label: '中学から始めた', difficulty: 'イージー',       statMin: 20, statSpread: 26 },
       { id: 'childhood',  label: '幼少期から',     difficulty: 'ベリーイージー', statMin: 30, statSpread: 26 }

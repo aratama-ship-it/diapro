@@ -1,8 +1,8 @@
 (function (global) {
   'use strict';
   const DT = global.DT = global.DT || {};
-  const SAVE_KEY = 'diabolo-trainer-save-v8';
-  const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3', 'diabolo-trainer-save-v4', 'diabolo-trainer-save-v5', 'diabolo-trainer-save-v6', 'diabolo-trainer-save-v7'];
+  const SAVE_KEY = 'diabolo-trainer-save-v9';
+  const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3', 'diabolo-trainer-save-v4', 'diabolo-trainer-save-v5', 'diabolo-trainer-save-v6', 'diabolo-trainer-save-v7', 'diabolo-trainer-save-v8'];
 
   function newCharacter(rng, backgroundId) {
     rng = rng || Math.random;
@@ -15,7 +15,10 @@
       skills[g.id] = {};
       DT.DATA.METHODS.forEach(m => { skills[g.id][m.id] = bg.statMin + Math.floor(rng() * bg.statSpread); });
     });
-    const composition = bg.statMin + Math.floor(rng() * bg.statSpread);
+    // 演技構成は技術と別レンジを持てる（大学は技術0でも演技構成を少し残すため）。未指定なら技術と同レンジ。
+    const compMin = (bg.compMin !== undefined) ? bg.compMin : bg.statMin;
+    const compSpread = (bg.compSpread !== undefined) ? bg.compSpread : bg.statSpread;
+    const composition = compMin + Math.floor(rng() * compSpread);
     return {
       turn: 1,
       skills: skills,
@@ -36,7 +39,9 @@
       coachEvents: 0,
       specialUnlocked: false,
       rivalRecord: DT.DATA.RIVALS.reduce((acc, r) => { acc[r.id] = { win: 0, lose: 0 }; return acc; }, {}),
-      lastSlots: []
+      lastSlots: [],
+      // 開始時に既に解禁済みのジャンルは告知しない（h1d常時＋経歴により解禁されるもの）
+      announcedUnlocks: DT.DATA.GENRES.filter(g => DT.contest.isGenreUnlocked({ skills: skills }, g.id)).map(g => g.id)
     };
   }
 
