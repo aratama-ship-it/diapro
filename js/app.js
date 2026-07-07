@@ -488,6 +488,8 @@
     const rows = [];
     const emptyHint = el('div', 'cond-warn', '最低1部門を選択してください');
     DT.DATA.DIVISIONS.forEach(d => {
+      // スペシャリスト部門は該当ジャンルが未解禁なら出場不可（総合は常に出場可）
+      if (d.scoring === 'specialist' && !DT.contest.isGenreUnlocked(state, d.id)) return;
       const label = d.id === 'overall' ? '個人総合部門' : d.label;
       const b = el('button', '', label);
       b.onclick = () => {
