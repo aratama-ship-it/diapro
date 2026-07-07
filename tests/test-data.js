@@ -22,10 +22,11 @@ test('DATA: GENRESはジャンル習熟4項目で表示順は1D水平→1D垂直
   });
 });
 
-test('DATA: SLOTSは毎月4枠でゲイン/疲労/リスクを定義（v4: methodGain/genreGain→gridGainに統合）', () => {
+test('DATA: SLOTSは毎月3枠でゲイン/疲労/リスク/1年目ボーナスを定義（v4: methodGain/genreGain→gridGainに統合）', () => {
   const slots = DT.DATA.SLOTS;
-  assert.strictEqual(slots.perMonth, 4);
+  assert.strictEqual(slots.perMonth, 3); // 2026-07-07: 4→3に削減
   assert.strictEqual(slots.gridGain, 2);
+  assert.strictEqual(slots.yearOneGrowthBonus, 1.5); // 1年目(1〜12ターン)の練習ゲイン倍率
   assert.strictEqual(slots.methodGain, undefined, '旧methodGainは削除されている');
   assert.strictEqual(slots.genreGain, undefined, '旧genreGainは削除されている');
   assert.strictEqual(slots.routineGain, 1);

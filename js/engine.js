@@ -132,6 +132,8 @@
         timingNote = timingNote + DT.DATA.MEETUP.note;
       }
     }
+    // 1年目(1〜12ターン)は成長が早い初期ボーナス。全倍率に乗せてから最後に一度だけ丸める。
+    if (state.turn <= 12) mult *= DT.DATA.SLOTS.yearOneGrowthBonus;
     let gain = Math.round(baseGain * mult);
     if (gain < 1) gain = 1; // 非失敗枠は最低+1を保証
 

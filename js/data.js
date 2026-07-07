@@ -17,15 +17,17 @@
       { id: 'd2',  label: '2ディアボロ' },
       { id: 'd3',  label: '3ディアボロ以上' }
     ],
-    // v4: 毎月4枠のスロット制練習定義。枠= {genre, method}(method∈difficulty/novelty/control) または 'routine'
-    // バランス調整（Task4）: 「毎月弱点狙い」の合理的方針でも4年で能力が青天井近くまで伸びきってしまい
-    // AJDC総合を年1で確実に制してしまう（=毎回S）問題があったため、ゲインを3/2/3→1/1/1へ縮小。
-    // 詳細な反復調整記録は .superpowers/sdd/v3-task-4-report.md 参照
+    // 毎月のスロット制練習定義。枠= {genre, method}(method∈difficulty/novelty/control) または 'routine'
     // v4: スキルグリッド化でmethodGain/genreGainを統合しgridGain（マス1つへの単一ゲイン）に一本化
+    // 2026-07-07(実プレイ反映): 毎月の枠数を4→3に削減（1ヶ月の判断の重みを増やす）。
+    //   併せて「1年目は練習の伸びが早い」初期ボーナスを追加（yearOneGrowthBonus）。技術0スタートの大学でも
+    //   1年目のうちにh1dを伸ばして2D/1D垂直の解禁に届きやすくする狙い。数値は暫定、最終バランスは後日再調整。
     SLOTS: {
-      perMonth: 4,
+      perMonth: 3,
       gridGain: 2,
       routineGain: 1,
+      // 1年目(1〜12ターン)は練習ゲインをこの倍率で底上げ（ルーチン含む全練習枠に適用、失敗枠は対象外）。
+      yearOneGrowthBonus: 1.5,
       // バランス調整（スロット別疲労・怪我リスク改定）: ルーチン構成（演技構成づくり）はデスクワーク寄りの
       // 負担が軽い枠と位置づけ、疲労・リスクとも回復（負値）に変更。高難度技は最もリスクが高い枠へ引き上げ。
       fatigue: { difficulty: 5, novelty: 4, control: 3, routine: -2 },

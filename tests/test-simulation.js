@@ -34,8 +34,8 @@ function decideMonth(state) {
   return 'train';
 }
 
-// 練習な月は4枠 [combo, combo, combo, 'routine']。
-// combo = { genre, method } のうち、12マス中もっとも値が低いセルを狙う（argmin cell）
+// 練習な月は3枠 [combo, combo, 'routine']（perMonth=3）。
+// combo = { genre, method } のうち、解禁済みマスでもっとも値が低いセルを狙う（argmin cell）
 function pickCombo(state) {
   const methodIds = DT.DATA.METHODS.map(m => m.id);
   const genres = DT.DATA.GENRES.filter(g => DT.contest.isGenreUnlocked(state, g.id));
@@ -59,7 +59,7 @@ function playThrough(rng, choose) {
     const monthAction = choose(state);
     if (monthAction === 'train') {
       const combo = pickCombo(state);
-      DT.engine.applyTraining(state, [combo, combo, combo, 'routine'], rng);
+      DT.engine.applyTraining(state, [combo, combo, 'routine'], rng);
     } else {
       DT.engine.applyAction(state, monthAction, rng);
     }
@@ -200,7 +200,7 @@ test('参考: 20シードの赤点回数を表示', () => {
       const monthAction = chooseSensible(state);
       if (monthAction === 'train') {
         const combo = pickCombo(state);
-        DT.engine.applyTraining(state, [combo, combo, combo, 'routine'], rng);
+        DT.engine.applyTraining(state, [combo, combo, 'routine'], rng);
       } else {
         DT.engine.applyAction(state, monthAction, rng);
       }

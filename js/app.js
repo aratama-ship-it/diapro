@@ -13,7 +13,8 @@
   let pendingActionId = null;
 
   // --- 練習スロット選択（UI状態。null=空き、'routine'、または{genre,method}） ---
-  let slotsUI = [null, null, null, null];
+  // 枠数は DT.DATA.SLOTS.perMonth に従う（4→3等の変更に追従）
+  let slotsUI = new Array(DT.DATA.SLOTS.perMonth).fill(null);
   let selectedGenre = null;
   // メソッドの練習アクション名（DT.DATA.METHODSのid/labelとは別に、練習ボタン用の表示名を持つ）
   const METHOD_ACTION_LABEL = { difficulty: '高難度技', novelty: '新技開発', control: '反復練習' };
@@ -45,8 +46,8 @@
   // 前月のスロット構成をプリフィル（不正なジャンル/メソッドは除外し空きに戻す）
   function prefillSlots() {
     const src = Array.isArray(state.lastSlots) ? state.lastSlots : [];
-    slotsUI = [null, null, null, null];
-    for (let i = 0; i < 4 && i < src.length; i++) {
+    slotsUI = new Array(DT.DATA.SLOTS.perMonth).fill(null);
+    for (let i = 0; i < DT.DATA.SLOTS.perMonth && i < src.length; i++) {
       const s = src[i];
       if (s === 'routine') {
         slotsUI[i] = 'routine';
