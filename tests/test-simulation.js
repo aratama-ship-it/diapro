@@ -14,8 +14,10 @@ function lcg(seed) {
   return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 }
 
-function entryPick(turn) {
-  const specialistIds = DT.DATA.DIVISIONS.filter(d => d.scoring === 'specialist').map(d => d.id);
+function entryPick(turn, state) {
+  const specialistIds = DT.DATA.DIVISIONS
+    .filter(d => d.scoring === 'specialist' && DT.contest.isGenreUnlocked(state, d.id))
+    .map(d => d.id);
   const max = DT.contest.maxEntries(turn);
   return ['overall'].concat(specialistIds.slice(0, max - 1));
 }
@@ -36,17 +38,14 @@ function decideMonth(state) {
 // combo = { genre, method } のうち、12マス中もっとも値が低いセルを狙う（argmin cell）
 function pickCombo(state) {
   const methodIds = DT.DATA.METHODS.map(m => m.id);
-  let worstGenre = DT.DATA.GENRES[0].id;
+  const genres = DT.DATA.GENRES.filter(g => DT.contest.isGenreUnlocked(state, g.id));
+  let worstGenre = genres[0].id;
   let worstMethod = methodIds[0];
   let worstValue = state.skills[worstGenre][worstMethod];
-  DT.DATA.GENRES.forEach(g => {
+  genres.forEach(g => {
     methodIds.forEach(m => {
       const v = state.skills[g.id][m];
-      if (v < worstValue) {
-        worstValue = v;
-        worstGenre = g.id;
-        worstMethod = m;
-      }
+      if (v < worstValue) { worstValue = v; worstGenre = g.id; worstMethod = m; }
     });
   });
   return { genre: worstGenre, method: worstMethod };
@@ -66,7 +65,7 @@ function playThrough(rng, choose) {
     }
     const contest = DT.contest.contestForTurn(state.turn);
     if (contest) {
-      DT.contest.runAll(state, contest, entryPick(state.turn), rng);
+      DT.contest.runAll(state, contest, entryPick(state.turn, state), rng);
     } else {
       const wc = DT.contest.worldsContestForTurn(state.turn);
       if (wc && DT.contest.worldsQualified(state, state.turn)) {
@@ -207,7 +206,7 @@ test('参考: 20シードの赤点回数を表示', () => {
       }
       const contest = DT.contest.contestForTurn(state.turn);
       if (contest) {
-        DT.contest.runAll(state, contest, entryPick(state.turn), rng);
+        DT.contest.runAll(state, contest, entryPick(state.turn, state), rng);
       } else {
         const wc = DT.contest.worldsContestForTurn(state.turn);
         if (wc && DT.contest.worldsQualified(state, state.turn)) {
