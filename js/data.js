@@ -12,10 +12,10 @@
     COMPOSITION: { id: 'composition', label: '演技構成', desc: '楽曲・衣装・順序・起承転結' },
     // v4: ジャンル表示順を「1D水平→1D垂直→2D→3D以上」に変更。v1d/h1d/d2/d3はDIVISIONSのidと一致させる
     GENRES: [
-      { id: 'h1d', label: '1ディアボロ水平軸' },
-      { id: 'v1d', label: '1ディアボロ垂直軸' },
-      { id: 'd2',  label: '2ディアボロ' },
-      { id: 'd3',  label: '3ディアボロ以上' }
+      { id: 'h1d', label: '1DH' },
+      { id: 'v1d', label: '1DV' },
+      { id: 'd2',  label: '2D' },
+      { id: 'd3',  label: '3D+' }
     ],
     // 毎月のスロット制練習定義。枠= {genre, method}(method∈difficulty/novelty/control) または 'routine'
     // v4: スキルグリッド化でmethodGain/genreGainを統合しgridGain（マス1つへの単一ゲイン）に一本化

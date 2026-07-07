@@ -94,13 +94,13 @@
 
   // 1ジャンル分の三角レーダーカード。cell={difficulty,novelty,control}, avg=習熟平均, unlocked=解禁済みか
   function genreRadar(genreId, cell, avg, unlocked) {
-    const CX = 50, CY = 52, R = 30;
+    const CX = 50, CY = 52, R = 40;
     const rp = (v, a) => DT.radar.radarPoint(v, a, CX, CY, R);
     const ptStr = pts => pts.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
     const svg = svgEl('svg', { viewBox: '0 0 100 100', class: 'radar-svg' });
 
-    // グリッド（外枠100・中間50の三角）
-    [100, 50].forEach(level => {
+    // グリッド（25/50/75/100の同心三角）
+    [100, 75, 50, 25].forEach(level => {
       const ring = [rp(level, 0), rp(level, 1), rp(level, 2)];
       svg.appendChild(svgEl('polygon', { points: ptStr(ring), fill: 'none', stroke: '#4a4a63', 'stroke-width': '0.6' }));
     });
@@ -112,22 +112,26 @@
     // 値ポリゴン（解禁時のみ）
     if (unlocked) {
       const vpts = [rp(cell.difficulty, 0), rp(cell.novelty, 1), rp(cell.control, 2)];
-      svg.appendChild(svgEl('polygon', { points: ptStr(vpts), fill: 'rgba(78,205,196,0.35)', stroke: '#4ecdc4', 'stroke-width': '1' }));
+      svg.appendChild(svgEl('polygon', { points: ptStr(vpts), fill: 'rgba(78,205,196,0.4)', stroke: '#4ecdc4', 'stroke-width': '1.4' }));
+      // 各頂点に小さな丸（現在値の位置を強調）
+      vpts.forEach(p => svg.appendChild(svgEl('circle', { cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: '1.4', fill: '#4ecdc4' })));
     }
-    // 頂点ラベル＋数値（100より少し外側に配置）
-    const anchors = ['middle', 'end', 'start'];
-    const dys = ['-1.2', '3.2', '3.2'];
+    // 頂点ラベル＋数値（外周頂点の少し外側に配置。全てcenter揃えで枠内に収める）
+    const labelOffset = [[0, -3], [0, 9], [0, 9]]; // 上/左下/右下
     const labels = [['難', cell.difficulty, 0], ['新', cell.novelty, 1], ['操', cell.control, 2]];
     labels.forEach(function (lv) {
       const lab = lv[0], val = lv[1], a = lv[2];
-      const o = DT.radar.radarPoint(100, a, CX, CY, R + 9);
-      const t = svgEl('text', { x: o.x.toFixed(1), y: o.y.toFixed(1), 'text-anchor': anchors[a], dy: dys[a], fill: '#cfcfe0', 'font-size': '7' });
+      const o = rp(100, a);
+      const t = svgEl('text', {
+        x: (o.x + labelOffset[a][0]).toFixed(1), y: (o.y + labelOffset[a][1]).toFixed(1),
+        'text-anchor': 'middle', fill: '#cfcfe0', 'font-size': '8'
+      });
       t.textContent = unlocked ? (lab + val) : lab;
       svg.appendChild(t);
     });
     // 未解禁は中央に🔒
     if (!unlocked) {
-      const t = svgEl('text', { x: CX, y: CY + 3, 'text-anchor': 'middle', 'font-size': '10' });
+      const t = svgEl('text', { x: CX, y: CY + 4, 'text-anchor': 'middle', 'font-size': '13' });
       t.textContent = '🔒';
       svg.appendChild(t);
     }
