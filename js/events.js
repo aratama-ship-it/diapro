@@ -64,7 +64,7 @@
       state.coachEvents += 1;
       if (state.coachEvents >= 2 && !state.specialUnlocked) {
         state.specialUnlocked = true;
-        messages.push('剣持コーチの特別指導を受けられるようになった！（練習成功時の伸び+1）');
+        messages.push('野中コーチの特別指導を受けられるようになった！（練習成功時の伸び+1）');
       }
     }
     return { messages };

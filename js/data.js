@@ -147,7 +147,7 @@
     ],
     // v2: 登場キャラクター（名前はdata.jsで一元管理 — 変更はここだけでよい）
     CHARACTERS: [
-      { id: 'coach',  name: '剣持コーチ', role: '部の指導者。元世界チャンピオン' },
+      { id: 'coach',  name: '野中コーチ', role: '部の指導者。元世界チャンピオン' },
       { id: 'yota',   name: '陽太',       role: '同期のムードメーカー' },
       { id: 'mikoto', name: '美琴先輩',   role: '理論派の先輩' },
       { id: 'shion',  name: '志音',       role: '同学年の天才ライバル' },
@@ -156,11 +156,11 @@
     EVENTS: {
       probs: { char: 0.15, happening: 0.05 },
       charEvents: [
-        { id: 'coach1', char: 'coach', text: '「基礎ができてない奴に応用はない」剣持コーチが反復練習を命じてきた。',
+        { id: 'coach1', char: 'coach', text: '「基礎ができてない奴に応用はない」野中コーチが反復練習を命じてきた。',
           choices: [
             { label: '黙って従う',       effects: { stat: { id: 'control', amount: 3 }, fatigue: 8 },       result: '地味な反復の先に、確かな手応えがあった。' },
             { label: '自分の練習を主張', effects: { stat: { id: 'novelty', amount: 2 }, motivation: 8 },     result: '「…好きにしろ」意外にも認めてくれた。' } ] },
-        { id: 'coach2', char: 'coach', text: '剣持コーチが自分の現役時代の映像を見せてくれた。',
+        { id: 'coach2', char: 'coach', text: '野中コーチが自分の現役時代の映像を見せてくれた。',
           choices: [
             { label: '技術を盗む',       effects: { stat: { id: 'difficulty', amount: 3 } },                  result: '世界レベルの技術を目に焼き付けた。' },
             { label: '見せ方を学ぶ',     effects: { stat: { id: 'composition', amount: 3 } },                 result: '「魅せて初めて点になる」深い言葉だった。' } ] },
