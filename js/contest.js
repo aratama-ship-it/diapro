@@ -123,16 +123,17 @@
     return { score: Math.round(total * 10) / 10, parts, rawTotal, judgeMod, misses, execDeduction, specialDeduction };
   }
 
-  // v4バランス調整（Task4）: グリッド化でスペシャ部門のゲートが廃止された結果、総合部門との整合を取るため
-  // oidc/ajdc/worldsのbase・growthを全面的に引き下げた（argminマス狙いの合理的方針では12マスに練習が
-  // 分散し、4年でgenreAvgは30台程度にしか伸びない。旧base値は72.4〜92.7display相当の場を想定しており
-  // 高すぎたため、卒業時ランクがE/D未満に張り付いていた）。世界大会は別途キャリブレーション要件があり
-  // base 63/growth 3/sd 20（ユーザー指定の目安63/3/13からsdのみ広げ、rank6≒88-91・rank3≒93-96に整合させた）。
-  // 詳細な反復調整記録は .superpowers/sdd/v4-task-4-report.md 参照
+  // v5バランス調整（実プレイフィードバック 2026-07-07）: 旧base値（oidc16/ajdc24）は初期能力
+  // （素点20台）にすら負けており、1年生の初大会からほぼ確実に優勝できてしまっていた（実測turn5勝率27%）。
+  // 「それなりの能力でも国内では14〜15位止まり（優勝には程遠い）、優勝は近年の全力投球でようやく」という
+  // ユーザー指定の目標に合わせ、oidc/ajdcのbase・sdを引き上げ。まともな方針（argmin弱点狙い）30シードで
+  // 検証：turn5勝率0/30・turn5平均順位14.0位、AJDC総合(4年)優勝3/30、世界大会出場17/30（詳細tests/参照）。
+  // 世界大会はユーザー指定の「90点・8割以上で戦える」という目標に既に合致していたため変更なし
+  // （base 63/growth 3/sd 20、詳細は .superpowers/sdd/v4-task-4-report.md 参照）。
   const LEVELS = {
-    oidc: { base: 16, growth: 8, sd: 8, entrants: 16,
+    oidc: { base: 35, growth: 4, sd: 11, entrants: 16,
             points: { overall: [40, 25, 15, 8, 2], specialist: [20, 13, 8, 4, 1] } },
-    ajdc: { base: 24, growth: 7, sd: 10, entrants: 16,
+    ajdc: { base: 42, growth: 5, sd: 12, entrants: 16,
             points: { overall: [100, 70, 50, 20, 5], specialist: [50, 35, 25, 10, 3] } },
     worlds: { base: 63, growth: 3, sd: 20, entrants: 16,
               points: { overall: [150, 100, 70, 30, 10], specialist: [75, 50, 35, 15, 5] } }
