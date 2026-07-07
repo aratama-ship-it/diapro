@@ -56,7 +56,6 @@ table.results tr.me-row { color: #ffd166; font-weight: bold; }
 table.skill-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin: 4px 0 8px; }
 table.skill-table td, table.skill-table th { padding: 3px 4px; border-bottom: 1px solid #333; text-align: center; }
 table.skill-table th:first-child, table.skill-table td:first-child { text-align: left; }
-.radar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.radar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 8px; }
 .radar-card { background: #1c1c30; border-radius: 8px; padding: 4px 2px 2px; }
-.radar-title { font-size: 0.7rem; color: #ffd166; text-align: center; margin-bottom: 2px; }
 .radar-svg { width: 100%; height: auto; display: block; }
