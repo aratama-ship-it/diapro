@@ -15,7 +15,10 @@
       skills[g.id] = {};
       DT.DATA.METHODS.forEach(m => { skills[g.id][m.id] = bg.statMin + Math.floor(rng() * bg.statSpread); });
     });
-    const composition = bg.statMin + Math.floor(rng() * bg.statSpread);
+    // 演技構成は技術と別レンジを持てる（大学は技術0でも演技構成を少し残すため）。未指定なら技術と同レンジ。
+    const compMin = (bg.compMin !== undefined) ? bg.compMin : bg.statMin;
+    const compSpread = (bg.compSpread !== undefined) ? bg.compSpread : bg.statSpread;
+    const composition = compMin + Math.floor(rng() * compSpread);
     return {
       turn: 1,
       skills: skills,

@@ -138,7 +138,7 @@
     EXAMS: { turns: [3, 9, 15, 21, 27, 33, 39, 45], passLine: 40, banMonths: 2 },
     // 難易度調整: ディアボロを始めた時期。初期能力のロール幅が変わる（学力は共通）
     BACKGROUNDS: [
-      { id: 'college',    label: '大学から始めた', difficulty: 'ハード',         statMin: 5,  statSpread: 16 },
+      { id: 'college',    label: '大学から始めた', difficulty: 'ハード',         statMin: 0,  statSpread: 0, compMin: 3, compSpread: 8 },
       { id: 'highschool', label: '高校から始めた', difficulty: 'ノーマル',       statMin: 10, statSpread: 26 },
       { id: 'juniorhigh', label: '中学から始めた', difficulty: 'イージー',       statMin: 20, statSpread: 26 },
       { id: 'childhood',  label: '幼少期から',     difficulty: 'ベリーイージー', statMin: 30, statSpread: 26 }
