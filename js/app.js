@@ -182,6 +182,11 @@
     } else if (state.banTurns > 0) {
       condNodes.push(el('div', 'cond-warn', '補習中！練習禁止（残り' + state.banTurns + 'ヶ月）'));
     }
+    const nextUnlock = DT.contest.nextUnlockTarget(state);
+    if (nextUnlock) {
+      condNodes.push(textRow('次の解禁',
+        genreLabel(nextUnlock.id) + '（' + genreLabel(nextUnlock.reqGenre) + 'の習熟あと' + nextUnlock.remaining + '）'));
+    }
     $('#main-cond').replaceChildren(...condNodes);
 
     $('#main-stats').replaceChildren(
@@ -261,14 +266,21 @@
     });
     nodes.push(slotRow);
 
-    // (b) ジャンル選択行
+    // (b) ジャンル選択行（未解禁ジャンルはロック表示・選択不可）
     const genreRow = el('div', 'genre-row');
     DT.DATA.GENRES.forEach(g => {
-      const b = el('button', g.id === selectedGenre ? 'primary' : '', g.label);
-      b.onclick = () => {
-        selectedGenre = (selectedGenre === g.id) ? null : g.id;
-        renderActions();
-      };
+      const unlocked = DT.contest.isGenreUnlocked(state, g.id);
+      const b = el('button', g.id === selectedGenre ? 'primary' : '', unlocked ? g.label : '🔒 ' + g.label);
+      if (!unlocked) {
+        const req = DT.DATA.SKILL_TREE[g.id].requires;
+        b.disabled = true;
+        b.title = genreLabel(req.genre) + 'の習熟' + req.threshold + '超で解禁';
+      } else {
+        b.onclick = () => {
+          selectedGenre = (selectedGenre === g.id) ? null : g.id;
+          renderActions();
+        };
+      }
       genreRow.appendChild(b);
     });
     nodes.push(genreRow);
