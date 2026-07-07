@@ -141,11 +141,14 @@
 
   // 技術解禁ツリー: genreId が現在解禁されているか。requires=null（根）は常にtrue。
   // スキルは単調増加なので、都度genreAvgで判定すれば永続フラグ無しで常に正しい。
+  // チェーン依存: 前提ジャンル自身も解禁済みでなければならない（前提の習熟>閾値だけでは不十分）。
+  //   例: d3は「d2が解禁済み かつ d2習熟>20」の両方が必要。d2の初期値がたまたま高くても、
+  //   h1dが低くてd2が未解禁なら d3 も未解禁のまま（再帰で前提チェーンを辿る）。
   function isGenreUnlocked(state, genreId) {
     const node = DT.DATA.SKILL_TREE[genreId];
     const req = node ? node.requires : null;
     if (!req) return true;
-    return genreAvg(state, req.genre) > req.threshold;
+    return isGenreUnlocked(state, req.genre) && genreAvg(state, req.genre) > req.threshold;
   }
 
   // 今解禁済みで state.announcedUnlocks に未登録のジャンルid（解禁演出用）
