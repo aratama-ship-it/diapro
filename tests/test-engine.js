@@ -3,6 +3,7 @@ const assert = require('node:assert');
 const { test, summary } = require('./harness');
 require('../js/data.js');
 require('../js/state.js');
+require('../js/contest.js');
 require('../js/engine.js');
 const DT = globalThis.DT;
 

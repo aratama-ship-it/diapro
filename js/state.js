@@ -1,8 +1,8 @@
 (function (global) {
   'use strict';
   const DT = global.DT = global.DT || {};
-  const SAVE_KEY = 'diabolo-trainer-save-v8';
-  const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3', 'diabolo-trainer-save-v4', 'diabolo-trainer-save-v5', 'diabolo-trainer-save-v6', 'diabolo-trainer-save-v7'];
+  const SAVE_KEY = 'diabolo-trainer-save-v9';
+  const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3', 'diabolo-trainer-save-v4', 'diabolo-trainer-save-v5', 'diabolo-trainer-save-v6', 'diabolo-trainer-save-v7', 'diabolo-trainer-save-v8'];
 
   function newCharacter(rng, backgroundId) {
     rng = rng || Math.random;
@@ -39,7 +39,9 @@
       coachEvents: 0,
       specialUnlocked: false,
       rivalRecord: DT.DATA.RIVALS.reduce((acc, r) => { acc[r.id] = { win: 0, lose: 0 }; return acc; }, {}),
-      lastSlots: []
+      lastSlots: [],
+      // 開始時に既に解禁済みのジャンルは告知しない（h1d常時＋経歴により解禁されるもの）
+      announcedUnlocks: DT.DATA.GENRES.filter(g => DT.contest.isGenreUnlocked({ skills: skills }, g.id)).map(g => g.id)
     };
   }
 

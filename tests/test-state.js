@@ -3,6 +3,7 @@ const assert = require('node:assert');
 const { test, summary } = require('./harness');
 require('../js/data.js');
 require('../js/state.js');
+require('../js/contest.js');
 const DT = globalThis.DT;
 
 test('newCharacter: 12マス(GENRES×METHODS)は経歴レンジでランダム生成', () => {
@@ -97,8 +98,15 @@ test('load: 壊れたセーブデータはnullを返す', () => {
   assert.strictEqual(DT.state.load(store), null);
 });
 
-test('SAVE_KEYはv8・OLD_KEYSにv1〜v7を含む', () => {
-  assert.strictEqual(DT.state.SAVE_KEY, 'diabolo-trainer-save-v8');
+test('SAVE_KEYはv9・OLD_KEYSにv1〜v8を含む', () => {
+  assert.strictEqual(DT.state.SAVE_KEY, 'diabolo-trainer-save-v9');
+});
+
+test('newCharacter: announcedUnlocksは開始時解禁済みジャンルで初期化される', () => {
+  const hard = DT.state.newCharacter(() => 0, 'college'); // 技術0 → h1dのみ解禁
+  assert.deepStrictEqual(hard.announcedUnlocks, ['h1d']);
+  const easy = DT.state.newCharacter(() => 0.999, 'childhood'); // 全マス55 → 全解禁
+  assert.deepStrictEqual(easy.announcedUnlocks.sort(), ['d2', 'd3', 'h1d', 'v1d']);
 });
 
 test('load: 旧バージョン(v1〜v7)のセーブキーを掃除する', () => {
@@ -115,6 +123,7 @@ test('load: 旧バージョン(v1〜v7)のセーブキーを掃除する', () =>
   store.setItem('diabolo-trainer-save-v5', '{}');
   store.setItem('diabolo-trainer-save-v6', '{}');
   store.setItem('diabolo-trainer-save-v7', '{}');
+  store.setItem('diabolo-trainer-save-v8', '{}');
   DT.state.load(store);
   assert.strictEqual(store.getItem('diabolo-trainer-save-v1'), null);
   assert.strictEqual(store.getItem('diabolo-trainer-save-v2'), null);
@@ -123,6 +132,7 @@ test('load: 旧バージョン(v1〜v7)のセーブキーを掃除する', () =>
   assert.strictEqual(store.getItem('diabolo-trainer-save-v5'), null);
   assert.strictEqual(store.getItem('diabolo-trainer-save-v6'), null);
   assert.strictEqual(store.getItem('diabolo-trainer-save-v7'), null);
+  assert.strictEqual(store.getItem('diabolo-trainer-save-v8'), null);
 });
 
 test('newCharacter: v2フィールド（名前・イベント進行・ライバル戦績）', () => {
