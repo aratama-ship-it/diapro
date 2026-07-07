@@ -99,37 +99,44 @@
 
   // 1枠分のゲインを計算する。key: method id ('difficulty'/'novelty'/'control') または 'routine'
   // baseGain: SLOTS.gridGain または SLOTS.routineGain。growthValue: growthMult計算に使う現在値（skills[genre][method] または composition）
+  //
+  // v5修正（2026-07-07 実プレイ報告）: 旧実装は「ベース丸め→大会補正で再丸め→練習会補正で再丸め」と
+  // 段階ごとにMath.roundしていたため、baseが小さい枠（routineGain=1）や高レベル（growthMult<1）で
+  // tierごとの小数差が丸めで潰れていた（例: 練習会でroutineの成功も普通もどちらも+2）。
+  // 全倍率（tier×成長×大会補正×練習会補正）を掛け合わせてから最後に一度だけ丸めることで、
+  // tierの差を保つ。フラット加算（特別指導・絶好調ボーナス）は丸めの後に加える。
   function computeSlotGain(state, key, baseGain, growthValue, tier) {
-    let gain = Math.round(baseGain * TIER_MULT[tier] * growthMult(growthValue));
-    if (tier === '失敗') {
-      gain = 0;
-    } else if (gain < 1) {
-      gain = 1;
-    }
     let timingNote = '';
     let extraFatigue = 0;
-    if (isContestMonth(state)) {
-      const tm = DT.DATA.TIMING.contestMonth[key];
-      if (tm) {
-        if (tier !== '失敗') {
-          gain = Math.round(gain * tm.gainMult);
-          timingNote = tm.note;
-        }
-        if (tm.extraFatiguePerSlot) {
-          extraFatigue = tm.extraFatiguePerSlot;
-          if (tier === '失敗') timingNote = tm.note;
-        }
+    const tm = isContestMonth(state) ? DT.DATA.TIMING.contestMonth[key] : null;
+
+    if (tier === '失敗') {
+      // 失敗枠はゲイン0。大会月の追加疲労（例: 高難度技）とそのノートだけは反映する。
+      if (tm && tm.extraFatiguePerSlot) {
+        extraFatigue = tm.extraFatiguePerSlot;
+        timingNote = tm.note;
       }
+      return { gain: 0, timingNote, extraFatigue };
+    }
+
+    let mult = TIER_MULT[tier] * growthMult(growthValue);
+    if (tm) {
+      mult *= tm.gainMult;
+      timingNote = tm.note;
+      if (tm.extraFatiguePerSlot) extraFatigue = tm.extraFatiguePerSlot;
     }
     if (isMeetupMonth(state.turn)) {
       const boost = DT.DATA.MEETUP.boosts[key];
-      if (boost && tier !== '失敗') {
-        gain = Math.round(gain * boost);
+      if (boost) {
+        mult *= boost;
         timingNote = timingNote + DT.DATA.MEETUP.note;
       }
     }
-    if (tier !== '失敗' && state.specialUnlocked) gain += 1;
-    if (tier !== '失敗' && state.motivation >= DT.DATA.MOTIVATION.hotLine) gain += DT.DATA.MOTIVATION.hotBonus;
+    let gain = Math.round(baseGain * mult);
+    if (gain < 1) gain = 1; // 非失敗枠は最低+1を保証
+
+    if (state.specialUnlocked) gain += 1;
+    if (state.motivation >= DT.DATA.MOTIVATION.hotLine) gain += DT.DATA.MOTIVATION.hotBonus;
     return { gain, timingNote, extraFatigue };
   }
 
