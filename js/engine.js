@@ -134,6 +134,8 @@
     }
     // 1年目(1〜12ターン)は成長が早い初期ボーナス。全倍率に乗せてから最後に一度だけ丸める。
     if (state.turn <= 12) mult *= DT.DATA.SLOTS.yearOneGrowthBonus;
+    // 屋外練習デバフ（体育館工事イベント直後の練習）: このセッションのゲインを半減
+    if (state.outdoorTurns > 0) mult *= DT.DATA.SLOTS.outdoorGainMult;
     let gain = Math.round(baseGain * mult);
     if (gain < 1) gain = 1; // 非失敗枠は最低+1を保証
 
@@ -149,19 +151,25 @@
     state.didStudy = false;
     const messages = [];
     const results = [];
+    const outdoor = state.outdoorTurns > 0; // このセッションが屋外練習デバフ中か（枠処理中は据え置き、末尾で1消費）
+    const MOT = DT.DATA.MOTIVATION;
+    let noveltyGreat = false; // 新技開発で大成功したか（SNS投稿イベントのトリガー）
 
     slots.forEach(slot => {
       const isRoutine = slot === 'routine';
       const key = isRoutine ? 'routine' : slot.method;
-      const tier = rollTier(state, rng);
+      let tier = rollTier(state, rng);
+      // 失敗が起きるのは新技開発(novelty)のみ。高難度技/反復練習/ルーチン構成は失敗させない
+      // （rng消費順は変えないよう、ロール後に判定結果だけ「普通」へ読み替える）
+      if (tier === '失敗' && key !== 'novelty') tier = '普通';
 
       if (isRoutine) {
         const { gain, timingNote, extraFatigue } = computeSlotGain(state, 'routine', DT.DATA.SLOTS.routineGain, state.composition, tier);
         state.composition = clamp(state.composition + gain, 0, 100);
         state.fatigue = clamp(state.fatigue + DT.DATA.SLOTS.fatigue.routine + extraFatigue, 0, 100);
         state.injuryRisk = clamp(state.injuryRisk + DT.DATA.SLOTS.risk.routine, 0, 100);
-        if (tier === '大成功') state.motivation = clamp(state.motivation + 3, 0, 100);
-        if (tier === '失敗') state.motivation = clamp(state.motivation - 3, 0, 100);
+        if (tier === '大成功') state.motivation = clamp(state.motivation + MOT.greatBonus, 0, 100);
+        if (tier === '失敗') state.motivation = clamp(state.motivation - MOT.failPenalty, 0, 100);
         results.push({ slot, tier, gain });
         if (tier === '失敗') {
           messages.push('ルーチン構成（失敗）: うまくいかず疲れだけが残った……' + timingNote);
@@ -175,8 +183,14 @@
         state.skills[genre][method] = clamp(state.skills[genre][method] + gain, 0, 100);
         state.fatigue = clamp(state.fatigue + DT.DATA.SLOTS.fatigue[method] + extraFatigue, 0, 100);
         state.injuryRisk = clamp(state.injuryRisk + DT.DATA.SLOTS.risk[method] + DT.DATA.SLOTS.genreRisk[genre], 0, 100);
-        if (tier === '大成功') state.motivation = clamp(state.motivation + 3, 0, 100);
-        if (tier === '失敗') state.motivation = clamp(state.motivation - 3, 0, 100);
+        // 大成功は全種別でやる気大幅アップ。新技開発は「成功」でも高揚（新しい技を覚えた）＋大成功でSNSイベント
+        if (tier === '大成功') {
+          state.motivation = clamp(state.motivation + MOT.greatBonus, 0, 100);
+          if (method === 'novelty') noveltyGreat = true;
+        } else if (tier === '成功' && method === 'novelty') {
+          state.motivation = clamp(state.motivation + MOT.noveltySuccessBonus, 0, 100);
+        }
+        if (tier === '失敗') state.motivation = clamp(state.motivation - MOT.failPenalty, 0, 100);
         results.push({ slot, tier, gain });
         if (tier === '失敗') {
           messages.push(genreLabel(genre) + '×' + METHOD_LABEL[method] + '（失敗）: うまくいかず疲れだけが残った……' + timingNote);
@@ -194,9 +208,15 @@
       messages.push('🎉 ' + genreLabel(id) + 'が解禁された！新しいジャンルを練習できる。');
     });
 
+    // 屋外練習デバフはこのセッションで1回消費（末尾で減算し、枠ごとの評価には影響させない）
+    if (outdoor) {
+      state.outdoorTurns -= 1;
+      messages.push('（体育館工事の影響で屋外練習… 伸びが半減した）');
+    }
+
     state.didTrain = true;
     state.lastSlots = slots.map(slot => (slot === 'routine' ? 'routine' : { genre: slot.genre, method: slot.method }));
-    return { results, messages };
+    return { results, messages, outdoor: outdoor, noveltyGreat: noveltyGreat };
   }
 
   function endTurn(state, rng) {
@@ -219,10 +239,13 @@
     }
 
     if (state.didTrain && rng() < state.injuryRisk / 500) {
+      // 怪我発生時の体力/疲労/怪我リスクを表示（開発用: 体力が高いのに怪我するバグ調査のため）
+      const staminaAtInjury = 100 - state.fatigue;
+      const riskAtInjury = state.injuryRisk;
       state.injuredTurns = 1;
       state.injuryRisk = 25;
       state.motivation = clamp(state.motivation - 8, 0, 100);
-      events.push('怪我をしてしまった！ 来月は療養が必要だ。');
+      events.push('怪我をしてしまった！ 来月は療養が必要だ。（発生時 体力' + staminaAtInjury + '／疲労' + state.fatigue + '／怪我リスク' + riskAtInjury + '）');
     } else if (state.injuredTurns > 0) {
       state.injuredTurns -= 1;
       state.fatigue = clamp(state.fatigue - 25, 0, 100);

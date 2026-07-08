@@ -4,73 +4,204 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ディアボロ選手育成</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="app">
-  <section id="screen-title" class="screen">
-    <h1>ディアボロ選手育成</h1>
-    <p class="subtitle">〜大学4年間、ディアボロに懸けろ〜</p>
-    <button id="btn-new" class="primary">はじめから</button>
-    <button id="btn-continue">つづきから</button>
-  </section>
+  <div class="screens">
+    <!-- ======== タイトル ======== -->
+    <section id="screen-title" class="screen">
+      <h1>ディアボロ選手育成</h1>
+      <p class="subtitle">〜大学4年間、ディアボロに懸けろ〜</p>
+      <button id="btn-new" class="primary">はじめから</button>
+      <button id="btn-continue">つづきから</button>
+      <div class="app-version" id="app-version"></div>
+    </section>
 
-  <section id="screen-create" class="screen hidden">
-    <h2>新入生スカウト</h2>
-    <p class="subtitle">今年の新入生はこんな選手！</p>
-    <div class="card">
-      <label for="create-name" class="subtitle">選手の名前（8文字まで）</label>
-      <input id="create-name" maxlength="8" placeholder="主人公">
+    <!-- ======== キャラ作成 ======== -->
+    <section id="screen-create" class="screen hidden">
+      <h2>新入生スカウト</h2>
+      <p class="subtitle">今年の新入生はこんな選手！</p>
+      <div class="card">
+        <label for="create-name" class="subtitle">選手の名前（8文字まで）</label>
+        <input id="create-name" maxlength="8" placeholder="主人公">
+      </div>
+      <div class="card">
+        <label for="create-bg" class="board-label">経歴（難易度）</label>
+        <select id="create-bg"></select>
+      </div>
+      <div id="create-stats" class="card"></div>
+      <div class="cta-bar">
+        <button id="btn-reroll" style="display: none;">引き直す</button>
+        <button id="btn-start" class="primary">この選手で始める</button>
+      </div>
+    </section>
+
+    <!-- ======== ホーム ======== -->
+    <section id="screen-home" class="screen hidden">
+      <div class="turn-banner" id="home-turn"></div>
+      <div id="home-contest"></div>
+      <div class="card cond-card" id="home-cond"></div>
+      <div class="card slot-board status-card" id="home-status"></div>
+      <div class="prompt-line">今月はどうする？</div>
+      <div class="action-stack" id="home-actions"></div>
+      <div class="log-strip" id="home-log">💬 どうする？</div>
+    </section>
+
+    <!-- ======== 練習メニュー ======== -->
+    <section id="screen-trainmenu" class="screen hidden">
+      <div class="sub-header">
+        <button class="back-btn" data-back>←</button>
+        <div class="sub-title">今月の練習<small>TRAINING MENU</small></div>
+        <span class="chip" id="trainmenu-mood"></span>
+      </div>
+      <div class="card slot-board" id="trainmenu-skills"></div>
+      <div class="card slot-board">
+        <div class="board-label">練習スロット</div>
+        <div class="slot-row3" id="slot-row"></div>
+      </div>
+      <div class="card slot-board">
+        <div class="board-label">① ジャンルを選ぶ</div>
+        <div class="pick-grid4" id="genre-row"></div>
+      </div>
+      <div class="card slot-board">
+        <div class="board-label">② 内容を選ぶ → 空き枠にセット</div>
+        <div class="pick-grid2" id="method-row"></div>
+      </div>
+      <div class="train-hint">💡 ジャンルを選んでから内容をタップ。ルーチン構成はジャンル不要。</div>
+      <button class="go-btn" id="btn-training-go">この内容で練習する！</button>
+    </section>
+
+    <!-- ======== 練習結果 ======== -->
+    <section id="screen-training" class="screen hidden">
+      <h2>練習の成果</h2>
+      <div id="training-slots" class="card"></div>
+      <div id="training-summary" class="card"></div>
+      <button id="btn-training-ok" class="primary">OK</button>
+    </section>
+
+    <!-- ======== 詳細（技術グリッド等） ======== -->
+    <section id="screen-detail" class="screen hidden">
+      <div class="sub-header">
+        <button class="back-btn" data-back>←</button>
+        <div class="sub-title">詳細<small>SKILL DETAIL</small></div>
+        <span class="chip num" id="detail-pt"></span>
+      </div>
+      <div class="card slot-board">
+        <div class="board-label">技術グリッド（難易度 / 新奇性 / 操作安定度）</div>
+        <div id="detail-skills"></div>
+      </div>
+      <div class="card slot-board">
+        <div class="board-label">レーダー</div>
+        <div id="detail-radar"></div>
+      </div>
+      <div class="card slot-board">
+        <div class="board-label">演技構成・コンディション</div>
+        <div id="detail-cond"></div>
+      </div>
+      <div class="log-strip" id="detail-unlock"></div>
+    </section>
+
+    <!-- ======== エントリー ======== -->
+    <section id="screen-entry" class="screen hidden">
+      <h2 id="entry-title"></h2>
+      <p class="subtitle" id="entry-hint"></p>
+      <div class="card slot-board" id="entry-status"></div>
+      <div id="entry-divisions"></div>
+      <button id="btn-entry-go" class="primary">この内容でエントリー</button>
+    </section>
+
+    <!-- ======== イベント ======== -->
+    <section id="screen-event" class="screen hidden">
+      <h2 id="event-char"></h2>
+      <div id="event-text" class="card"></div>
+      <div id="event-choices"></div>
+    </section>
+
+    <!-- ======== 大会結果 ======== -->
+    <section id="screen-contest" class="screen hidden">
+      <h2 id="contest-name"></h2>
+      <div id="contest-result" class="card"></div>
+      <button id="btn-contest-ok" class="primary">結果を受け止める</button>
+    </section>
+
+    <!-- ======== エンディング ======== -->
+    <section id="screen-ending" class="screen hidden">
+      <h2 id="ending-title"></h2>
+      <div id="ending-detail" class="card"></div>
+      <button id="btn-restart" class="primary">タイトルへ</button>
+    </section>
+  </div>
+
+  <!-- ======== ボトムナビ ======== -->
+  <nav class="bottom-nav hidden" id="bottom-nav">
+    <button class="nav-btn" id="nav-home"><span class="nav-icon">🏠</span>ホーム</button>
+    <button class="nav-btn" id="nav-detail"><span class="nav-icon">📊</span>詳細</button>
+    <button class="nav-btn" id="nav-settings"><span class="nav-icon">⚙️</span>設定</button>
+  </nav>
+
+  <!-- ======== 今後の予定モーダル（次のイベントバナーのタップで開く） ======== -->
+  <div id="schedule-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close-schedule></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <span class="modal-title">📅 今後の予定</span>
+        <button class="modal-close" data-close-schedule aria-label="閉じる">×</button>
+      </div>
+      <div class="modal-list" id="schedule-list"></div>
     </div>
-    <div class="card">
-      <p class="subtitle">経歴（難易度）</p>
-      <div id="create-bg"></div>
+  </div>
+
+  <!-- ======== ポイント履歴モーダル（右上ポイントのタップで開く） ======== -->
+  <div id="points-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close-points></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <span class="modal-title">🏅 ポイント履歴</span>
+        <button class="modal-close" data-close-points aria-label="閉じる">×</button>
+      </div>
+      <div class="modal-sub" id="points-total"></div>
+      <div class="modal-list" id="points-list"></div>
     </div>
-    <div id="create-stats" class="card"></div>
-    <button id="btn-reroll">引き直す</button>
-    <button id="btn-start" class="primary">この選手で始める</button>
-  </section>
+  </div>
 
-  <section id="screen-main" class="screen hidden">
-    <header id="main-header"></header>
-    <div id="main-cond" class="card"></div>
-    <div id="main-stats" class="card"></div>
-    <div id="main-actions" class="card"></div>
-    <div id="main-log" class="card"></div>
-  </section>
+  <!-- ======== 定期イベント ポップアップ（新入生歓迎会など。ホームの上に表示） ======== -->
+  <div id="sched-popup" class="modal center hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card popup-card">
+      <div class="modal-head"><span class="modal-title" id="sched-title"></span></div>
+      <div class="popup-body" id="sched-body"></div>
+      <button class="go-btn popup-ok" id="sched-ok">OK</button>
+    </div>
+  </div>
 
-  <section id="screen-training" class="screen hidden">
-    <h2>今月の練習</h2>
-    <div id="training-slots" class="card"></div>
-    <div id="training-summary" class="card"></div>
-    <button id="btn-training-ok" class="primary">OK</button>
-  </section>
-
-  <section id="screen-entry" class="screen hidden">
-    <h2 id="entry-title"></h2>
-    <p class="subtitle" id="entry-hint"></p>
-    <div id="entry-divisions" class="card"></div>
-    <button id="btn-entry-go" class="primary">この内容でエントリー</button>
-  </section>
-
-  <section id="screen-event" class="screen hidden">
-    <h2 id="event-char"></h2>
-    <div id="event-text" class="card"></div>
-    <div id="event-choices" class="card"></div>
-  </section>
-
-  <section id="screen-contest" class="screen hidden">
-    <h2 id="contest-name"></h2>
-    <div id="contest-result" class="card"></div>
-    <button id="btn-contest-ok" class="primary">結果を受け止める</button>
-  </section>
-
-  <section id="screen-ending" class="screen hidden">
-    <h2 id="ending-title"></h2>
-    <div id="ending-detail" class="card"></div>
-    <button id="btn-restart" class="primary">タイトルへ</button>
-  </section>
+  <!-- ======== 設定モーダル（ホーム右下の設定ボタンで開く。リタイア可） ======== -->
+  <div id="settings-modal" class="modal center hidden">
+    <div class="modal-backdrop" data-close-settings></div>
+    <div class="modal-card popup-card">
+      <div class="modal-head">
+        <span class="modal-title">⚙️ 設定</span>
+        <button class="modal-close" data-close-settings aria-label="閉じる">×</button>
+      </div>
+      <div class="popup-body" id="settings-body"></div>
+    </div>
+  </div>
 </div>
+
+<!-- ======== 右: 開発用パラメータパネル（1100px以上で表示） ======== -->
+<aside class="dev-panel" id="dev-panel">
+  <div class="dev-head">
+    <span class="dev-title">🔧 DEV PARAMS</span>
+    <span class="dev-badge">開発時のみ表示</span>
+  </div>
+  <div class="dev-body" id="dev-body">
+    <div class="dev-note">ゲーム開始後に現在のstateを表示します。</div>
+  </div>
+</aside>
+
 <script src="js/data.js"></script>
 <script src="js/state.js"></script>
 <script src="js/engine.js"></script>

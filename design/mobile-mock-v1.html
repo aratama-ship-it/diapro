@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ディアボロ選手育成｜スマホUIモック v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   ディアボロ選手育成 スマホUIモック v1「おもちゃ箱パワプロ」
+   - 390px スマホフレーム基準・各画面は縦スクロールなしが目標
+   - 右側の開発パネルは 1100px 以上のときだけ表示
+   ============================================================ */
+:root {
+  --sky-1: #7ec8f5;
+  --sky-2: #b9e3ff;
+  --cream: #fff8ec;
+  --paper: #ffffff;
+  --ink: #2b3a67;
+  --ink-soft: #6b7aa8;
+  --coral: #ff6b6b;
+  --coral-deep: #e6504f;
+  --sun: #ffd166;
+  --teal: #2ec4b6;
+  --leaf: #7ac74f;
+  --blue: #4d96ff;
+  --lock: #c9cede;
+  --line: 3px solid var(--ink);
+  --pop-shadow: 0 4px 0 var(--ink);
+  --pop-shadow-sm: 0 3px 0 var(--ink);
+  --radius: 18px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+button { font-family: inherit; cursor: pointer; }
+
+body {
+  font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
+  font-weight: 700;
+  color: var(--ink);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255,255,255,.55) 0 40px, transparent 41px),
+    radial-gradient(circle at 80% 12%, rgba(255,255,255,.45) 0 56px, transparent 57px),
+    radial-gradient(circle at 60% 80%, rgba(255,255,255,.35) 0 48px, transparent 49px),
+    linear-gradient(180deg, var(--sky-1), var(--sky-2) 70%, #d8f1ff);
+  background-attachment: fixed;
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  padding: 32px 20px 48px;
+}
+
+/* ---------- 全体レイアウト: 左=スマホ / 右=開発パネル ---------- */
+.stage { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.stage-caption {
+  font-size: .8rem; font-weight: 800; color: var(--ink);
+  background: var(--sun); border: var(--line); border-radius: 999px;
+  padding: 6px 18px; box-shadow: var(--pop-shadow-sm);
+  letter-spacing: .06em;
+}
+
+/* ---------- スマホフレーム ---------- */
+.phone {
+  width: 390px; height: 800px;
+  background: #22284a;
+  border-radius: 44px;
+  padding: 10px;
+  box-shadow: 0 24px 48px rgba(30,60,110,.35);
+  flex-shrink: 0;
+}
+.phone-screen {
+  position: relative;
+  width: 100%; height: 100%;
+  border-radius: 36px;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(45deg, rgba(255,209,102,.06) 0 14px, transparent 14px 28px),
+    var(--cream);
+  display: flex; flex-direction: column;
+}
+.statusbar {
+  height: 34px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 22px; font-size: .68rem; font-weight: 800; color: var(--ink-soft);
+}
+
+/* ---------- 画面切替 ---------- */
+.app-screen { flex: 1; display: none; flex-direction: column; padding: 6px 14px 8px; gap: 6px; min-height: 0; overflow-y: auto; }
+.app-screen.active { display: flex; animation: pop-in .28s cubic-bezier(.34,1.56,.64,1); }
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(.96) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ---------- 共通パーツ ---------- */
+.card {
+  background: var(--paper);
+  border: var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--pop-shadow);
+  padding: 8px 11px;
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .68rem; font-weight: 800;
+  border: 2px solid var(--ink); border-radius: 999px;
+  padding: 2px 10px; background: var(--paper);
+}
+.num { font-family: "Baloo 2", "M PLUS Rounded 1c", sans-serif; font-weight: 800; }
+
+/* ---------- ヘッダー（ターン帯） ---------- */
+.turn-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--ink); color: #fff;
+  border-radius: 14px; padding: 6px 14px;
+  box-shadow: var(--pop-shadow);
+}
+.turn-banner .turn-label { font-size: 1.02rem; font-weight: 800; letter-spacing: .04em; }
+.turn-banner .turn-sub { font-size: .62rem; color: #aebbe6; letter-spacing: .08em; }
+.turn-banner .pt {
+  background: var(--sun); color: var(--ink);
+  border-radius: 999px; padding: 3px 12px;
+  font-size: .78rem; font-weight: 800;
+  border: 2px solid #fff;
+}
+
+/* ---------- 次大会バナー ---------- */
+.contest-banner {
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(120deg, var(--sun), #ffe3a3);
+  border: var(--line); border-radius: 14px;
+  padding: 5px 12px; box-shadow: var(--pop-shadow-sm);
+}
+.contest-banner .flag { font-size: 1.3rem; }
+.contest-banner .name { font-size: .86rem; font-weight: 800; }
+.contest-banner .when { font-size: .66rem; color: #8a6d1f; }
+.contest-banner .count {
+  margin-left: auto;
+  background: var(--coral); color: #fff;
+  border: 2px solid var(--ink); border-radius: 10px;
+  padding: 2px 10px; text-align: center; line-height: 1.15;
+}
+.contest-banner .count .n { font-size: 1.05rem; display: block; }
+.contest-banner .count .u { font-size: .5rem; letter-spacing: .1em; }
+
+/* ---------- コンディションカード ---------- */
+.cond-card { display: flex; flex-direction: column; gap: 5px; }
+.cond-top { display: flex; align-items: center; gap: 10px; }
+.mood-face {
+  width: 46px; height: 46px; flex-shrink: 0;
+  display: grid; place-items: center;
+  font-size: 1.5rem;
+  background: #fff2cf; border: var(--line); border-radius: 50%;
+}
+.mood-meta { flex: 1; }
+.mood-meta .mood-label { font-size: .92rem; font-weight: 800; color: var(--coral-deep); }
+.mood-meta .mood-note { font-size: .62rem; color: var(--ink-soft); }
+.cond-chips { display: flex; gap: 4px; flex-direction: column; align-items: flex-end; }
+.meter { display: grid; grid-template-columns: 3.4em 1fr 2.4em; align-items: center; gap: 8px; font-size: .72rem; }
+.meter .m-label { font-weight: 800; }
+.meter .m-val { text-align: right; font-size: .8rem; }
+.gauge {
+  height: 12px; border: 2px solid var(--ink); border-radius: 999px;
+  background: #eef1fa; overflow: hidden;
+}
+.gauge > span {
+  display: block; height: 100%;
+  border-radius: 999px 0 0 999px;
+  background: linear-gradient(90deg, var(--teal), var(--sun));
+}
+.gauge.warn > span { background: linear-gradient(90deg, var(--sun), var(--coral)); }
+
+/* ---------- どうする？ 3大ボタン ---------- */
+.prompt-line {
+  display: flex; align-items: center; gap: 8px;
+  font-size: .8rem; font-weight: 800; color: var(--ink);
+}
+.prompt-line::before, .prompt-line::after {
+  content: ""; flex: 1; height: 3px; border-radius: 3px;
+  background: repeating-linear-gradient(90deg, var(--ink) 0 8px, transparent 8px 14px);
+  opacity: .25;
+}
+.action-stack { display: flex; flex-direction: column; gap: 7px; flex-shrink: 0; }
+.action-btn {
+  display: flex; align-items: center; gap: 11px;
+  border: var(--line); border-radius: 16px;
+  padding: 7px 13px;
+  box-shadow: 0 4px 0 var(--ink);
+  transition: transform .08s ease, box-shadow .08s ease;
+  text-align: left;
+}
+.action-btn:active { transform: translateY(4px); box-shadow: 0 0 0 var(--ink); }
+.action-btn .icon {
+  width: 36px; height: 36px; flex-shrink: 0;
+  display: grid; place-items: center;
+  font-size: 1.2rem;
+  background: rgba(255,255,255,.55);
+  border: 2px solid var(--ink); border-radius: 11px;
+}
+.action-btn .t { flex: 1; }
+.action-btn .t .name { display: block; font-size: 1.04rem; font-weight: 800; letter-spacing: .12em; }
+.action-btn .t .desc { display: block; font-size: .64rem; font-weight: 700; }
+.action-btn .arrow { font-size: 1.1rem; font-weight: 800; }
+.action-btn.train { background: linear-gradient(135deg, #ff8b7b, var(--coral)); color: #fff; }
+.action-btn.train .t .desc { color: #ffe3dc; }
+.action-btn.study { background: linear-gradient(135deg, #7db4ff, var(--blue)); color: #fff; }
+.action-btn.study .t .desc { color: #dcebff; }
+.action-btn.rest  { background: linear-gradient(135deg, #a5e07f, var(--leaf)); color: #234010; }
+.action-btn.rest  .t .desc { color: #3d6420; }
+
+/* ---------- ホームのステータスカード ---------- */
+.status-card { gap: 5px; }
+.status-head { display: flex; align-items: center; justify-content: space-between; }
+.detail-link {
+  font-size: .62rem; font-weight: 800; color: var(--blue);
+  background: #eaf2ff; border: 2px solid var(--blue); border-radius: 999px;
+  padding: 2px 10px;
+}
+.detail-link:active { transform: translateY(2px); }
+.status-card .radar-strip { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.status-card .radar-cell { padding: 2px; }
+.status-card .radar-cell svg { max-height: 46px; margin: 0 auto; }
+.status-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
+
+/* ---------- ログ帯 ---------- */
+.log-strip {
+  font-size: .68rem; font-weight: 700; color: var(--ink-soft);
+  background: #f2f5fd; border: 2px dashed #b9c3e0; border-radius: 12px;
+  padding: 5px 10px;
+  min-height: 1.7em; display: flex; align-items: center; gap: 6px;
+}
+
+/* ---------- ボトムナビ ---------- */
+.bottom-nav {
+  flex-shrink: 0;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  padding: 8px 14px 12px;
+}
+.nav-btn {
+  border: var(--line); border-radius: 14px;
+  background: var(--paper);
+  padding: 7px 4px 5px;
+  font-size: .64rem; font-weight: 800; color: var(--ink-soft);
+  box-shadow: var(--pop-shadow-sm);
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+}
+.nav-btn .nav-icon { font-size: 1.05rem; }
+.nav-btn.active { background: var(--sun); color: var(--ink); }
+.nav-btn:disabled { opacity: .45; cursor: default; box-shadow: none; transform: translateY(3px); }
+
+/* ---------- サブ画面ヘッダー ---------- */
+.sub-header { display: flex; align-items: center; gap: 10px; }
+.back-btn {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border: var(--line); border-radius: 12px;
+  background: var(--paper); box-shadow: var(--pop-shadow-sm);
+  font-size: 1rem; font-weight: 800; color: var(--ink);
+}
+.back-btn:active { transform: translateY(3px); box-shadow: none; }
+.sub-title { font-size: 1.05rem; font-weight: 800; letter-spacing: .06em; }
+.sub-title small { display: block; font-size: .6rem; color: var(--ink-soft); letter-spacing: .1em; }
+.sub-header .chip { margin-left: auto; }
+
+/* ---------- 練習画面 ---------- */
+.slot-board { display: flex; flex-direction: column; gap: 6px; }
+.board-label { font-size: .66rem; font-weight: 800; color: var(--ink-soft); letter-spacing: .12em; }
+.slot-row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.slot {
+  border: var(--line); border-radius: 14px;
+  min-height: 64px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: .66rem; font-weight: 800; color: var(--ink);
+  padding: 4px;
+  position: relative;
+  background: var(--paper);
+}
+.slot.empty { background: #f2f5fd; border-style: dashed; color: #a6b1d2; box-shadow: none; cursor: default; }
+.slot.filled { box-shadow: var(--pop-shadow-sm); }
+.slot .s-genre {
+  font-size: .58rem; padding: 1px 8px; border-radius: 999px;
+  border: 2px solid var(--ink); background: var(--sun);
+}
+.slot .s-genre.routine-tag { background: #bff0dd; }
+.slot .s-x {
+  position: absolute; top: -8px; right: -8px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--coral); color: #fff;
+  border: 2px solid var(--ink);
+  font-size: .6rem; line-height: 1;
+  display: grid; place-items: center;
+}
+.slot.filled.routine { background: #e9f9f1; }
+
+.pick-grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.pick-grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.pick-btn {
+  border: var(--line); border-radius: 14px;
+  background: var(--paper); box-shadow: var(--pop-shadow-sm);
+  padding: 8px 4px;
+  font-size: .74rem; font-weight: 800; color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.pick-btn small { font-size: .55rem; font-weight: 700; color: var(--ink-soft); }
+.pick-btn:active { transform: translateY(3px); box-shadow: none; }
+.pick-btn.selected { background: var(--teal); color: #fff; }
+.pick-btn.selected small { color: #d7f6f2; }
+.pick-btn.locked { background: var(--lock); color: #8a90a8; box-shadow: none; cursor: default; border-color: #8a90a8; }
+.pick-btn.locked small { color: #8a90a8; }
+
+.train-hint {
+  font-size: .62rem; font-weight: 700; color: var(--ink-soft);
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 2px;
+}
+.go-btn {
+  border: var(--line); border-radius: 18px;
+  background: linear-gradient(135deg, #ff8b7b, var(--coral));
+  color: #fff; font-size: 1rem; font-weight: 800; letter-spacing: .14em;
+  padding: 13px; box-shadow: 0 5px 0 var(--ink);
+}
+.go-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.go-btn:disabled { background: var(--lock); color: #8a90a8; box-shadow: none; transform: translateY(4px); cursor: default; }
+
+/* ---------- ステータス画面 ---------- */
+table.mock-skill { width: 100%; border-collapse: collapse; font-size: .72rem; }
+table.mock-skill th, table.mock-skill td { padding: 4px 2px; text-align: center; border-bottom: 2px dotted #d8ddf0; }
+table.mock-skill th { font-size: .62rem; color: var(--ink-soft); letter-spacing: .06em; }
+table.mock-skill td:first-child, table.mock-skill th:first-child { text-align: left; font-weight: 800; }
+table.mock-skill tr:last-child td { border-bottom: none; }
+table.mock-skill .avg { font-weight: 800; color: var(--coral-deep); }
+table.mock-skill tr.locked-row td { color: #b0b6cc; font-size: .62rem; }
+.radar-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.radar-cell {
+  border: 2px solid var(--ink); border-radius: 12px;
+  background: #fffdf6; padding: 3px;
+}
+.radar-cell svg { width: 100%; height: auto; display: block; }
+.radar-cell .r-name { text-align: center; font-size: .58rem; font-weight: 800; color: var(--ink-soft); }
+
+/* ============================================================
+   右側: 開発用パラメータパネル（1100px以上で表示）
+   ============================================================ */
+.dev-panel {
+  display: none;
+  width: 320px;
+  align-self: flex-start;
+  position: sticky; top: 32px;
+  background: #1c2240;
+  border-radius: 20px;
+  border: 3px solid #10132b;
+  box-shadow: 0 18px 40px rgba(20,30,70,.4);
+  color: #d7defa;
+  font-size: .74rem;
+  overflow: hidden;
+}
+@media (min-width: 1100px) { .dev-panel { display: block; } }
+.dev-head {
+  background: #10132b; padding: 10px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.dev-head .dev-title { font-weight: 800; letter-spacing: .1em; font-size: .78rem; color: #ffd166; }
+.dev-head .dev-badge {
+  font-size: .58rem; background: #2ec4b6; color: #10132b;
+  padding: 2px 8px; border-radius: 999px; font-weight: 800;
+}
+.dev-body { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.dev-section .dev-label {
+  font-size: .6rem; letter-spacing: .18em; color: #7f8ec2;
+  margin-bottom: 5px; font-weight: 800;
+}
+.dev-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 2px 0;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: .72rem;
+}
+.dev-row .k { color: #9aa8d8; }
+.dev-row .v { color: #fff; font-weight: 700; text-align: right; }
+.dev-row .v.warn { color: #ff6b6b; }
+.dev-row .v.good { color: #2ec4b6; }
+table.dev-grid {
+  width: 100%; border-collapse: collapse;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .68rem;
+}
+table.dev-grid th, table.dev-grid td { padding: 2px 4px; text-align: right; border-bottom: 1px solid #2a3158; }
+table.dev-grid th { color: #7f8ec2; font-size: .58rem; font-weight: 700; }
+table.dev-grid td:first-child, table.dev-grid th:first-child { text-align: left; color: #9aa8d8; }
+table.dev-grid td.avg { color: #ffd166; font-weight: 700; }
+table.dev-grid tr.locked td { color: #545d85; }
+.dev-note { font-size: .6rem; color: #7f8ec2; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- ============ 左: スマホフレーム ============ -->
+<div class="stage">
+  <div class="stage-caption">📱 スマホUIモック v1（デザイン検討用・機能なし）</div>
+  <div class="phone">
+    <div class="phone-screen">
+      <div class="statusbar"><span>9:41</span><span>ディアボロ選手育成</span><span>🔋 100%</span></div>
+
+      <!-- ======== 画面1: ホーム ======== -->
+      <section class="app-screen active" id="scr-home">
+        <div class="turn-banner">
+          <div>
+            <div class="turn-sub">TURN 16 / 48</div>
+            <div class="turn-label">2年生 7月</div>
+          </div>
+          <span class="pt num">46pt</span>
+        </div>
+
+        <div class="contest-banner">
+          <span class="flag">🏆</span>
+          <div>
+            <div class="name">2年 OIDC</div>
+            <div class="when">大阪国際ディアボロコンテスト</div>
+          </div>
+          <div class="count"><span class="n num">1</span><span class="u">ヶ月後</span></div>
+        </div>
+
+        <div class="card cond-card">
+          <div class="cond-top">
+            <div class="mood-face">😊</div>
+            <div class="mood-meta">
+              <div class="mood-label">好調</div>
+              <div class="mood-note">やる気 72 / 100</div>
+            </div>
+            <div class="cond-chips">
+              <span class="chip">🎯 予想 <span class="num">68.4</span>点</span>
+              <span class="chip">💥 ミス率 <span class="num">31</span>%</span>
+            </div>
+          </div>
+          <div class="meter">
+            <span class="m-label">疲労</span>
+            <div class="gauge warn"><span style="width:42%"></span></div>
+            <span class="m-val num">42</span>
+          </div>
+          <div class="meter">
+            <span class="m-label">学力</span>
+            <div class="gauge"><span style="width:55%"></span></div>
+            <span class="m-val num">55</span>
+          </div>
+        </div>
+
+        <div class="card slot-board status-card">
+          <div class="status-head">
+            <span class="board-label">ステータス</span>
+            <button class="detail-link" data-go="scr-status">技術グリッド詳細 ▸</button>
+          </div>
+          <div class="radar-strip" id="radar-strip"></div>
+          <div class="status-meters">
+            <div class="meter">
+              <span class="m-label">構成</span>
+              <div class="gauge"><span style="width:34%"></span></div>
+              <span class="m-val num">34</span>
+            </div>
+            <div class="meter">
+              <span class="m-label">怪我</span>
+              <div class="gauge"><span style="width:18%"></span></div>
+              <span class="m-val num">18</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="prompt-line">今月はどうする？</div>
+
+        <div class="action-stack">
+          <button class="action-btn train" data-go="scr-train">
+            <span class="icon">🥢</span>
+            <span class="t">
+              <span class="name">練 習</span>
+              <span class="desc">3枠のメニューを組んで技術アップ</span>
+            </span>
+            <span class="arrow">▶</span>
+          </button>
+          <button class="action-btn study" data-log="📖 図書館にこもった。学力が上がった！（モック）">
+            <span class="icon">📖</span>
+            <span class="t">
+              <span class="name">勉 強</span>
+              <span class="desc">学力アップ（赤点で補習2ヶ月…）</span>
+            </span>
+            <span class="arrow">▶</span>
+          </button>
+          <button class="action-btn rest" data-log="🛌 しっかり休んだ。疲労が回復した！（モック）">
+            <span class="icon">🛌</span>
+            <span class="t">
+              <span class="name">休 養</span>
+              <span class="desc">疲労回復・怪我リスク低下</span>
+            </span>
+            <span class="arrow">▶</span>
+          </button>
+        </div>
+
+        <div class="log-strip" id="home-log">💬 どうする？</div>
+      </section>
+
+      <!-- ======== 画面2: 練習メニュー ======== -->
+      <section class="app-screen" id="scr-train">
+        <div class="sub-header">
+          <button class="back-btn" data-go="scr-home">←</button>
+          <div class="sub-title">今月の練習<small>TRAINING MENU</small></div>
+          <span class="chip">😊 好調</span>
+        </div>
+
+        <div class="card slot-board">
+          <div class="board-label">練習スロット（3枠）</div>
+          <div class="slot-row3" id="slot-row"></div>
+        </div>
+
+        <div class="card slot-board">
+          <div class="board-label">① ジャンルを選ぶ</div>
+          <div class="pick-grid4" id="genre-row"></div>
+        </div>
+
+        <div class="card slot-board">
+          <div class="board-label">② 内容を選ぶ → 空き枠にセット</div>
+          <div class="pick-grid2" id="method-row"></div>
+        </div>
+
+        <div class="train-hint">💡 ジャンルを選んでから内容をタップ。ルーチン構成はジャンル不要。</div>
+
+        <button class="go-btn" id="btn-go">この内容で練習する！</button>
+      </section>
+
+      <!-- ======== 画面3: ステータス ======== -->
+      <section class="app-screen" id="scr-status">
+        <div class="sub-header">
+          <button class="back-btn" data-go="scr-home">←</button>
+          <div class="sub-title">詳細<small>SKILL DETAIL</small></div>
+          <span class="chip num">46pt</span>
+        </div>
+
+        <div class="card slot-board">
+          <div class="board-label">技術グリッド（難易度 / 新奇性 / 操作安定度）</div>
+          <table class="mock-skill">
+            <tr><th>ジャンル</th><th>難</th><th>新</th><th>操</th><th>平均</th></tr>
+            <tr><td>1DH</td><td>38</td><td>29</td><td>44</td><td class="avg">37</td></tr>
+            <tr><td>1DV</td><td>22</td><td>18</td><td>25</td><td class="avg">22</td></tr>
+            <tr><td>2D</td><td>15</td><td>12</td><td>20</td><td class="avg">16</td></tr>
+            <tr class="locked-row"><td>3D+ 🔒</td><td>-</td><td>-</td><td>-</td><td>2D習熟20超で解禁</td></tr>
+          </table>
+        </div>
+
+        <div class="card slot-board">
+          <div class="board-label">演技構成・コンディション</div>
+          <div class="meter">
+            <span class="m-label">構成</span>
+            <div class="gauge"><span style="width:34%"></span></div>
+            <span class="m-val num">34</span>
+          </div>
+          <div class="meter">
+            <span class="m-label">学力</span>
+            <div class="gauge"><span style="width:55%"></span></div>
+            <span class="m-val num">55</span>
+          </div>
+          <div class="meter">
+            <span class="m-label">怪我</span>
+            <div class="gauge"><span style="width:18%"></span></div>
+            <span class="m-val num">18</span>
+          </div>
+        </div>
+
+        <div class="log-strip">🔓 次の解禁: 3D+（2Dの習熟あと5）</div>
+      </section>
+
+      <!-- ======== ボトムナビ ======== -->
+      <nav class="bottom-nav">
+        <button class="nav-btn active" id="nav-home" data-go="scr-home"><span class="nav-icon">🏠</span>ホーム</button>
+        <button class="nav-btn" id="nav-status" data-go="scr-status"><span class="nav-icon">📊</span>詳細</button>
+        <button class="nav-btn" disabled><span class="nav-icon">📜</span>記録（予定）</button>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 右: 開発用パラメータパネル ============ -->
+<aside class="dev-panel">
+  <div class="dev-head">
+    <span class="dev-title">🔧 DEV PARAMS</span>
+    <span class="dev-badge">開発時のみ表示</span>
+  </div>
+  <div class="dev-body">
+    <div class="dev-section">
+      <div class="dev-label">STATE</div>
+      <div class="dev-row"><span class="k">turn</span><span class="v">16 / 48（2年生7月）</span></div>
+      <div class="dev-row"><span class="k">totalPoints</span><span class="v">46pt</span></div>
+      <div class="dev-row"><span class="k">motivation</span><span class="v good">72（好調）</span></div>
+      <div class="dev-row"><span class="k">fatigue</span><span class="v warn">42</span></div>
+      <div class="dev-row"><span class="k">injuryRisk</span><span class="v">18</span></div>
+      <div class="dev-row"><span class="k">study</span><span class="v">55</span></div>
+      <div class="dev-row"><span class="k">composition</span><span class="v">34</span></div>
+      <div class="dev-row"><span class="k">banTurns</span><span class="v">0</span></div>
+      <div class="dev-row"><span class="k">injuredTurns</span><span class="v">0</span></div>
+    </div>
+
+    <div class="dev-section">
+      <div class="dev-label">SKILLS（GRID 4×3）</div>
+      <table class="dev-grid">
+        <tr><th>genre</th><th>diff</th><th>nov</th><th>ctrl</th><th>avg</th></tr>
+        <tr><td>h1d</td><td>38</td><td>29</td><td>44</td><td class="avg">37</td></tr>
+        <tr><td>v1d</td><td>22</td><td>18</td><td>25</td><td class="avg">22</td></tr>
+        <tr><td>d2</td><td>15</td><td>12</td><td>20</td><td class="avg">16</td></tr>
+        <tr class="locked"><td>d3 🔒</td><td>0</td><td>0</td><td>0</td><td class="avg">0</td></tr>
+      </table>
+    </div>
+
+    <div class="dev-section">
+      <div class="dev-label">CONTEST / FORECAST</div>
+      <div class="dev-row"><span class="k">next</span><span class="v">2年OIDC (turn17)</span></div>
+      <div class="dev-row"><span class="k">worldsQualified</span><span class="v warn">false</span></div>
+      <div class="dev-row"><span class="k">expectedScore</span><span class="v">68.4</span></div>
+      <div class="dev-row"><span class="k">missRate</span><span class="v">31%</span></div>
+      <div class="dev-row"><span class="k">nextExam</span><span class="v">turn21（12月）</span></div>
+      <div class="dev-row"><span class="k">meetupMonth</span><span class="v good">false</span></div>
+      <div class="dev-row"><span class="k">nextUnlock</span><span class="v">d3（d2習熟あと5）</span></div>
+    </div>
+
+    <div class="dev-section">
+      <div class="dev-label">TRAINING UI STATE</div>
+      <div class="dev-row"><span class="k">slotsUI</span><span class="v" id="dev-slots">-</span></div>
+      <div class="dev-row"><span class="k">selectedGenre</span><span class="v" id="dev-genre">null</span></div>
+      <div class="dev-row"><span class="k">screen</span><span class="v" id="dev-screen">scr-home</span></div>
+    </div>
+
+    <div class="dev-section">
+      <div class="dev-note">
+        ※ このパネルは開発用。本実装では実stateとバインドし、幅1100px未満（=スマホ実機）では非表示。数値はすべてダミー。
+      </div>
+    </div>
+  </div>
+</aside>
+
+<script>
+/* ============================================================
+   モック用の最小スクリプト（画面遷移＋スロット組み立ての体験のみ。
+   ゲームロジックなし・innerHTML不使用のDOM生成方式）
+   ============================================================ */
+(function () {
+  'use strict';
+
+  const GENRES = [
+    { id: 'h1d', label: '1DH', locked: false },
+    { id: 'v1d', label: '1DV', locked: false },
+    { id: 'd2',  label: '2D',  locked: false },
+    { id: 'd3',  label: '3D+', locked: true }
+  ];
+  const METHODS = [
+    { id: 'difficulty', label: '高難度技', sub: '難易度UP・疲労大', needGenre: true },
+    { id: 'novelty',    label: '新技開発', sub: '新奇性UP',         needGenre: true },
+    { id: 'control',    label: '反復練習', sub: '操作安定度UP',     needGenre: true },
+    { id: 'routine',    label: 'ルーチン構成', sub: '構成UP・疲労回復', needGenre: false }
+  ];
+  const METHOD_SHORT = { difficulty: '高難度技', novelty: '新技開発', control: '反復練習' };
+
+  // 前月プリフィル相当のダミー初期値
+  let slots = [
+    { genre: 'h1d', method: 'control' },
+    { genre: 'd2',  method: 'novelty' },
+    'routine'
+  ];
+  let selectedGenre = null;
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  function genreLabel(id) { return GENRES.find(g => g.id === id).label; }
+
+  function goScreen(id) {
+    document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('nav-home').classList.toggle('active', id === 'scr-home');
+    document.getElementById('nav-status').classList.toggle('active', id === 'scr-status');
+    document.getElementById('dev-screen').textContent = id;
+    if (id === 'scr-train') renderTrain();
+  }
+
+  function mockLog(msg) {
+    document.getElementById('home-log').textContent = msg;
+  }
+
+  // data-go / data-log を持つ静的ボタンにハンドラを一括登録
+  document.querySelectorAll('[data-go]').forEach(b => {
+    b.addEventListener('click', () => goScreen(b.dataset.go));
+  });
+  document.querySelectorAll('[data-log]').forEach(b => {
+    b.addEventListener('click', () => mockLog(b.dataset.log));
+  });
+
+  function slotButton(s, idx) {
+    if (!s) {
+      const d = el('button', 'slot empty', '＋ 空き');
+      d.disabled = true;
+      return d;
+    }
+    const d = el('button', s === 'routine' ? 'slot filled routine' : 'slot filled');
+    if (s === 'routine') {
+      d.appendChild(el('span', 's-genre routine-tag', '構成'));
+      d.appendChild(document.createTextNode('ルーチン構成'));
+    } else {
+      d.appendChild(el('span', 's-genre', genreLabel(s.genre)));
+      d.appendChild(document.createTextNode(METHOD_SHORT[s.method]));
+    }
+    d.appendChild(el('span', 's-x', '×'));
+    d.onclick = () => { slots[idx] = null; renderTrain(); };
+    return d;
+  }
+
+  function renderTrain() {
+    // スロット
+    const row = document.getElementById('slot-row');
+    row.replaceChildren(...slots.map(slotButton));
+
+    // ジャンル
+    const gr = document.getElementById('genre-row');
+    gr.replaceChildren(...GENRES.map(g => {
+      const b = el('button', 'pick-btn' + (g.locked ? ' locked' : '') + (selectedGenre === g.id ? ' selected' : ''));
+      b.appendChild(document.createTextNode(g.locked ? '🔒 ' + g.label : g.label));
+      b.appendChild(el('small', '', g.locked ? '未解禁' : (selectedGenre === g.id ? '選択中' : 'タップ')));
+      if (!g.locked) {
+        b.onclick = () => { selectedGenre = (selectedGenre === g.id) ? null : g.id; renderTrain(); };
+      } else {
+        b.disabled = true;
+      }
+      return b;
+    }));
+
+    // メソッド
+    const mr = document.getElementById('method-row');
+    const empty = slots.indexOf(null);
+    mr.replaceChildren(...METHODS.map(m => {
+      const usable = empty >= 0 && (!m.needGenre || selectedGenre);
+      const b = el('button', 'pick-btn' + (usable ? '' : ' locked'));
+      b.appendChild(document.createTextNode(m.label));
+      b.appendChild(el('small', '', m.sub));
+      if (usable) {
+        b.onclick = () => {
+          slots[empty] = (m.id === 'routine') ? 'routine' : { genre: selectedGenre, method: m.id };
+          renderTrain();
+        };
+      } else {
+        b.disabled = true;
+      }
+      return b;
+    }));
+
+    // 決定ボタンとデバッグパネル
+    document.getElementById('btn-go').disabled = slots.some(s => s === null);
+    document.getElementById('dev-slots').textContent =
+      slots.map(s => !s ? 'null' : (s === 'routine' ? 'routine' : s.genre + '.' + s.method.slice(0, 4))).join(' | ');
+    document.getElementById('dev-genre').textContent = selectedGenre || 'null';
+  }
+
+  document.getElementById('btn-go').onclick = () => {
+    goScreen('scr-home');
+    mockLog('🎉 練習完了！（モック：結果画面はデザイン第2弾で）');
+  };
+
+  /* --- ステータス画面のミニレーダー（静的ダミー・SVGはDOM生成） --- */
+  function svgEl(tag, attrs) {
+    const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    if (attrs) Object.keys(attrs).forEach(k => n.setAttribute(k, attrs[k]));
+    return n;
+  }
+
+  (function drawRadars() {
+    const data = [
+      { name: '1DH', v: [38, 29, 44], locked: false },
+      { name: '1DV', v: [22, 18, 25], locked: false },
+      { name: '2D',  v: [15, 12, 20], locked: false },
+      { name: '3D+', v: [0, 0, 0],    locked: true }
+    ];
+    const pt = (val, axis) => {
+      const ang = -Math.PI / 2 + axis * (2 * Math.PI / 3);
+      const r = 30 * (val / 100);
+      return [(40 + r * Math.cos(ang)).toFixed(1), (42 + r * Math.sin(ang)).toFixed(1)];
+    };
+    const ring = (lv) => [0, 1, 2].map(a => pt(lv, a).join(',')).join(' ');
+    const strip = document.getElementById('radar-strip');
+    data.forEach(d => {
+      const cell = el('div', 'radar-cell');
+      const svg = svgEl('svg', { viewBox: '0 0 80 80' });
+      svg.appendChild(svgEl('polygon', { points: ring(100), fill: 'none', stroke: '#d8ddf0', 'stroke-width': '2' }));
+      svg.appendChild(svgEl('polygon', { points: ring(50), fill: 'none', stroke: '#e8ecf8', 'stroke-width': '1.5' }));
+      if (!d.locked) {
+        const pts = d.v.map((v, a) => pt(v, a).join(',')).join(' ');
+        svg.appendChild(svgEl('polygon', { points: pts, fill: 'rgba(46,196,182,.45)', stroke: '#2ec4b6', 'stroke-width': '2' }));
+      } else {
+        const t = svgEl('text', { x: 40, y: 47, 'text-anchor': 'middle', 'font-size': '14' });
+        t.textContent = '🔒';
+        svg.appendChild(t);
+      }
+      cell.appendChild(svg);
+      cell.appendChild(el('div', 'r-name', d.name));
+      strip.appendChild(cell);
+    });
+  })();
+
+  renderTrain();
+})();
+</script>
+</body>
+</html>

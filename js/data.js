@@ -30,6 +30,8 @@
       routineGain: 2,
       // 1年目(1〜12ターン)は練習ゲインをこの倍率で底上げ（ルーチン含む全練習枠に適用、失敗枠は対象外）。
       yearOneGrowthBonus: 1.5,
+      // 屋外練習デバフ（体育館工事イベント）: state.outdoorTurns>0 の練習セッションはゲインをこの倍率に。
+      outdoorGainMult: 0.5,
       // バランス調整（スロット別疲労・怪我リスク改定）: ルーチン構成（演技構成づくり）はデスクワーク寄りの
       // 負担が軽い枠と位置づけ、疲労・リスクとも回復（負値）に変更。高難度技は最もリスクが高い枠へ引き上げ。
       fatigue: { difficulty: 5, novelty: 4, control: 3, routine: -2 },
@@ -38,7 +40,8 @@
       // 2D/3Dは中間で補正なし。comboスロットのinjuryRisk増分は risk[method] + genreRisk[genre] になる。
       genreRisk: { v1d: 1, h1d: -1, d2: 0, d3: 0 }
     },
-    // 大会: 8月OIDC(大阪国際)、3月AJDC(全日本選手権=頂点)
+    // 大会: 8月OIDC(大阪国際)、3月AJDC(全日本選手権=頂点)、1月 静岡DC(参加資格全員)。
+    // ※CONTESTSはインデックス参照するテストがあるため、静岡は末尾に追加(0-7=oidc/ajdc維持)。順序依存の検索はコード側で最小turnを取る。
     CONTESTS: [
       { turn: 5,  type: 'oidc', name: '1年 OIDC' },
       { turn: 12, type: 'ajdc', name: '1年 AJDC' },
@@ -47,14 +50,21 @@
       { turn: 29, type: 'oidc', name: '3年 OIDC' },
       { turn: 36, type: 'ajdc', name: '3年 AJDC' },
       { turn: 41, type: 'oidc', name: '4年 OIDC' },
-      { turn: 48, type: 'ajdc', name: '4年 AJDC' }
+      { turn: 48, type: 'ajdc', name: '4年 AJDC' },
+      { turn: 10, type: 'shizuoka', name: '1年 静岡DC' },
+      { turn: 22, type: 'shizuoka', name: '2年 静岡DC' },
+      { turn: 34, type: 'shizuoka', name: '3年 静岡DC' },
+      { turn: 46, type: 'shizuoka', name: '4年 静岡DC' }
     ],
     DIVISIONS: [
-      { id: 'overall', label: '個人総合部門',           scoring: 'overall' },
-      { id: 'h1d',     label: '1ディアボロ水平軸部門',  scoring: 'specialist' },
-      { id: 'v1d',     label: '1ディアボロ垂直軸部門',  scoring: 'specialist' },
-      { id: 'd2',      label: '2ディアボロ部門',        scoring: 'specialist' },
-      { id: 'd3',      label: '3ディアボロ部門',        scoring: 'specialist' }
+      { id: 'overall', label: '個人総合部門',           scoring: 'overall',     contests: ['oidc', 'ajdc'] },
+      { id: 'h1d',     label: '1ディアボロ水平軸部門',  scoring: 'specialist',  contests: ['oidc', 'ajdc'] },
+      { id: 'v1d',     label: '1ディアボロ垂直軸部門',  scoring: 'specialist',  contests: ['oidc', 'ajdc'] },
+      { id: 'd2',      label: '2ディアボロ部門',        scoring: 'specialist',  contests: ['oidc', 'ajdc'] },
+      { id: 'd3',      label: '3ディアボロ部門',        scoring: 'specialist',  contests: ['oidc', 'ajdc'] },
+      // 静岡DC: テクニカル=12項目(4ジャンル×3技術)の総合、構成は不参加。パフォーマンス=構成のみ
+      { id: 'technical',   label: 'テクニカル部門',     scoring: 'technical',   contests: ['shizuoka'] },
+      { id: 'performance', label: 'パフォーマンス部門', scoring: 'performance', contests: ['shizuoka'] }
     ],
     // 技術解禁ツリー: ジャンルは基礎ジャンルの習熟(genreAvg)がthresholdを「超える」と解禁される。
     // requires=null は根（常時解禁）。h1d→{v1d,d2}→d3。閾値は厳密に > threshold。
@@ -73,6 +83,14 @@
       },
       specialist: {
         weights: { difficulty: 45, control: 15, novelty: 30, composition: 10 }
+      },
+      // 静岡DC テクニカル部門: 12項目(4ジャンル×3技術)の平均を単一の総合点に（構成は含めない）
+      technical: {
+        weights: { technical: 100 }
+      },
+      // 静岡DC パフォーマンス部門: 構成のみで争う（構成95以上で優勝ラインになるよう相手レベルを調整）
+      performance: {
+        weights: { composition: 100 }
       },
       base: { elements: 4, perElement: 5, threshold: 25 },
       // v6（2026-07-07 実プレイ反映）: 各採点項目に40%下限を導入（能力0で満点の40%、能力100で100%）。
@@ -108,8 +126,13 @@
       judgeCoef: 0.08,    // judgeMod: (motivation-50)*judgeCoef → ±4
       hotLine: 80,        // 絶好調帯
       hotBonus: 1,        // 絶好調時、成功スロットのゲイン+1
-      reversion: 0.1      // 毎月、50への平均回帰率（0/100張り付きの二極化を防ぐ減衰項）
+      reversion: 0.1,     // 毎月、50への平均回帰率（0/100張り付きの二極化を防ぐ減衰項）
+      greatBonus: 8,      // 練習で大成功したときのやる気上昇（全種別・大幅）
+      noveltySuccessBonus: 3, // 新技開発が成功したときのやる気上昇（新しい技を覚えた高揚。大成功はgreatBonus側）
+      failPenalty: 3      // 練習失敗（＝新技開発の失敗のみ）でのやる気低下
     },
+    // 新技開発の大成功で発生するSNS投稿イベント（投稿=高確率バズでやる気↑・低確率で既存技判明↓）
+    SNS_EVENT: { viralChance: 0.8, viralMotivation: 15, existingPenalty: 8 },
     STUDY: { id: 'study', label: '勉強', gain: 10, fatigue: 4 },
     REST:  { id: 'rest',  label: '休養' },
     // 大会前後のタイミング補正（大会月の枠と、演技翌月の休養に適用）。キーはmethod id(difficulty/control)またはroutine
@@ -130,9 +153,24 @@
     // 定期イベント（固定・非ランダム）: 指定ターンの行動後に必ず1回発生する。
     // welcome=新入生歓迎会: 現在解禁済みジャンルの全技術(難易度/新奇性/操作安定度)が gain ずつ上がる。
     SCHEDULED_EVENTS: [
-      { turn: 1, id: 'welcome', text: '新入生歓迎会！先輩たちが基礎のコツを教えてくれた。' }
+      { turn: 1, id: 'welcome', name: '新入生歓迎会', text: '新入生歓迎会！先輩たちが基礎のコツを教えてくれた。' }
     ],
     SCHEDULED_WELCOME_GAIN: 10,
+    // JJF(ジャグリング全国大会・ディアボロ): 毎年10月開催・9月予選。大会扱い。
+    //   予選=参加任意。突破判定は「全パラメータ(4ジャンル習熟＋演技構成)がバランス良く高いか」。
+    //   passSure(全日本総合top-3相当)=確実突破 / passHalf(入賞圏4-8相当)=50% / それ未満=不可。
+    //   突破でやる気↑＋決勝進出(+finalistPoints)。決勝は10人・上位3名のみ追加ポイント(全日本優勝より難しい高レベル)。
+    JJF: {
+      qualifierTurns: [6, 18, 30, 42],   // 9月
+      finalTurns: [7, 19, 31, 43],       // 10月
+      passSure: { avg: 60, min: 50 },
+      passHalf: { avg: 50, min: 40 },
+      passMotivation: 12,
+      finalistPoints: 10,
+      finalEntrants: 10,
+      finalRankPoints: [30, 20, 10],     // 決勝1位/2位/3位の追加ポイント（それ以外は0）
+      finalLevel: { base: 90, growth: 0.5, sd: 6 } // 全日本優勝より明確に難しい高レベル（上位3名は能力80級でも稀）
+    },
     // 練習会: 4ヶ月ごとの定期イベント月。対象枠の伸びがブーストされる
     MEETUP: {
       interval: 4,
@@ -146,8 +184,8 @@
     STUDY_MIN: 20,          // 学力がこれ未満の月が続くと退学
     STUDY_LIMIT_MONTHS: 3,  // 退学までの連続月数
     STUDY_BONUS: 70,        // 学力がこれ以上なら練習成功率ボーナス
-    // 定期テスト: 6月/12月の月末に学力判定。赤点で2ヶ月補習（練習禁止）
-    EXAMS: { turns: [3, 9, 15, 21, 27, 33, 39, 45], passLine: 40, banMonths: 2 },
+    // 定期テスト: 7月/2月の月末に学力判定。赤点で2ヶ月補習（練習禁止）。イベント枠としても通知する
+    EXAMS: { turns: [4, 11, 16, 23, 28, 35, 40, 47], passLine: 40, banMonths: 2 },
     // 難易度調整: ディアボロを始めた時期。初期能力のロール幅が変わる（学力は共通）
     BACKGROUNDS: [
       { id: 'college',    label: '大学から始めた', difficulty: 'ハード',         statMin: 0,  statSpread: 0, compMin: 3, compSpread: 8 },
@@ -212,7 +250,13 @@
         { id: 'hap2', text: '風邪をひいてしまった……', effects: { fatigue: 15, motivation: -8 } },
         { id: 'hap3', text: '文化祭で演技を披露して大ウケだった！', effects: { stat: { id: 'composition', amount: 2 }, motivation: 8 } },
         { id: 'hap4', text: '練習動画がSNSで少しバズった！', effects: { motivation: 15 } },
-        { id: 'hap5', text: '大雨で体育館が使えず、家でゆっくり過ごした。', effects: { fatigue: -10 } }
+        { id: 'hap5', text: '大雨で体育館が使えず、家でゆっくり過ごした。', effects: { fatigue: -10 } },
+        // outdoor=次の練習セッションのゲインを半減させるデバフ（体育館工事）
+        { id: 'hap_gym', text: '体育館が工事のため、屋外での練習を余儀なくされた。次の練習は伸びが半減してしまう……', effects: { outdoor: 1 } },
+        // サーカス観覧: プロのディアボロ演技を見て構成のヒント（演技構成が少しアップ）
+        { id: 'hap_circus', text: 'サーカスを見に行った。プロのディアボロ演技に見入り、構成のヒントを得た。', effects: { stat: { id: 'composition', amount: 3 } } },
+        // 望月勇作さんに偶然出会う: Mochi Powerで構成力とやる気アップ
+        { id: 'hap_mochi', text: '偶然、望月勇作さんに出会った。「Mochi Power」を浴び、構成力とやる気が上がった！', effects: { stat: { id: 'composition', amount: 5 }, motivation: 10 } }
       ]
     },
     // v2: ライバル（総合部門に実在する対戦相手）
@@ -220,6 +264,25 @@
     RIVALS: [
       { id: 'shion', name: '志音', contests: ['oidc', 'ajdc'], base: 76, growth: 2, sd: 5 },
       { id: 'kaito', name: '魁人', contests: ['ajdc', 'worlds'],         base: 88, growth: 1.5, sd: 4 }
+    ],
+    // 実装予定のイベント草案（テキストと選択肢のみを記録。効果パラメータは後日設定するため未実装。
+    // ゲームループからは未参照 ＝ まだ発生しない）
+    EVENT_DRAFTS: [
+      {
+        id: 'youtube', text: 'YouTube動画の解説を見た。よくわからなかったが……',
+        choices: [
+          { label: '高評価ボタンを押す' },
+          { label: 'コメントをする' },
+          { label: '低評価ボタンを押す' }
+        ]
+      },
+      {
+        id: 'taiwan_camp', text: '斉藤会長が「台湾に合宿に行こう」と誘ってくれた。',
+        choices: [
+          { label: '行く' },
+          { label: '行かない' }
+        ]
+      }
     ]
   };
 })(typeof window !== 'undefined' ? window : globalThis);

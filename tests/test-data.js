@@ -101,16 +101,27 @@ test('DATA: TRAININGSは削除されている（スロット制に置換）', ()
   assert.strictEqual(DT.DATA.TRAININGS, undefined);
 });
 
-test('DATA: DIVISIONSは総合1＋スペシャリスト4', () => {
-  assert.strictEqual(DT.DATA.DIVISIONS.length, 5);
+test('DATA: DIVISIONSは総合1＋スペシャリスト4＋静岡2（テクニカル/パフォーマンス）', () => {
+  assert.strictEqual(DT.DATA.DIVISIONS.length, 7);
   assert.strictEqual(DT.DATA.DIVISIONS.filter(d => d.scoring === 'specialist').length, 4);
   assert.strictEqual(DT.DATA.DIVISIONS[0].id, 'overall');
+  // 静岡部門は shizuoka 専用、既存部門は oidc/ajdc 専用
+  assert.deepStrictEqual(DT.DATA.DIVISIONS.filter(d => d.contests.includes('shizuoka')).map(d => d.id), ['technical', 'performance']);
+  assert.ok(DT.DATA.DIVISIONS.every(d => Array.isArray(d.contests)));
 });
 
-test('DATA: 大会はOIDC(8月)×4とAJDC(3月)×4', () => {
-  assert.strictEqual(DT.DATA.CONTESTS.length, 8);
+test('DATA: 大会はOIDC(8月)×4・AJDC(3月)×4・静岡DC(1月)×4', () => {
+  assert.strictEqual(DT.DATA.CONTESTS.length, 12);
   assert.deepStrictEqual(DT.DATA.CONTESTS.filter(c => c.type === 'oidc').map(c => c.turn), [5, 17, 29, 41]);
   assert.deepStrictEqual(DT.DATA.CONTESTS.filter(c => c.type === 'ajdc').map(c => c.turn), [12, 24, 36, 48]);
+  const shiz = DT.DATA.CONTESTS.filter(c => c.type === 'shizuoka').map(c => c.turn);
+  assert.deepStrictEqual(shiz, [10, 22, 34, 46]);
+  // 静岡は全て1月・他大会/世界大会/定期テストと非衝突
+  shiz.forEach(t => {
+    assert.ok(DT.engine.turnLabel(t).endsWith('1月'), 'turn=' + t + ' は1月ではない');
+    assert.ok(!DT.DATA.WORLDS_TURNS.includes(t) && !DT.DATA.EXAMS.turns.includes(t), '静岡が世界/テストと衝突: ' + t);
+    assert.strictEqual(DT.DATA.CONTESTS.filter(c => c.turn === t).length, 1, '同turn重複: ' + t);
+  });
 });
 
 test('DATA: 経歴は4種で初期値レンジが昇順', () => {
@@ -186,13 +197,13 @@ test('DATA: 練習会は大会・世界大会と衝突せず、boostsはroutine/
   assert.deepStrictEqual(mu.boosts, { routine: 1.5, novelty: 1.5 });
 });
 
-test('DATA: 定期テストは6月/12月の8回、赤点ライン40・補習2ヶ月、CONTESTS/WORLDS_TURNSと非衝突', () => {
+test('DATA: 定期テストは7月/2月の8回、赤点ライン40・補習2ヶ月、CONTESTS/WORLDS_TURNSと非衝突', () => {
   const exams = DT.DATA.EXAMS;
   assert.strictEqual(exams.turns.length, 8);
-  assert.deepStrictEqual(exams.turns, [3, 9, 15, 21, 27, 33, 39, 45]);
+  assert.deepStrictEqual(exams.turns, [4, 11, 16, 23, 28, 35, 40, 47]);
   exams.turns.forEach(t => {
     const label = DT.engine.turnLabel(t);
-    assert.ok(label.endsWith('6月') || label.endsWith('12月'), 'turn=' + t + ' は6月/12月ではない: ' + label);
+    assert.ok(label.endsWith('7月') || label.endsWith('2月'), 'turn=' + t + ' は7月/2月ではない: ' + label);
   });
   assert.strictEqual(exams.passLine, 40);
   assert.strictEqual(exams.banMonths, 2);

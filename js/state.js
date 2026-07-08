@@ -30,6 +30,8 @@
       injuredTurns: 0,
       lowStudyMonths: 0,
       banTurns: 0,
+      outdoorTurns: 0,
+      jjfFinalist: 0,
       didStudy: false,
       didTrain: false,
       results: [],

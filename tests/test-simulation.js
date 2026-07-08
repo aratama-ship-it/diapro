@@ -15,6 +15,8 @@ function lcg(seed) {
 }
 
 function entryPick(turn, state) {
+  const contest = DT.contest.contestForTurn(turn);
+  if (contest && contest.type === 'shizuoka') return ['technical', 'performance']; // 静岡は2部門とも出場
   const specialistIds = DT.DATA.DIVISIONS
     .filter(d => d.scoring === 'specialist' && DT.contest.isGenreUnlocked(state, d.id))
     .map(d => d.id);
@@ -102,8 +104,8 @@ test('まともな方針なら20回全部卒業できる', () => {
   for (let seed = 1; seed <= 20; seed++) {
     const s = playThrough(lcg(seed), chooseSensible);
     assert.strictEqual(s.status, 'graduated', 'seed=' + seed);
-    // 8大会 × エントリー枠(学年+1) = 1年2×2 + 2年3×2 + 3年4×2 + 4年5×2 = 28エントリー（通常大会のみ、総合は常に含む）
-    assert.strictEqual(s.results.filter(r => r.type !== 'worlds').length, 28, 'seed=' + seed + ' エントリー数');
+    // OIDC/AJDC 28エントリー（1年2×2+2年3×2+3年4×2+4年5×2）＋ 静岡DC 4大会×2部門=8 → 計36（世界大会除く）
+    assert.strictEqual(s.results.filter(r => r.type !== 'worlds').length, 36, 'seed=' + seed + ' エントリー数');
     const e = DT.ending.evaluate(s);
     assert.ok('SABCDE'.includes(e.rank), 'seed=' + seed + ' rank=' + e.rank);
   }

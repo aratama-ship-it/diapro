@@ -54,6 +54,8 @@
     if (effects.motivation) state.motivation = clamp(state.motivation + effects.motivation, 0, 100);
     if (effects.fatigue) state.fatigue = clamp(state.fatigue + effects.fatigue, 0, 100);
     if (effects.study) state.study = clamp(state.study + effects.study, 0, 100);
+    // outdoor=次の練習セッションのゲイン半減デバフ（体育館工事）。ターン数を積む
+    if (effects.outdoor) state.outdoorTurns = (state.outdoorTurns || 0) + effects.outdoor;
     return messages;
   }
 

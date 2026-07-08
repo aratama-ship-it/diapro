@@ -66,6 +66,14 @@
         }
       });
       parts.fundamentals = floorPart(scoring, 'fundamentals', derivedBase(state).points);
+    } else if (scoring === 'technical') {
+      // 静岡DC テクニカル: 12項目(4ジャンル×3技術)の平均を単一の総合点に（構成は不参加）
+      const total = DT.DATA.GENRES.reduce((a, g) => a + DT.DATA.METHODS.reduce((b, m) => b + state.skills[g.id][m.id], 0), 0);
+      const avg12 = total / (DT.DATA.GENRES.length * DT.DATA.METHODS.length);
+      parts.technical = floorPart(scoring, 'technical', avg12 * sc.weights.technical / 100);
+    } else if (scoring === 'performance') {
+      // 静岡DC パフォーマンス: 構成のみ
+      parts.composition = floorPart(scoring, 'composition', state.composition * sc.weights.composition / 100);
     } else {
       const cell = state.skills[divisionId];
       Object.keys(sc.weights).forEach(id => {
@@ -79,20 +87,20 @@
     return parts;
   }
 
-  // 部門ごとの操作安定度参照値: overall→4ジャンルcontrol平均、specialist→skills[divisionId].control
+  // 部門ごとの操作安定度参照値: overall/technical→4ジャンルcontrol平均、performance→構成の完成度、specialist→skills[divisionId].control
   function controlRef(state, divisionId) {
-    const division = divisionOf(divisionId);
-    return division.scoring === 'overall'
-      ? methodAvgAcrossGenres(state, 'control')
-      : state.skills[divisionId].control;
+    const sc = divisionOf(divisionId).scoring;
+    if (sc === 'overall' || sc === 'technical') return methodAvgAcrossGenres(state, 'control');
+    if (sc === 'performance') return state.composition;
+    return state.skills[divisionId].control;
   }
 
-  // 部門ごとの難易度参照値（ハードライン判定用）: overall→4ジャンルdifficulty平均、specialist→skills[divisionId].difficulty
+  // 部門ごとの難易度参照値（ハードライン判定用）: overall/technical→4ジャンルdifficulty平均、performance→0(ハードボーナス無し)、specialist→skills[divisionId].difficulty
   function difficultyRef(state, divisionId) {
-    const division = divisionOf(divisionId);
-    return division.scoring === 'overall'
-      ? methodAvgAcrossGenres(state, 'difficulty')
-      : state.skills[divisionId].difficulty;
+    const sc = divisionOf(divisionId).scoring;
+    if (sc === 'overall' || sc === 'technical') return methodAvgAcrossGenres(state, 'difficulty');
+    if (sc === 'performance') return 0;
+    return state.skills[divisionId].difficulty;
   }
 
   // v4新ミスモデル: rate = clamp(base − control×controlCoef + fatigue×fatigueCoef, min, max)
@@ -155,7 +163,17 @@
     ajdc: { base: 76, growth: 1.5, sd: 12, entrants: 16,
             points: { overall: [100, 70, 50, 20, 5], specialist: [50, 35, 25, 10, 3] } },
     worlds: { base: 85, growth: 1, sd: 11, entrants: 16,
-              points: { overall: [150, 100, 70, 30, 10], specialist: [75, 50, 35, 15, 5] } }
+              points: { overall: [150, 100, 70, 30, 10], specialist: [75, 50, 35, 15, 5] } },
+    // 静岡DC(1月): 参加資格全員・レベル低め・ポイントは通常の半分程度。部門ごとに相手レベルを変える(divLevels)。
+    //   テクニカル=低め＆高sd(ランダム強め)。パフォーマンス=構成95付近が優勝ラインになる高めの帯＋低sd。
+    shizuoka: {
+      base: 55, growth: 1, sd: 15, entrants: 12, // フォールバック（通常はdivLevelsを使用）
+      points: { technical: [20, 12, 8, 4, 1], performance: [20, 12, 8, 4, 1] },
+      divLevels: {
+        technical:   { base: 50, sd: 18 },
+        performance: { base: 84, sd: 5 }
+      }
+    }
   };
 
   // 技術解禁ツリー: genreId が現在解禁されているか。requires=null（根）は常にtrue。
@@ -238,8 +256,13 @@
 
   function runDivision(state, contest, divisionId, rng) {
     const lv = LEVELS[contest.type];
+    // 部門別の相手レベル上書き(divLevels)があればそれを使う。無ければ大会共通のlv（既存大会は挙動不変）
+    const dlv = (lv.divLevels && lv.divLevels[divisionId]) ? lv.divLevels[divisionId] : lv;
     const year = Math.ceil(contest.turn / 12);
-    const mean = lv.base + lv.growth * (year - 1);
+    const base = dlv.base !== undefined ? dlv.base : lv.base;
+    const growth = dlv.growth !== undefined ? dlv.growth : lv.growth;
+    const sd = dlv.sd !== undefined ? dlv.sd : lv.sd;
+    const mean = base + growth * (year - 1);
 
     const rivals = divisionId === 'overall' ? rivalsFor(contest) : [];
     // rng消費順: ライバル→モブ→プレイヤー（変更禁止）
@@ -250,7 +273,7 @@
     const opponents = [];
     for (let i = 0; i < opponentCount; i++) {
       const g = (rng() + rng() + rng()) / 3;
-      const raw = mean + (g - 0.5) * 2 * lv.sd * 1.8;
+      const raw = mean + (g - 0.5) * 2 * sd * 1.8;
       opponents.push({ name: opponentName(contest, i), score: round1(scale.base + raw * scale.mult) });
     }
     const p = playerScore(state, divisionId, rng);
@@ -334,10 +357,68 @@
     return DT.DATA.CONTESTS.find(c => c.turn === turn) || null;
   }
 
+  // --- JJF（ジャグリング全国大会・ディアボロ）: 9月予選(参加任意) → 10月決勝(予選突破者のみ) ---
+  function jjfQualifierForTurn(turn) {
+    if (DT.DATA.JJF.qualifierTurns.indexOf(turn) < 0) return null;
+    return { turn: turn, type: 'jjf-qualifier', name: Math.ceil(turn / 12) + '年 JJF予選' };
+  }
+  function jjfFinalForTurn(turn) {
+    if (DT.DATA.JJF.finalTurns.indexOf(turn) < 0) return null;
+    return { turn: turn, type: 'jjf', name: Math.ceil(turn / 12) + '年 JJF決勝' };
+  }
+
+  // 予選突破判定: 4ジャンル習熟＋演技構成の「平均」と「最低」で、バランス良く高いかを見る。
+  //   sure=確実突破 / half=50% / none=不可。rng未指定時はMath.random。
+  function jjfQualify(state, rng) {
+    rng = rng || Math.random;
+    const jjf = DT.DATA.JJF;
+    const params = DT.DATA.GENRES.map(g => genreAvg(state, g.id)).concat([state.composition]);
+    const avg = params.reduce((a, v) => a + v, 0) / params.length;
+    const min = Math.min.apply(null, params);
+    let tier;
+    if (avg >= jjf.passSure.avg && min >= jjf.passSure.min) tier = 'sure';
+    else if (avg >= jjf.passHalf.avg && min >= jjf.passHalf.min) tier = 'half';
+    else tier = 'none';
+    const passed = tier === 'sure' || (tier === 'half' && rng() < 0.5);
+    return { passed: passed, tier: tier, avg: round1(avg), min: round1(min) };
+  }
+
+  // 決勝(10人): プレイヤーは総合スコアで争う。上位3名のみ追加ポイント。決勝進出の10ptは予選側で付与済み。
+  function runJjfFinal(state, contest, rng) {
+    rng = rng || Math.random;
+    const jjf = DT.DATA.JJF;
+    const lvl = jjf.finalLevel;
+    const year = Math.ceil(contest.turn / 12);
+    const mean = lvl.base + (lvl.growth || 0) * (year - 1);
+    const scale = DT.DATA.SCORING.scale;
+    const opponents = [];
+    for (let i = 0; i < jjf.finalEntrants - 1; i++) {
+      const g = (rng() + rng() + rng()) / 3;
+      const raw = mean + (g - 0.5) * 2 * lvl.sd * 1.8;
+      opponents.push({ name: opponentName(contest, i), score: round1(scale.base + raw * scale.mult) });
+    }
+    const p = playerScore(state, 'overall', rng);
+    const rank = 1 + opponents.filter(o => o.score > p.score).length;
+    const bonus = rank <= 3 ? jjf.finalRankPoints[rank - 1] : 0;
+    const standings = buildStandings(
+      opponents.map(o => ({ name: o.name, score: o.score })).concat([{ name: state.name, score: p.score, isPlayer: true }])
+    );
+    const r = {
+      name: contest.name, type: 'jjf', division: 'overall', divisionLabel: 'JJF決勝',
+      rank: rank, entrants: jjf.finalEntrants, score: p.score,
+      parts: p.parts, rawTotal: p.rawTotal, judgeMod: p.judgeMod, misses: p.misses,
+      execDeduction: p.execDeduction, specialDeduction: p.specialDeduction,
+      points: bonus, standings: standings, turn: contest.turn, rivalMessages: []
+    };
+    state.results.push(r);
+    return [r];
+  }
+
   DT.contest = {
     genreAvg, derivedVariety, derivedBase, breakdown, missRate, playerScore,
     maxEntries, runAll, contestForTurn, worldsContestForTurn, worldsQualified,
     rivalScore, LEVELS, buildStandings,
-    isGenreUnlocked, newlyUnlockedGenres, nextUnlockTarget
+    isGenreUnlocked, newlyUnlockedGenres, nextUnlockTarget,
+    jjfQualifierForTurn, jjfFinalForTurn, jjfQualify, runJjfFinal
   };
 })(typeof window !== 'undefined' ? window : globalThis);
