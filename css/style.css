@@ -77,6 +77,17 @@ body {
 h1 { font-size: 1.7rem; text-align: center; color: var(--coral-deep); letter-spacing: .04em; }
 h2 { font-size: 1.2rem; text-align: center; color: var(--ink); letter-spacing: .04em; }
 .subtitle { text-align: center; color: var(--ink-soft); font-size: .82rem; }
+.title-manual {
+  margin-top: 6px;
+  padding: 12px 14px;
+  border: var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .78);
+  box-shadow: var(--pop-shadow-sm);
+  color: var(--ink);
+  font-size: .78rem;
+  line-height: 1.65;
+}
 /* タイトル画面: ボタンを下部に寄せてタップしやすく（見出しは上、ボタンは最下部） */
 #screen-title > button:first-of-type { margin-top: auto; }
 .app-version { text-align: center; font-size: .6rem; font-weight: 700; color: var(--ink-soft); padding: 4px 0 2px; letter-spacing: .05em; }
