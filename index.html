@@ -19,6 +19,7 @@
       <p class="title-manual">大学4年間でディアボロ選手を育てるゲームです。毎月、練習・勉強・休養を選びます。練習はジャンルと内容を組み合わせて3枠決めます。疲労がたまると失敗や怪我のリスクが上がるので注意。大会の成績と通算ポイントで、卒業時の評価が決まります。</p>
       <button id="btn-new" class="primary">はじめから</button>
       <button id="btn-continue">つづきから</button>
+      <button id="btn-records">🏅 これまでの記録</button>
       <div class="app-version" id="app-version"></div>
     </section>
 
@@ -176,6 +177,19 @@
       <div class="modal-head"><span class="modal-title" id="sched-title"></span></div>
       <div class="popup-body" id="sched-body"></div>
       <button class="go-btn popup-ok" id="sched-ok">OK</button>
+    </div>
+  </div>
+
+  <!-- ======== 記録モーダル（自己ベスト・タイトル/設定から開く） ======== -->
+  <div id="records-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close-records></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <span class="modal-title">🏅 これまでの記録</span>
+        <button class="modal-close" data-close-records aria-label="閉じる">×</button>
+      </div>
+      <div class="modal-sub" id="records-sub"></div>
+      <div class="modal-list" id="records-list"></div>
     </div>
   </div>
 

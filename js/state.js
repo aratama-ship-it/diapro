@@ -68,5 +68,30 @@
     (storage || global.localStorage).removeItem(SAVE_KEY);
   }
 
-  DT.state = { newCharacter, save, load, clear, SAVE_KEY };
+  // --- 個人記録（ローカル）: クリアした周回の成績を localStorage に蓄積し、通算ポイント降順で保持 ---
+  const RECORDS_KEY = 'diabolo-trainer-records-v1';
+  const RECORDS_MAX = 20;
+
+  function loadRecords(storage) {
+    const s = storage || global.localStorage;
+    try {
+      const arr = JSON.parse(s.getItem(RECORDS_KEY));
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // 記録を1件追加し、通算ポイント降順にソート＆上位RECORDS_MAX件だけ保持して保存。保存後の一覧を返す。
+  function addRecord(record, storage) {
+    const s = storage || global.localStorage;
+    const list = loadRecords(s);
+    list.push(record);
+    list.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+    const trimmed = list.slice(0, RECORDS_MAX);
+    s.setItem(RECORDS_KEY, JSON.stringify(trimmed));
+    return trimmed;
+  }
+
+  DT.state = { newCharacter, save, load, clear, SAVE_KEY, loadRecords, addRecord, RECORDS_KEY };
 })(typeof window !== 'undefined' ? window : globalThis);

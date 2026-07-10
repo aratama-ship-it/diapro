@@ -358,6 +358,33 @@
   }
   function closePoints() { $('#points-modal').classList.add('hidden'); }
 
+  // 個人記録（自己ベスト）モーダル。通算ポイント降順の一覧を表示
+  function openRecords() {
+    const list = DT.state.loadRecords();
+    const rows = [];
+    if (!list.length) {
+      rows.push(el('div', 'dev-note', 'まだ記録がありません。1周プレイ（卒業/退学）すると記録されます。'));
+      $('#records-sub').textContent = '';
+    } else {
+      $('#records-sub').textContent = '自己ベスト ' + (list[0].totalPoints || 0) + 'pt（' + list.length + '件）';
+      list.forEach((r, i) => {
+        const row = el('div', 'event-row' + (i === 0 ? ' next' : ''));
+        row.appendChild(el('span', 'event-icon', i === 0 ? '👑' : String(i + 1)));
+        const meta = el('div', 'event-meta');
+        const d = new Date(r.date);
+        const dateStr = isNaN(d) ? '' : (d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate());
+        meta.appendChild(el('div', 'event-when', (r.name || '主人公') + '・' + (r.background || '') + (dateStr ? '・' + dateStr : '')));
+        meta.appendChild(el('div', 'event-name', '卒業ランク ' + r.rank + (r.status === 'expelled' ? '（退学）' : '') + (r.abilityAvg !== undefined ? '／能力' + r.abilityAvg : '')));
+        row.appendChild(meta);
+        row.appendChild(el('span', 'event-badge', (r.totalPoints || 0) + 'pt'));
+        rows.push(row);
+      });
+    }
+    $('#records-list').replaceChildren(...rows);
+    $('#records-modal').classList.remove('hidden');
+  }
+  function closeRecords() { $('#records-modal').classList.add('hidden'); }
+
   // 設定モーダル（ホーム右下）。リタイア＝セーブ消去してタイトルへ
   function openSettings() {
     renderSettingsMain();
@@ -365,10 +392,13 @@
   }
   function closeSettings() { $('#settings-modal').classList.add('hidden'); }
   function renderSettingsMain() {
+    const records = el('button', '', '🏅 これまでの記録');
+    records.onclick = () => { closeSettings(); openRecords(); };
     const retire = el('button', 'retire', 'リタイア（最初から）');
     retire.onclick = renderSettingsConfirm;
     $('#settings-body').replaceChildren(
       el('p', 'settings-note', 'ゲームの設定'),
+      records,
       retire
     );
   }
@@ -1017,8 +1047,28 @@
 
   function renderEnding() {
     const e = DT.ending.evaluate(state);
+    // 個人記録を保存（この周回で一度だけ）。終了したセーブは消して「つづきから」不可＆二重記録防止
+    let bestNote = null;
+    if (!state.recorded) {
+      const prev = DT.state.loadRecords();
+      const prevBest = prev.length ? Math.max.apply(null, prev.map(r => r.totalPoints || 0)) : -1;
+      DT.state.addRecord({
+        date: Date.now(),
+        name: state.name,
+        background: (DT.DATA.BACKGROUNDS.find(b => b.id === state.background) || {}).label || '',
+        status: state.status,
+        rank: e.rank,
+        title: e.title,
+        totalPoints: e.totalPoints,
+        abilityAvg: e.abilityAvg
+      });
+      if (state.status !== 'expelled' && e.totalPoints > prevBest) bestNote = '🎉 自己ベスト更新！';
+      state.recorded = true;
+      DT.state.clear();
+    }
     $('#ending-title').textContent = state.status === 'expelled' ? 'GAME OVER' : state.name + '、卒業！';
     const nodes = [el('div', 'result-big', e.rank), el('p', 'center', e.title)];
+    if (bestNote) nodes.push(el('p', 'center best-note', bestNote));
     if (e.comment) nodes.push(el('p', 'center', e.comment));
     nodes.push(textRow('通算ポイント', e.totalPoints + 'pt'));
     if (e.abilityAvg !== undefined) nodes.push(textRow('最終能力平均', String(e.abilityAvg)));
@@ -1038,6 +1088,8 @@
   document.querySelectorAll('[data-close-schedule]').forEach(b => { b.onclick = closeSchedule; });
   document.querySelectorAll('[data-close-points]').forEach(b => { b.onclick = closePoints; });
   document.querySelectorAll('[data-close-settings]').forEach(b => { b.onclick = closeSettings; });
+  document.querySelectorAll('[data-close-records]').forEach(b => { b.onclick = closeRecords; });
+  $('#btn-records').onclick = openRecords;
 
   // --- 開発用パラメータパネル ---
   function devRow(k, v, cls) {
