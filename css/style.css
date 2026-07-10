@@ -387,16 +387,18 @@ select:focus { outline: none; box-shadow: var(--pop-shadow-sm); }
 .action-btn.train .t .desc { color: #ffe3dc; }
 .action-btn.study { background: linear-gradient(135deg, #7db4ff, var(--blue)); color: #fff; }
 .action-btn.study .t .desc { color: #dcebff; }
-.action-btn.rest  { background: linear-gradient(135deg, #a5e07f, var(--leaf)); color: #234010; }
-.action-btn.rest  .t .desc { color: #3d6420; }
+.action-btn.rest  { background: linear-gradient(135deg, #8ed35f, #5fae3a); color: #fff; }
+.action-btn.rest  .t .desc { color: #eafce0; }
 /* 勉強・休養は横並び2列。ボタンは幅が狭いのでコンパクト表示（矢印なし・アイコン小） */
 .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 .action-btn.compact { padding: 8px 10px; gap: 8px; box-shadow: 0 4px 0 var(--ink); }
 .action-btn.compact .icon { width: 32px; height: 32px; font-size: 1.05rem; border-radius: 10px; }
 .action-btn.compact .t .name { font-size: .92rem; letter-spacing: .06em; }
 .action-btn.compact .t .desc { font-size: .56rem; }
-.action-btn.injured { background: linear-gradient(135deg, #ffd1a1, #ffb27a); color: #5a3210; }
-.action-btn.injured .t .desc { color: #7a4a20; }
+.action-btn.injured { background: linear-gradient(135deg, #ffbf80, #ff9e52); color: #fff; }
+.action-btn.injured .t .desc { color: #fff1e2; }
+/* 休養・療養は薄色地のため、白文字の可読性確保に軽く影を付ける */
+.action-btn.rest .t .name, .action-btn.injured .t .name { text-shadow: 0 1px 2px rgba(0,0,0,.28); }
 
 /* ---------- ログ帯 ---------- */
 .log-strip {
