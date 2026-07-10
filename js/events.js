@@ -3,21 +3,16 @@
   const DT = global.DT = global.DT || {};
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-  const COACH_WEIGHT = 2;
-  const DEFAULT_WEIGHT = 1;
+  function seenCharEvents(state) {
+    if (!Array.isArray(state.seenCharEvents)) state.seenCharEvents = [];
+    return state.seenCharEvents;
+  }
 
-  // コーチイベントの出現重みを2倍にする（特別指導到達率の底上げ）。
-  // rng消費は帯判定1回＋この選択1回の計2回を維持するため、重み付き累積区間上を1つのrng値でスキャンする。
-  function pickWeightedCharEvent(rng) {
+  function pickCharEvent(state, rng) {
+    const seen = new Set(seenCharEvents(state));
     const list = DT.DATA.EVENTS.charEvents;
-    const weight = (ev) => (ev.char === 'coach' ? COACH_WEIGHT : DEFAULT_WEIGHT);
-    const totalWeight = list.reduce((sum, ev) => sum + weight(ev), 0);
-    let target = rng() * totalWeight;
-    for (let i = 0; i < list.length; i++) {
-      target -= weight(list[i]);
-      if (target < 0) return list[i];
-    }
-    return list[list.length - 1];
+    const event = list[Math.floor(rng() * list.length)];
+    return seen.has(event.id) ? null : event;
   }
 
   function roll(state, rng) {
@@ -27,7 +22,8 @@
     const happeningP = charP + probs.happening; // char判定の上に積む帯
     const r = rng();
     if (r < charP) {
-      return { kind: 'char', event: pickWeightedCharEvent(rng) };
+      const event = pickCharEvent(state, rng);
+      return event ? { kind: 'char', event: event } : null;
     }
     if (r < happeningP) {
       const list = DT.DATA.EVENTS.happenings;
@@ -62,6 +58,8 @@
   function applyChoice(state, event, choiceIndex) {
     const choice = event.choices[choiceIndex];
     const messages = [choice.result].concat(applyEffects(state, choice.effects));
+    const seen = seenCharEvents(state);
+    if (!seen.includes(event.id)) seen.push(event.id);
     if (event.char === 'coach') {
       state.coachEvents += 1;
       if (state.coachEvents >= 2 && !state.specialUnlocked) {

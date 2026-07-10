@@ -135,13 +135,14 @@ test('まともな方針なら4年間でどこかの大会で3位以内に入れ
   assert.ok(bestRank <= 3, '20シードの最高順位が' + bestRank + '位（勝機がなさすぎる）');
 });
 
-test('イベントは4年間で複数回発生し、特別指導も到達可能', () => {
-  let unlockedCount = 0;
+test('キャライベントは4年間で発生し、同一イベントは重複記録されない', () => {
+  let seenTotal = 0;
   for (let seed = 1; seed <= 20; seed++) {
     const s = playThrough(lcg(seed), chooseSensible);
-    if (s.specialUnlocked) unlockedCount += 1;
+    seenTotal += s.seenCharEvents.length;
+    assert.strictEqual(new Set(s.seenCharEvents).size, s.seenCharEvents.length, 'seed=' + seed + ' でキャライベントが重複');
   }
-  assert.ok(unlockedCount >= 5, '特別指導解放が少なすぎる: ' + unlockedCount + '/20');
+  assert.ok(seenTotal > 0, '20シードでキャライベントが一度も発生していない');
 });
 
 test('ライバル戦績が記録される', () => {

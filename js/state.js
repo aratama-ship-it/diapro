@@ -40,6 +40,7 @@
       background: bg.id,
       coachEvents: 0,
       specialUnlocked: false,
+      seenCharEvents: [],
       rivalRecord: DT.DATA.RIVALS.reduce((acc, r) => { acc[r.id] = { win: 0, lose: 0 }; return acc; }, {}),
       lastSlots: [],
       // 開始時に既に解禁済みのジャンルは告知しない（h1d常時＋経歴により解禁されるもの）

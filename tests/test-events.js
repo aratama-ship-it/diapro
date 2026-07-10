@@ -9,15 +9,34 @@ const DT = globalThis.DT;
 
 function base() { return DT.state.newCharacter(() => 0); }
 
-test('roll: r<0.15でキャライベント、r<0.20でハプニング、以上でnull', () => {
+test('roll: r<0.125でキャライベント、r<0.175でハプニング、以上でnull', () => {
   const s = base();
   const seq1 = [0.10, 0.0]; let i1 = 0; // 発生roll, イベント選択roll
   const r1 = DT.events.roll(s, () => seq1[i1++]);
   assert.strictEqual(r1.kind, 'char');
-  const seq2 = [0.17, 0.0]; let i2 = 0;
+  const seq2 = [0.15, 0.0]; let i2 = 0;
   const r2 = DT.events.roll(s, () => seq2[i2++]);
   assert.strictEqual(r2.kind, 'happening');
-  assert.strictEqual(DT.events.roll(s, () => 0.25), null);
+  assert.strictEqual(DT.events.roll(s, () => 0.18), null);
+});
+
+test('roll: キャライベントは等確率で、発生済みイベントは再抽選しない', () => {
+  const s = base();
+  const first = DT.events.roll(s, (() => { const seq = [0.10, 0.0]; let i = 0; return () => seq[i++]; })());
+  assert.strictEqual(first.event.id, 'coach1');
+  DT.events.applyChoice(s, first.event, 0);
+
+  const second = DT.events.roll(s, (() => { const seq = [0.10, 0.0]; let i = 0; return () => seq[i++]; })());
+  assert.strictEqual(second, null);
+  const third = DT.events.roll(s, (() => { const seq = [0.10, 0.1]; let i = 0; return () => seq[i++]; })());
+  assert.strictEqual(third.event.id, 'coach2');
+  assert.deepStrictEqual(s.seenCharEvents, ['coach1']);
+});
+
+test('roll: キャライベントを全て見た後はキャラ帯でもnull', () => {
+  const s = base();
+  s.seenCharEvents = DT.DATA.EVENTS.charEvents.map(e => e.id);
+  assert.strictEqual(DT.events.roll(s, () => 0.10), null);
 });
 
 test('applyChoice: 効果が適用されメッセージが返る', () => {

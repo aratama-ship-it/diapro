@@ -419,9 +419,21 @@
     $('#home-status').replaceChildren(head, skillRadarGrid(state.skills), meters);
   }
 
+  // アクションボタンのアイコン画像（絵文字の代わり）。無い種別は絵文字にフォールバック
+  const ACTION_ICON = { train: 'train.png', study: 'study.png', rest: 'rest.png', injured: 'injured.png' };
   function bigAction(kind, icon, name, desc, onclick, compact) {
     const b = el('button', 'action-btn ' + kind + (compact ? ' compact' : ''));
-    b.appendChild(el('span', 'icon', icon));
+    const iconBox = el('span', 'icon');
+    if (ACTION_ICON[kind]) {
+      const img = el('img');
+      img.src = 'assets/icons/' + ACTION_ICON[kind];
+      img.alt = name;
+      iconBox.classList.add('has-img');
+      iconBox.appendChild(img);
+    } else {
+      iconBox.textContent = icon;
+    }
+    b.appendChild(iconBox);
     const t = el('span', 't');
     t.appendChild(el('span', 'name', name));
     t.appendChild(el('span', 'desc', desc));
