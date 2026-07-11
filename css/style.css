@@ -174,24 +174,6 @@ select:focus { outline: none; box-shadow: var(--pop-shadow-sm); }
 .section-label { color: var(--ink-soft); font-size: .68rem; font-weight: 800; margin: 4px 0 2px; letter-spacing: .08em; }
 .board-label { font-size: .66rem; font-weight: 800; color: var(--ink-soft); letter-spacing: .1em; }
 
-/* ---------- ターン帯 ---------- */
-.turn-banner {
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--ink); color: #fff;
-  border-radius: 14px; padding: 6px 14px;
-  box-shadow: var(--pop-shadow); flex-shrink: 0;
-}
-.turn-banner .turn-label { font-size: 1.02rem; font-weight: 800; letter-spacing: .04em; }
-.turn-banner .turn-sub { font-size: .62rem; color: #aebbe6; letter-spacing: .06em; }
-.turn-banner .pt {
-  background: var(--sun); color: var(--ink);
-  border-radius: 999px; padding: 3px 12px;
-  font-size: .78rem; font-weight: 800; border: 2px solid #fff;
-  cursor: pointer;
-}
-.turn-banner .pt::after { content: " ▸"; font-size: .62rem; }
-.turn-banner .pt:active { transform: translateY(1px); }
-
 /* ---------- 次大会バナー ---------- */
 .contest-banner {
   display: flex; align-items: center; gap: 10px;
@@ -325,18 +307,39 @@ select:focus { outline: none; box-shadow: var(--pop-shadow-sm); }
   padding: 1px 10px;
 }
 
-/* ---------- コンディションカード ---------- */
-.cond-card { display: flex; flex-direction: column; gap: 5px; }
-.cond-top { display: flex; align-items: center; gap: 10px; }
-.mood-face {
-  width: 46px; height: 46px; flex-shrink: 0;
-  display: grid; place-items: center; font-size: 1.5rem;
+/* ---------- 選手ボード（名前・やる気・ステータス・技術を1枠に集約） ---------- */
+.pboard { display: flex; flex-direction: column; gap: 8px; padding: 8px; }
+/* ヘッダー帯：紺地に学年月・名前・pt */
+.pb-head {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--ink); color: #fff;
+  border-radius: 12px; padding: 5px 12px;
+}
+.pb-head .pb-turn { font-size: .58rem; color: #aebbe6; letter-spacing: .06em; }
+.pb-head .pb-name { font-size: 1rem; font-weight: 800; letter-spacing: .04em; }
+.pb-head .pt {
+  flex-shrink: 0; background: var(--sun); color: var(--ink);
+  border-radius: 999px; padding: 3px 12px;
+  font-size: .78rem; font-weight: 800; border: 2px solid #fff; cursor: pointer;
+}
+.pb-head .pt::after { content: " ▸"; font-size: .62rem; }
+.pb-head .pt:active { transform: translateY(1px); }
+/* コンディション：やる気の顔｜メーター2×2 */
+.pb-cond { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+.pb-mood {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding-right: 12px; border-right: 2px dashed #dde1f0;
+}
+.pb-mood .mood-face {
+  width: 44px; height: 44px; font-size: 1.4rem;
+  display: grid; place-items: center;
   background: #fff2cf; border: var(--line); border-radius: 50%;
 }
-.mood-meta { flex: 1; }
-.mood-meta .mood-label { font-size: .92rem; font-weight: 800; color: var(--coral-deep); }
-.mood-meta .mood-note { font-size: .62rem; color: var(--ink-soft); }
-.cond-chips { display: flex; gap: 4px; flex-direction: column; align-items: flex-end; }
+.pb-mood .mood-label { font-size: .74rem; font-weight: 800; color: var(--coral-deep); margin-top: 2px; }
+.pb-mood .mood-note { font-size: .54rem; color: var(--ink-soft); }
+.pb-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+/* 技術見出し（レーダーの上） */
+.pb-tech-head { display: flex; align-items: center; justify-content: space-between; }
 
 /* メーター（label / gauge / value） */
 .meter { display: grid; grid-template-columns: 3.4em 1fr 2.4em; align-items: center; gap: 8px; font-size: .72rem; }
@@ -346,16 +349,13 @@ select:focus { outline: none; box-shadow: var(--pop-shadow-sm); }
 .gauge > span { display: block; height: 100%; border-radius: 999px 0 0 999px; background: linear-gradient(90deg, var(--teal), var(--sun)); }
 .gauge.warn > span { background: linear-gradient(90deg, var(--sun), var(--coral)); }
 
-/* ---------- ホームのステータスカード ---------- */
-.status-card { gap: 5px; }
-.status-head { display: flex; align-items: center; justify-content: space-between; }
+/* ---------- 詳細リンク ---------- */
 .detail-link {
   font-size: .62rem; font-weight: 800; color: var(--blue);
   background: #eaf2ff; border: 2px solid var(--blue); border-radius: 999px;
   padding: 2px 10px;
 }
 .detail-link:active { transform: translateY(2px); }
-.status-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
 
 /* ---------- どうする？ 3大アクション ---------- */
 .prompt-line { display: flex; align-items: center; gap: 8px; font-size: .8rem; font-weight: 800; color: var(--ink); flex-shrink: 0; }

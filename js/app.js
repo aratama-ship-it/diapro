@@ -236,20 +236,8 @@
     homeEl.classList.remove('year-1', 'year-2', 'year-3', 'year-4');
     homeEl.classList.add('year-' + yr);
 
-    // ターン帯
-    const banner = $('#home-turn');
-    const left = el('div');
-    left.appendChild(el('div', 'turn-sub', 'TURN ' + state.turn + ' / ' + DT.DATA.TOTAL_TURNS));
-    left.appendChild(el('div', 'turn-label', DT.engine.turnLabel(state.turn) + '・' + state.name));
-    const pt = el('span', 'pt num', totalPoints() + 'pt');
-    pt.setAttribute('role', 'button');
-    pt.title = 'タップでポイント履歴';
-    pt.onclick = openPoints;
-    banner.replaceChildren(left, pt);
-
     renderHomeContest();
-    renderHomeCond();
-    renderHomeStatus();
+    renderPlayerBoard();
 
     // 毎月スロットは空にリセット（前月構成の引き継ぎはしない）。怪我中はルーチン構成のみ1枠
     slotsUI = state.injuredTurns > 0 ? [null] : new Array(DT.DATA.SLOTS.perMonth).fill(null);
@@ -411,42 +399,54 @@
     $('#settings-body').replaceChildren(warn, yes, no);
   }
 
-  function renderHomeCond() {
-    // 予想スコア・ミス率はプレイヤーには非表示（開発パネルにのみ表示）
+  // 名前・やる気・ステータス（体力/学力/構成/怪我）・技術レーダーを1枠に集約した「選手ボード」
+  function renderPlayerBoard() {
+    const board = $('#home-board');
+
+    // ヘッダー帯（学年月・名前・TURN・ポイント）
+    const head = el('div', 'pb-head');
+    const hl = el('div', 'pb-head-l');
+    hl.appendChild(el('div', 'pb-turn', 'TURN ' + state.turn + ' / ' + DT.DATA.TOTAL_TURNS));
+    hl.appendChild(el('div', 'pb-name', DT.engine.turnLabel(state.turn) + '・' + state.name));
+    head.appendChild(hl);
+    const pt = el('span', 'pt num', totalPoints() + 'pt');
+    pt.setAttribute('role', 'button');
+    pt.title = 'タップでポイント履歴';
+    pt.onclick = openPoints;
+    head.appendChild(pt);
+
+    // コンディション行（やる気の顔＋メーター2×2グリッド）
     const moodLabel = DT.engine.motivationLabel(state.motivation);
-
-    const top = el('div', 'cond-top');
-    top.appendChild(el('div', 'mood-face', MOOD_EMOJI[moodLabel] || '🙂'));
-    const meta = el('div', 'mood-meta');
-    meta.appendChild(el('div', 'mood-label', moodLabel));
-    meta.appendChild(el('div', 'mood-note', 'やる気 ' + state.motivation + ' / 100'));
-    top.appendChild(meta);
-
-    const nodes = [top,
-      meterRow('体力', 100 - state.fatigue, { warn: state.fatigue >= 60 }),
-      meterRow('学力', state.study)
-    ];
-    if (state.study < DT.DATA.STUDY_MIN) {
-      nodes.push(el('div', 'cond-warn', '⚠ 学業警告中！（学力' + DT.DATA.STUDY_MIN + '未満）'));
-    }
-    if (DT.DATA.EXAMS.turns.includes(state.turn)) {
-      nodes.push(el('div', 'cond-warn', '⚠ 今月末は定期テスト！（学力' + DT.DATA.EXAMS.passLine + '以上で合格）'));
-    }
-    $('#home-cond').replaceChildren(...nodes);
-  }
-
-  function renderHomeStatus() {
-    const head = el('div', 'status-head');
-    head.appendChild(el('span', 'board-label', 'ステータス'));
-    const link = el('button', 'detail-link', '技術グリッド詳細 ▸');
-    link.onclick = renderDetail;
-    head.appendChild(link);
-
-    const meters = el('div', 'status-meters');
+    const cond = el('div', 'pb-cond');
+    const mood = el('div', 'pb-mood');
+    mood.appendChild(el('div', 'mood-face', MOOD_EMOJI[moodLabel] || '🙂'));
+    mood.appendChild(el('div', 'mood-label', moodLabel));
+    mood.appendChild(el('div', 'mood-note', 'やる気 ' + state.motivation));
+    cond.appendChild(mood);
+    const meters = el('div', 'pb-meters');
+    meters.appendChild(meterRow('体力', 100 - state.fatigue, { warn: state.fatigue >= 60 }));
+    meters.appendChild(meterRow('学力', state.study));
     meters.appendChild(meterRow('構成', state.composition));
     meters.appendChild(meterRow('怪我', state.injuryRisk, { warn: state.injuryRisk >= 40 }));
+    cond.appendChild(meters);
 
-    $('#home-status').replaceChildren(head, skillRadarGrid(state.skills), meters);
+    // 学業・定期テストの警告
+    const warns = [];
+    if (state.study < DT.DATA.STUDY_MIN) {
+      warns.push(el('div', 'cond-warn', '⚠ 学業警告中！（学力' + DT.DATA.STUDY_MIN + '未満）'));
+    }
+    if (DT.DATA.EXAMS.turns.includes(state.turn)) {
+      warns.push(el('div', 'cond-warn', '⚠ 今月末は定期テスト！（学力' + DT.DATA.EXAMS.passLine + '以上で合格）'));
+    }
+
+    // 技術（レーダーグリッド＋詳細リンク）
+    const techHead = el('div', 'pb-tech-head');
+    techHead.appendChild(el('span', 'board-label', '技術'));
+    const link = el('button', 'detail-link', '技術グリッド詳細 ▸');
+    link.onclick = renderDetail;
+    techHead.appendChild(link);
+
+    board.replaceChildren(head, cond, ...warns, techHead, skillRadarGrid(state.skills));
   }
 
   // アクションボタンのアイコン画像（絵文字の代わり）。無い種別は絵文字にフォールバック
