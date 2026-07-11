@@ -978,47 +978,93 @@
     return table;
   }
 
+  // 部門の発表順（迫力の部門別リザルト）。指定外(JJF決勝/世界大会等)は末尾に単独表示
+  const REVEAL_ORDER = ['h1d', 'v1d', 'd2', 'd3', 'overall', 'technical', 'performance'];
+  const RANK_MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
+  let contestReveal = null;
+
   function renderContestResults(results) {
     $('#contest-name').textContent = results[0].name + ' 結果';
-    const nodes = [];
-    results.forEach((r) => {
-      const isOverall = r.division === 'overall';
-      nodes.push(el('div', 'result-big', r.divisionLabel + ' ' + r.rank + '位 / ' + r.entrants + '人'));
-      nodes.push(el('div', 'section-label', '内訳（素点）'));
-      const div = DT.DATA.DIVISIONS.find(d => d.id === r.division);
-      const weights = DT.DATA.SCORING[div.scoring].weights;
-      const maxFor = (key) => key === 'fundamentals'
-        ? DT.DATA.SCORING.base.elements * DT.DATA.SCORING.base.perElement
-        : weights[key];
-      Object.keys(r.parts).forEach(id => {
-        nodes.push(textRow((PARTS_LABELS[id] || id) + '点', String(r.parts[id]) + '/' + maxFor(id)));
-      });
-      nodes.push(textRow('調子・審査', (r.judgeMod >= 0 ? '+' : '') + r.judgeMod + '点'));
-      nodes.push(textRow('実施減点（ミス' + r.misses + '回）', '-' + r.execDeduction + '点'));
-      nodes.push(textRow('特別減点', '-' + r.specialDeduction + '点'));
-      nodes.push(textRow('スコア', r.score + '点'));
-      nodes.push(textRow('獲得ポイント', r.points + 'pt'));
-      // 開発用: ステータス（素点）より実スコアが低かった場合、その理由を明示（?dev時のみ）
-      const raw = Math.round(r.rawTotal * 10) / 10;
-      const diff = Math.round((r.score - raw) * 10) / 10;
-      if (DEV && diff < 0) {
-        const causes = [];
-        if (r.execDeduction > 0) causes.push('ミス' + r.misses + '回 −' + r.execDeduction);
-        if (r.specialDeduction > 0) causes.push('特別減点 −' + r.specialDeduction);
-        if (r.judgeMod < 0) causes.push('調子・審査 ' + r.judgeMod);
-        nodes.push(el('div', 'dev-reason',
-          '🔧DEV 実力(素点' + raw + ') → 実スコア' + r.score + '（' + diff + '） 主因: ' + (causes.join(' / ') || '軽微')));
-      }
-      if (Array.isArray(r.standings) && r.standings.length > 0) {
-        nodes.push(el('div', 'section-label', '順位表'));
-        nodes.push(standingsTable(r.standings));
-      }
-    });
-    $('#contest-result').replaceChildren(...nodes);
+    const orderOf = (r) => { const i = REVEAL_ORDER.indexOf(r.division); return i < 0 ? 99 : i; };
+    const ordered = results.slice().sort((a, b) => orderOf(a) - orderOf(b));
+    contestReveal = { ordered: ordered, i: 0 };
+    renderRevealStage();
     show('#screen-contest');
   }
 
-  $('#btn-contest-ok').onclick = () => afterTurn(pendingLogs);
+  // 1部門ぶんの発表ステージ。部門名→順位ドン→スコア→内訳の順にCSSで段階表示（再描画で毎回アニメ再生）
+  function renderRevealStage() {
+    const r = contestReveal.ordered[contestReveal.i];
+    const total = contestReveal.ordered.length;
+    const isLast = contestReveal.i === total - 1;
+    const stage = el('div', 'reveal-stage');
+
+    if (total > 1) stage.appendChild(el('div', 'reveal-progress', '発表 ' + (contestReveal.i + 1) + ' / ' + total + ' 部門'));
+    stage.appendChild(el('div', 'reveal-divname', r.divisionLabel));
+
+    // 順位（主役）
+    const rankBox = el('div', 'reveal-rank rank-' + (r.rank <= 3 ? r.rank : 'x'));
+    if (RANK_MEDAL[r.rank]) rankBox.appendChild(el('div', 'reveal-medal', RANK_MEDAL[r.rank]));
+    const num = el('div', 'reveal-rank-num');
+    num.appendChild(el('span', 'rn-side', '第'));
+    num.appendChild(el('span', 'rn-n', String(r.rank)));
+    num.appendChild(el('span', 'rn-side', '位'));
+    rankBox.appendChild(num);
+    rankBox.appendChild(el('div', 'reveal-entrants', r.entrants + '人中'));
+    if (r.rank === 1) rankBox.appendChild(el('div', 'reveal-champ', '🎉 優勝！ 🎉'));
+    stage.appendChild(rankBox);
+
+    // スコア・獲得ポイント
+    const scoreLine = el('div', 'reveal-scoreline');
+    scoreLine.appendChild(el('span', 'rs-score', r.score + '点'));
+    scoreLine.appendChild(el('span', 'rs-pt', '+' + r.points + 'pt'));
+    stage.appendChild(scoreLine);
+
+    // 内訳・順位表（情報量は維持）
+    const detail = el('div', 'reveal-detail');
+    detail.appendChild(el('div', 'section-label', '内訳（素点）'));
+    const div = DT.DATA.DIVISIONS.find(d => d.id === r.division);
+    const weights = div ? DT.DATA.SCORING[div.scoring].weights : {};
+    const maxFor = (key) => key === 'fundamentals'
+      ? DT.DATA.SCORING.base.elements * DT.DATA.SCORING.base.perElement
+      : weights[key];
+    Object.keys(r.parts).forEach(id => {
+      detail.appendChild(textRow((PARTS_LABELS[id] || id) + '点', String(r.parts[id]) + '/' + maxFor(id)));
+    });
+    detail.appendChild(textRow('調子・審査', (r.judgeMod >= 0 ? '+' : '') + r.judgeMod + '点'));
+    detail.appendChild(textRow('実施減点（ミス' + r.misses + '回）', '-' + r.execDeduction + '点'));
+    detail.appendChild(textRow('特別減点', '-' + r.specialDeduction + '点'));
+    // 開発用: ステータス（素点）より実スコアが低かった場合、その理由を明示（?dev時のみ）
+    const raw = Math.round(r.rawTotal * 10) / 10;
+    const diff = Math.round((r.score - raw) * 10) / 10;
+    if (DEV && diff < 0) {
+      const causes = [];
+      if (r.execDeduction > 0) causes.push('ミス' + r.misses + '回 −' + r.execDeduction);
+      if (r.specialDeduction > 0) causes.push('特別減点 −' + r.specialDeduction);
+      if (r.judgeMod < 0) causes.push('調子・審査 ' + r.judgeMod);
+      detail.appendChild(el('div', 'dev-reason',
+        '🔧DEV 実力(素点' + raw + ') → 実スコア' + r.score + '（' + diff + '） 主因: ' + (causes.join(' / ') || '軽微')));
+    }
+    if (Array.isArray(r.standings) && r.standings.length > 0) {
+      detail.appendChild(el('div', 'section-label', '順位表'));
+      detail.appendChild(standingsTable(r.standings));
+    }
+    stage.appendChild(detail);
+
+    $('#contest-result').replaceChildren(stage);
+    $('#screen-contest').scrollTop = 0;
+    $('#btn-contest-ok').textContent = isLast ? '結果を受け止める' : '次の部門へ ▸';
+  }
+
+  $('#btn-contest-ok').onclick = () => {
+    if (contestReveal && contestReveal.i < contestReveal.ordered.length - 1) {
+      contestReveal.i++;
+      renderRevealStage();
+    } else {
+      contestReveal = null;
+      afterTurn(pendingLogs);
+    }
+  };
 
   // --- エンディング ---
   function resultsTable(results) {
