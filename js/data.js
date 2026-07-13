@@ -154,6 +154,14 @@
     // welcome=新入生歓迎会: 現在解禁済みジャンルの全技術(難易度/新奇性/操作安定度)が gain ずつ上がる。
     SCHEDULED_EVENTS: [
       { turn: 1, id: 'welcome', name: '新入生歓迎会', text: '新入生歓迎会！先輩たちが基礎のコツを教えてくれた。' },
+      // 協会事務所（1年6月・必ず発生）。行く→SAITO会長に会う(metSaitoフラグ)＝以降 台湾合宿の誘いが発生し得る
+      { turn: 3, id: 'saito_office', name: 'ディアボロ協会事務所', speaker: '🏢 ディアボロ協会',
+        text: 'ディアボロ協会の事務所に顔を出さないか、と声をかけられた。行ってみる？',
+        choices: [
+          { label: '行く', effects: { motivation: 10, flag: 'metSaito' },
+            result: '事務所でSAITO会長に挨拶できた。「若いのは応援するよ」と励まされ、やる気が湧いた！' },
+          { label: '行かない', effects: {},
+            result: '今回は事務所には行かなかった。（SAITO会長には会えなかった）' } ] },
       // 大会前の緊張（1年7月・初の公式大会OIDCの前月）
       { turn: 4, id: 'nerves', name: '大会前の緊張', speaker: '💭 大会前',
         text: '初めての公式大会が近づいてきた。緊張で、少し眠れない夜が続く……',
@@ -227,7 +235,8 @@
       { id: 'shion',  name: '志音',       role: '同学年の天才ライバル' },
       { id: 'kaito',  name: '魁人',       role: 'AJDC連覇中の王者' },
       { id: 'irie',   name: 'イリエ',     role: '同期のディアボロ仲間' },
-      { id: 'ujiji',  name: 'うじじ',     role: '大陸からの刺客' }
+      { id: 'ujiji',  name: 'うじじ',     role: '大陸からの刺客' },
+      { id: 'kazuki', name: 'Dr. Kazuki', role: '（役割・イベントは後日設定）' }
     ],
     EVENTS: {
       probs: { char: 0.125, happening: 0.05 },
@@ -264,7 +273,8 @@
             { label: '構成理論を教わる', effects: { stat: { id: 'composition', amount: 3 } },                 result: '「起承転結は音楽で決まる」目から鱗だった。' },
             { label: '試験勉強も教わる', effects: { study: 8 },                                               result: 'ついでに レポートの書き方まで教わった。' } ] },
         // 台湾合宿: 一度きりの大きな決断イベント。行く=技術と刺激だが疲労大・学業のツケ / 行かない=堅実に学業
-        { id: 'taiwan_camp', char: 'saito', speaker: 'SAITO会長',
+        // requires: 協会事務所イベントでSAITO会長に会っている(metSaito)場合のみ発生
+        { id: 'taiwan_camp', char: 'saito', speaker: 'SAITO会長', requires: 'metSaito',
           text: 'SAITO会長が「台湾に合宿に行かないか？」と誘ってくれた。海外の強豪と練習できる、めったにない機会だ。',
           choices: [
             { label: '行く', effects: { stats: [{ id: 'novelty', amount: 8 }, { id: 'control', amount: 3 }], motivation: 12, fatigue: 25, study: -12 },

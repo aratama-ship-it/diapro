@@ -12,6 +12,8 @@
     const seen = new Set(seenCharEvents(state));
     const list = DT.DATA.EVENTS.charEvents;
     const event = list[Math.floor(rng() * list.length)];
+    // 発生条件フラグ(requires)を満たしていない場合は発生させない（例: taiwan_campはmetSaito必須）
+    if (event.requires && !state[event.requires]) return null;
     return seen.has(event.id) ? null : event;
   }
 
@@ -69,6 +71,8 @@
     if (effects.injuryRisk) state.injuryRisk = clamp(state.injuryRisk + effects.injuryRisk, 0, 100);
     // outdoor=次の練習セッションのゲイン半減デバフ（体育館工事）。ターン数を積む
     if (effects.outdoor) state.outdoorTurns = (state.outdoorTurns || 0) + effects.outdoor;
+    // flag=進行フラグを立てる（例: metSaito）。他イベントの発生条件(requires)に使う
+    if (effects.flag) state[effects.flag] = true;
     return messages;
   }
 
