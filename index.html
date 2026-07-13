@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=20260713h">
 </head>
 <body>
 <div id="app">
@@ -202,6 +202,41 @@
       <div class="popup-body" id="settings-body"></div>
     </div>
   </div>
+
+  <!-- ======== 記録ログモーダル（ホーム下部のログ帯タップで開く） ======== -->
+  <div id="log-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close-log></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <span class="modal-title">📖 これまでの記録ログ</span>
+        <button class="modal-close" data-close-log aria-label="閉じる">×</button>
+      </div>
+      <div class="modal-list" id="log-list"></div>
+    </div>
+  </div>
+
+  <!-- ======== レーダー拡大ポップアップ（技術レーダーのタップで開く） ======== -->
+  <div id="radar-modal" class="modal center hidden">
+    <div class="modal-backdrop" data-close-radar></div>
+    <div class="radar-stack">
+      <!-- メインチャートの枠 -->
+      <div class="modal-card popup-card">
+        <div class="modal-head">
+          <span class="modal-title" id="radar-title"></span>
+          <button class="modal-close" data-close-radar aria-label="閉じる">×</button>
+        </div>
+        <div class="popup-body">
+          <div id="radar-big"></div>
+          <div class="radar-legend" id="radar-legend"></div>
+        </div>
+      </div>
+      <!-- 他ジャンル（別枠。タップでメインに切替） -->
+      <div class="modal-card popup-card radar-thumbs-card">
+        <div class="radar-thumbs-title">他のジャンル（タップで拡大）</div>
+        <div class="radar-thumbs" id="radar-thumbs"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ======== 右: 開発用パラメータパネル（1100px以上で表示） ======== -->
@@ -215,13 +250,13 @@
   </div>
 </aside>
 
-<script src="js/data.js"></script>
-<script src="js/state.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/contest.js"></script>
-<script src="js/events.js"></script>
-<script src="js/ending.js"></script>
-<script src="js/radar.js"></script>
-<script src="js/app.js"></script>
+<script src="js/data.js?v=20260713h"></script>
+<script src="js/state.js?v=20260713h"></script>
+<script src="js/engine.js?v=20260713h"></script>
+<script src="js/contest.js?v=20260713h"></script>
+<script src="js/events.js?v=20260713h"></script>
+<script src="js/ending.js?v=20260713h"></script>
+<script src="js/radar.js?v=20260713h"></script>
+<script src="js/app.js?v=20260713h"></script>
 </body>
 </html>

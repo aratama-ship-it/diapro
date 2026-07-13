@@ -95,12 +95,20 @@
     return row;
   }
 
-  // 1ジャンル分の三角レーダーカード
-  function genreRadar(genreId, cell, unlocked) {
+  // 三角レーダーの軸カラー（軸番号順: 0=難易度 / 1=新奇性 / 2=操作安定度）。
+  // 空色背景と喧嘩する青は避け、青の補色にあたる暖色＋アクセントのティールで色分け。
+  const AXIS_COLORS = ['#ff6b6b', '#f0a825', '#2ec4b6'];
+
+  // ジャンルのフルネーム（ポップアップ見出し用）
+  const GENRE_FULL = { h1d: '1ディアボロ・水平軸', v1d: '1ディアボロ・垂直軸', d2: '2ディアボロ', d3: '3ディアボロ以上' };
+
+  // 三角レーダーのSVGを生成（小カードでも拡大ポップアップでも共通で使う。viewBox基準なのでCSSで拡縮）
+  function buildRadarSvg(genreId, cell, unlocked) {
     const CX = 50, CY = 52, R = 40;
     const rp = (v, a) => DT.radar.radarPoint(v, a, CX, CY, R);
     const ptStr = pts => pts.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
-    const svg = svgEl('svg', { viewBox: '0 0 100 100', class: 'radar-svg' });
+    // viewBoxの下側を詰める（内容は y=0〜約84。下部の空きをカットしてボックスの縦を節約）
+    const svg = svgEl('svg', { viewBox: '0 0 100 86', class: 'radar-svg' });
 
     const wm = svgEl('text', {
       x: CX, y: CY, 'text-anchor': 'middle', 'dominant-baseline': 'central',
@@ -113,21 +121,31 @@
       const ring = [rp(level, 0), rp(level, 1), rp(level, 2)];
       svg.appendChild(svgEl('polygon', { points: ptStr(ring), fill: 'none', stroke: '#d8ddf0', 'stroke-width': '0.8' }));
     });
+    // 軸スポークは各軸カラーの淡色に（どの方向がどの評価軸か色でも伝える）
     [0, 1, 2].forEach(a => {
       const o = rp(100, a);
-      svg.appendChild(svgEl('line', { x1: CX, y1: CY, x2: o.x.toFixed(1), y2: o.y.toFixed(1), stroke: '#e2e6f3', 'stroke-width': '0.6' }));
+      svg.appendChild(svgEl('line', {
+        x1: CX, y1: CY, x2: o.x.toFixed(1), y2: o.y.toFixed(1),
+        stroke: AXIS_COLORS[a], 'stroke-opacity': '0.35', 'stroke-width': '0.7'
+      }));
     });
     if (unlocked) {
       const vpts = [rp(cell.difficulty, 0), rp(cell.novelty, 1), rp(cell.control, 2)];
-      svg.appendChild(svgEl('polygon', { points: ptStr(vpts), fill: 'rgba(46,196,182,0.42)', stroke: '#2ec4b6', 'stroke-width': '1.6' }));
-      vpts.forEach(p => svg.appendChild(svgEl('circle', { cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: '1.6', fill: '#2ec4b6' })));
+      // 塗りは中立色（特定軸に偏らせない）。頂点ドットを軸カラーで色分けして識別性を上げる
+      svg.appendChild(svgEl('polygon', { points: ptStr(vpts), fill: 'rgba(43,58,103,0.10)', stroke: '#9aa4c8', 'stroke-width': '1.3' }));
+      vpts.forEach((p, a) => {
+        svg.appendChild(svgEl('circle', {
+          cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: '2.1',
+          fill: AXIS_COLORS[a], stroke: '#fff', 'stroke-width': '0.7'
+        }));
+      });
     }
     const labelOffset = [[0, -3], [0, 9], [0, 9]];
     [['難', 0], ['新', 1], ['操', 2]].forEach(function (lv) {
       const o = rp(100, lv[1]);
       const t = svgEl('text', {
         x: (o.x + labelOffset[lv[1]][0]).toFixed(1), y: (o.y + labelOffset[lv[1]][1]).toFixed(1),
-        'text-anchor': 'middle', fill: '#6b7aa8', 'font-size': '8', 'font-weight': 'bold'
+        'text-anchor': 'middle', fill: AXIS_COLORS[lv[1]], 'font-size': '8.5', 'font-weight': 'bold'
       });
       t.textContent = lv[0];
       svg.appendChild(t);
@@ -137,10 +155,64 @@
       t.textContent = '🔒';
       svg.appendChild(t);
     }
+    return svg;
+  }
+
+  // 1ジャンル分の三角レーダーカード（タップで拡大ポップアップを開く）
+  function genreRadar(genreId, cell, unlocked) {
     const card = el('div', 'radar-card');
-    card.appendChild(svg);
+    card.appendChild(buildRadarSvg(genreId, cell, unlocked));
+    card.setAttribute('role', 'button');
+    card.title = 'タップで拡大';
+    card.onclick = () => openRadar(genreId);
     return card;
   }
+
+  // レーダー拡大ポップアップ。ジャンルの3軸を色分けした大きなレーダー＋数値内訳を表示
+  function openRadar(genreId) {
+    const unlocked = DT.contest.isGenreUnlocked(state, genreId);
+    const cell = state.skills[genreId];
+    $('#radar-title').textContent = '📊 ' + genreLabel(genreId) + '（' + (GENRE_FULL[genreId] || '') + '）';
+
+    $('#radar-big').replaceChildren(buildRadarSvg(genreId, cell, unlocked));
+
+    // 他ジャンルのサムネイル（タップでそのジャンルをメインに切替）
+    const thumbs = DT.DATA.GENRES.filter(g => g.id !== genreId).map(function (g) {
+      const un = DT.contest.isGenreUnlocked(state, g.id);
+      const t = el('div', 'radar-thumb');
+      t.appendChild(buildRadarSvg(g.id, state.skills[g.id], un));
+      t.appendChild(el('div', 'radar-thumb-label', genreLabel(g.id)));
+      t.setAttribute('role', 'button');
+      t.title = genreLabel(g.id) + 'を拡大';
+      t.onclick = () => openRadar(g.id);
+      return t;
+    });
+    $('#radar-thumbs').replaceChildren(...thumbs);
+
+    const legend = [];
+    if (unlocked) {
+      const rows = [['難易度', cell.difficulty, 0], ['新奇性', cell.novelty, 1], ['操作安定度', cell.control, 2]];
+      rows.forEach(function (r) {
+        const row = el('div', 'radar-leg-row');
+        const dot = el('span', 'radar-leg-dot');
+        dot.style.background = AXIS_COLORS[r[2]];
+        row.appendChild(dot);
+        row.appendChild(el('span', 'radar-leg-label', r[0]));
+        row.appendChild(el('span', 'radar-leg-val num', String(r[1])));
+        legend.push(row);
+      });
+      const avg = el('div', 'radar-leg-avg');
+      avg.appendChild(el('span', 'radar-leg-label', '平均'));
+      avg.appendChild(el('span', 'radar-leg-val num', String(DT.contest.genreAvg(state, genreId))));
+      legend.push(avg);
+    } else {
+      const req = DT.DATA.SKILL_TREE[genreId].requires;
+      legend.push(el('div', 'radar-leg-locked', '🔒 未解禁：' + genreLabel(req.genre) + 'の習熟' + req.threshold + '超で解禁'));
+    }
+    $('#radar-legend').replaceChildren(...legend);
+    $('#radar-modal').classList.remove('hidden');
+  }
+  function closeRadar() { $('#radar-modal').classList.add('hidden'); }
 
   function skillRadarGrid(skills) {
     const grid = el('div', 'radar-grid');
@@ -245,13 +317,20 @@
     renderHomeActions();
 
     const log = $('#home-log');
+    const body = [];
     if (logs && logs.length > 0) {
       log.classList.add('multi');
-      log.replaceChildren(...logs.map(l => el('div', '', l)));
+      logs.forEach(l => body.push(el('div', '', l)));
     } else {
       log.classList.remove('multi');
-      log.replaceChildren(el('div', '', '💬 今月はどうする？'));
+      body.push(el('div', '', '💬 今月はどうする？'));
     }
+    // ログ帯タップで記録ログを開ける（後から見返せる）
+    body.push(el('div', 'log-more', '📖 これまでの記録ログ ▸'));
+    log.replaceChildren(...body);
+    log.setAttribute('role', 'button');
+    log.title = 'タップで記録ログ';
+    log.onclick = openLog;
     show('#screen-home');
   }
 
@@ -346,6 +425,25 @@
   }
   function closePoints() { $('#points-modal').classList.add('hidden'); }
 
+  // 記録ログモーダル（各ターンのイベント・ステータス変化を新しい順に表示）
+  function openLog() {
+    const hist = (state && state.logHistory) || [];
+    const rows = [];
+    if (hist.length === 0) {
+      rows.push(el('div', 'dev-note', 'まだ記録はありません。行動するとここに残ります。'));
+    } else {
+      hist.slice().reverse().forEach(entry => {
+        const box = el('div', 'log-entry');
+        box.appendChild(el('div', 'log-entry-turn', DT.engine.turnLabel(entry.turn)));
+        entry.messages.forEach(m => box.appendChild(el('div', 'log-entry-msg', m)));
+        rows.push(box);
+      });
+    }
+    $('#log-list').replaceChildren(...rows);
+    $('#log-modal').classList.remove('hidden');
+  }
+  function closeLog() { $('#log-modal').classList.add('hidden'); }
+
   // 個人記録（自己ベスト）モーダル。通算ポイント降順の一覧を表示
   function openRecords() {
     const list = DT.state.loadRecords();
@@ -426,8 +524,7 @@
     const meters = el('div', 'pb-meters');
     meters.appendChild(meterRow('体力', 100 - state.fatigue, { warn: state.fatigue >= 60 }));
     meters.appendChild(meterRow('学力', state.study));
-    meters.appendChild(meterRow('構成', state.composition));
-    meters.appendChild(meterRow('怪我', state.injuryRisk, { warn: state.injuryRisk >= 40 }));
+    // 構成（演技構成）はレーダーの下に配置。怪我（injuryRisk）はプレイヤー非表示（ロジックは継続）
     cond.appendChild(meters);
 
     // 学業・定期テストの警告
@@ -446,7 +543,11 @@
     link.onclick = renderDetail;
     techHead.appendChild(link);
 
-    board.replaceChildren(head, cond, ...warns, techHead, skillRadarGrid(state.skills));
+    // 構成（演技構成）メーターをレーダーチャートの下に配置
+    const compBox = el('div', 'pb-comp');
+    compBox.appendChild(meterRow('構成', state.composition));
+
+    board.replaceChildren(head, cond, ...warns, techHead, skillRadarGrid(state.skills), compBox);
   }
 
   // アクションボタンのアイコン画像（絵文字の代わり）。無い種別は絵文字にフォールバック
@@ -707,7 +808,6 @@
     $('#detail-cond').replaceChildren(
       meterRow('構成', state.composition),
       meterRow('学力', state.study),
-      meterRow('怪我', state.injuryRisk, { warn: state.injuryRisk >= 40 }),
       meterRow('体力', 100 - state.fatigue, { warn: state.fatigue >= 60 })
     );
     const nextUnlock = DT.contest.nextUnlockTarget(state);
@@ -804,6 +904,19 @@
   function finishTurn(messages, contestResults) {
     const end = DT.engine.endTurn(state);
     const logs = messages.concat(end.events);
+    // このターンの記録を履歴に残す（endTurnでturnは進んでいるので完了ターン=state.turn-1）。あとから見返せるように保存
+    const histMsgs = logs.slice();
+    if (contestResults && contestResults.length) {
+      contestResults.forEach(r => {
+        const pts = r.points ? '・+' + r.points + 'pt' : '';
+        const nums = (r.entrants ? '位/' + r.entrants + '人' : '位') + '（' + r.score + '点' + pts + '）';
+        histMsgs.push('🏆 ' + r.name + '　' + r.divisionLabel + '　' + r.rank + nums);
+      });
+    }
+    if (histMsgs.length) {
+      state.logHistory = state.logHistory || [];
+      state.logHistory.push({ turn: state.turn - 1, messages: histMsgs });
+    }
     DT.state.save(state);
     pendingContest = null;
     pendingMessages = [];
@@ -1135,6 +1248,8 @@
   document.querySelectorAll('[data-close-points]').forEach(b => { b.onclick = closePoints; });
   document.querySelectorAll('[data-close-settings]').forEach(b => { b.onclick = closeSettings; });
   document.querySelectorAll('[data-close-records]').forEach(b => { b.onclick = closeRecords; });
+  document.querySelectorAll('[data-close-radar]').forEach(b => { b.onclick = closeRadar; });
+  document.querySelectorAll('[data-close-log]').forEach(b => { b.onclick = closeLog; });
   $('#btn-records').onclick = openRecords;
 
   // --- 開発用パラメータパネル ---

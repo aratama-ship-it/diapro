@@ -35,6 +35,7 @@
       didStudy: false,
       didTrain: false,
       results: [],
+      logHistory: [],
       status: 'playing',
       name: '主人公',
       background: bg.id,
