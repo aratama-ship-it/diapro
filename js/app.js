@@ -109,22 +109,25 @@
     const ptStr = pts => pts.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
     // viewBoxの下側を詰める（内容は y=0〜約84。下部の空きをカットしてボックスの縦を節約）
     const svg = svgEl('svg', { viewBox: '0 0 100 86', class: 'radar-svg' });
+    // 未解禁ジャンルはチャート本体を <g class="radar-dim"> にまとめてグレースケール＋淡色化。
+    // 大きな鍵アイコンはこのグループの外に描いて鮮明なまま前面に出す。
+    const bg = unlocked ? svg : svgEl('g', { class: 'radar-dim' });
 
     const wm = svgEl('text', {
       x: CX, y: CY, 'text-anchor': 'middle', 'dominant-baseline': 'central',
       fill: '#ffd166', 'fill-opacity': '0.18', 'font-size': '40', 'font-weight': 'bold'
     });
     wm.textContent = genreLabel(genreId);
-    svg.appendChild(wm);
+    bg.appendChild(wm);
 
     [100, 75, 50, 25].forEach(level => {
       const ring = [rp(level, 0), rp(level, 1), rp(level, 2)];
-      svg.appendChild(svgEl('polygon', { points: ptStr(ring), fill: 'none', stroke: '#d8ddf0', 'stroke-width': '0.8' }));
+      bg.appendChild(svgEl('polygon', { points: ptStr(ring), fill: 'none', stroke: '#d8ddf0', 'stroke-width': '0.8' }));
     });
     // 軸スポークは各軸カラーの淡色に（どの方向がどの評価軸か色でも伝える）
     [0, 1, 2].forEach(a => {
       const o = rp(100, a);
-      svg.appendChild(svgEl('line', {
+      bg.appendChild(svgEl('line', {
         x1: CX, y1: CY, x2: o.x.toFixed(1), y2: o.y.toFixed(1),
         stroke: AXIS_COLORS[a], 'stroke-opacity': '0.35', 'stroke-width': '0.7'
       }));
@@ -132,9 +135,9 @@
     if (unlocked) {
       const vpts = [rp(cell.difficulty, 0), rp(cell.novelty, 1), rp(cell.control, 2)];
       // 塗りは中立色（特定軸に偏らせない）。頂点ドットを軸カラーで色分けして識別性を上げる
-      svg.appendChild(svgEl('polygon', { points: ptStr(vpts), fill: 'rgba(43,58,103,0.10)', stroke: '#9aa4c8', 'stroke-width': '1.3' }));
+      bg.appendChild(svgEl('polygon', { points: ptStr(vpts), fill: 'rgba(43,58,103,0.10)', stroke: '#9aa4c8', 'stroke-width': '1.3' }));
       vpts.forEach((p, a) => {
-        svg.appendChild(svgEl('circle', {
+        bg.appendChild(svgEl('circle', {
           cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: '2.1',
           fill: AXIS_COLORS[a], stroke: '#fff', 'stroke-width': '0.7'
         }));
@@ -148,10 +151,14 @@
         'text-anchor': 'middle', fill: AXIS_COLORS[lv[1]], 'font-size': '8.5', 'font-weight': 'bold'
       });
       t.textContent = lv[0];
-      svg.appendChild(t);
+      bg.appendChild(t);
     });
     if (!unlocked) {
-      const t = svgEl('text', { x: CX, y: CY + 4, 'text-anchor': 'middle', 'font-size': '13' });
+      svg.appendChild(bg);
+      // 未解禁は大きな鍵アイコンで中央にドンと表示（一目で「まだ使えない」と分かるように）
+      const t = svgEl('text', {
+        x: CX, y: CY, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': '46'
+      });
       t.textContent = '🔒';
       svg.appendChild(t);
     }
@@ -766,12 +773,22 @@
     if (summaryNodes.length === 0) summaryNodes.push(el('div', 'cond-warn', '今月は実りが少なかった……'));
     $('#training-summary').replaceChildren(...summaryNodes);
 
+    // その月の練習で変化したパラメーターの数値を記録ログにも残す
+    const changeMsgs = [];
+    Object.keys(cellTotals).forEach(key => {
+      if (cellTotals[key] === 0) return;
+      const [genre, method] = key.split('.');
+      changeMsgs.push('📈 ' + genreLabel(genre) + '×' + statLabelById(method) + ' +' + cellTotals[key]);
+    });
+    if (compositionTotal !== 0) changeMsgs.push('📈 演技構成 +' + compositionTotal);
+
     // 新技開発で大成功した月はSNS投稿イベントを挟む
     $('#btn-training-ok').onclick = () => {
+      const base = ['練習を終えた。'].concat(changeMsgs);
       if (tr.noveltyGreat) {
-        showSnsEvent(extra => continueTurn(['練習を終えた。'].concat(extra ? [extra] : []), 'training'));
+        showSnsEvent(extra => continueTurn(base.concat(extra ? [extra] : []), 'training'));
       } else {
-        continueTurn(['練習を終えた。'], 'training');
+        continueTurn(base, 'training');
       }
     };
     show('#screen-training');

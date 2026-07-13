@@ -493,14 +493,15 @@ select:focus { outline: none; box-shadow: var(--pop-shadow-sm); }
 .pick-btn.locked { background: var(--lock); color: #8a90a8; box-shadow: none; cursor: default; border-color: #8a90a8; }
 .pick-btn.locked small { color: #8a90a8; }
 .train-hint { font-size: .62rem; font-weight: 700; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; padding: 0 2px; }
-.go-btn {
+/* button.go-btn で特異度を上げ、`.screen > button`（白背景）に負けないようにする＝アクティブ時は赤 */
+button.go-btn {
   border: var(--line); border-radius: 18px;
   background: linear-gradient(135deg, #ff8b7b, var(--coral));
   color: #fff; font-size: 1rem; font-weight: 800; letter-spacing: .12em;
   padding: 13px; box-shadow: 0 5px 0 var(--ink); flex-shrink: 0;
 }
-.go-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
-.go-btn:disabled { background: var(--lock); color: #8a90a8; box-shadow: none; transform: translateY(4px); cursor: default; }
+button.go-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+button.go-btn:disabled { background: var(--lock); color: #8a90a8; box-shadow: none; transform: translateY(4px); cursor: default; }
 
 /* ---------- スロット行（汎用: 大会前ステータス表示など） ---------- */
 .stat-row { display: flex; align-items: center; gap: 8px; margin: 3px 0; font-size: .8rem; flex-wrap: wrap; }
@@ -529,6 +530,8 @@ table.skill-table tr:last-child td { border-bottom: none; }
 .radar-card { border: 2px solid var(--ink); border-radius: 12px; background: #fffdf6; padding: 3px; cursor: pointer; transition: transform .08s; }
 .radar-card:active { transform: scale(.94); }
 .radar-svg { width: 100%; height: auto; display: block; max-height: 88px; }
+/* 未解禁ジャンル: チャート本体だけ彩度を落として淡くグレーアウト（前面の大きな鍵は鮮明なまま） */
+.radar-dim { filter: grayscale(1); opacity: .45; }
 
 /* レーダー拡大ポップアップ */
 #radar-big { display: flex; justify-content: center; padding: 4px 0 2px; }
