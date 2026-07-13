@@ -122,10 +122,11 @@ button:disabled { opacity: .45; cursor: default; box-shadow: none; }
 #screen-ending > button.primary,
 #screen-training > button.primary,
 #screen-entry > button.primary {
-  position: sticky; bottom: 0; z-index: 3; margin-top: auto;
+  /* 最下端に貼り付けず少し上げる（タップしやすく。ホームバー等も避ける） */
+  position: sticky; bottom: 14px; z-index: 3; margin-top: auto;
 }
 .cta-bar {
-  position: sticky; bottom: 0; z-index: 3; margin-top: auto;
+  position: sticky; bottom: 14px; z-index: 3; margin-top: auto;
   display: flex; gap: 8px;
   padding: 8px 0 2px;
   background: linear-gradient(180deg, rgba(255,248,236,0), var(--cream) 45%);
@@ -678,7 +679,7 @@ table.results tr.me-row { color: var(--coral-deep); font-weight: 800; }
 }
 
 /* ---------- イベント選択肢: 全幅・画面下部 ---------- */
-#event-choices { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+#event-choices { margin-top: auto; margin-bottom: 14px; display: flex; flex-direction: column; gap: 8px; }
 
 /* ---------- 大会エントリー: 下寄せ・均等サイズ・チェックボックス ---------- */
 #entry-divisions { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
