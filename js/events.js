@@ -47,11 +47,21 @@
 
   const signed = n => (n >= 0 ? '+' : '') + n;
 
+  // 特定ジャンルの技術だけを変化させる（例: 1DVの新奇性+3）。表示は「1DV×新奇性 +3」形式。
+  function applyGenreStat(state, genre, id, amount) {
+    state.skills[genre][id] = clamp(state.skills[genre][id] + amount, 0, 100);
+    const g = DT.DATA.GENRES.find(x => x.id === genre);
+    const label = (g ? g.label : genre) + '×' + DT.DATA.METHODS.find(m => m.id === id).label;
+    return label + ' ' + signed(amount);
+  }
+
   function applyEffects(state, effects) {
     const messages = [];
-    // stat=単一 / stats=複数（合宿など複数技術が同時に伸びるイベント用）
+    // stat=単一(全ジャンル) / stats=複数(全ジャンル) / genreStat=特定ジャンル1つ / genreStats=特定ジャンル複数
     if (effects.stat) messages.push(applyStatChange(state, effects.stat.id, effects.stat.amount));
     if (effects.stats) effects.stats.forEach(s => messages.push(applyStatChange(state, s.id, s.amount)));
+    if (effects.genreStat) messages.push(applyGenreStat(state, effects.genreStat.genre, effects.genreStat.id, effects.genreStat.amount));
+    if (effects.genreStats) effects.genreStats.forEach(s => messages.push(applyGenreStat(state, s.genre, s.id, s.amount)));
     // コンディション変化も表示（どの選択でも変化が見えるように）。怪我リスクは非表示のまま。
     if (effects.motivation) { state.motivation = clamp(state.motivation + effects.motivation, 0, 100); messages.push('やる気 ' + signed(effects.motivation)); }
     if (effects.fatigue) { state.fatigue = clamp(state.fatigue + effects.fatigue, 0, 100); messages.push('体力 ' + signed(-effects.fatigue)); } // 体力=100-疲労なので符号反転

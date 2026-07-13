@@ -18,6 +18,7 @@
   let selectedBackground = 'highschool';
   let pendingActionId = null;
   let pendingScheduledPopup = null;
+  let pendingPopularity = null;
 
   // --- 練習スロット選択（UI状態。null=空き、'routine'、または{genre,method}） ---
   let slotsUI = new Array(DT.DATA.SLOTS.perMonth).fill(null);
@@ -995,17 +996,56 @@
   function showAwakenSplash(onDone) { playSplash('覚醒！', '', onDone); }
   function showInjurySplash(onDone) { playSplash('怪我！', 'injury', onDone); }
 
+  // 人気者イベント: OIDC/AJDCで「3位以内 かつ その部門の新奇性が90超」の部門があれば発火。
+  //   ※本来は対戦相手の新奇性スコアと比べて"トップ"だが、相手の項目別スコアはゲーム内に無いため代替条件=新奇性>90。
+  //   ★1ゲームで最大1回のみ（state.popularitySeenで管理）。効果はstateに適用し、複数部門で成立したら数値を部門数ぶん重ねる。
+  function evaluatePopularity(state, results) {
+    const type = results[0] && results[0].type;
+    if (type !== 'oidc' && type !== 'ajdc') return null;
+    if (state.popularitySeen) return null; // 既に一度発生していれば起きない
+    const clamp01 = v => Math.max(0, Math.min(100, v));
+    const avg = id => DT.DATA.GENRES.reduce((a, g) => a + state.skills[g.id][id], 0) / DT.DATA.GENRES.length;
+    const noveltyTop = r => {
+      if (r.division === 'overall') return avg('novelty') > 90;
+      const c = state.skills[r.division];
+      return c && c.novelty > 90;
+    };
+    const qualifying = results.filter(r => r.rank <= 3 && noveltyTop(r));
+    if (qualifying.length === 0) return null;
+    state.popularitySeen = true; // 発火＝以降は二度と起きない
+
+    const n = qualifying.length;
+    state.motivation = clamp01(state.motivation + 5 * n); // やる気 +5 ×部門数
+    const effectLines = ['やる気 +' + (5 * n)];
+    qualifying.forEach(r => {
+      if (r.division === 'overall') {
+        DT.DATA.GENRES.forEach(g => { state.skills[g.id].control = clamp01(state.skills[g.id].control + 3); });
+        effectLines.push('全ジャンル×操作安定度 +3');
+      } else {
+        state.skills[r.division].control = clamp01(state.skills[r.division].control + 3);
+        effectLines.push(genreLabel(r.division) + '×操作安定度 +3');
+      }
+    });
+    const divs = qualifying.map(r => r.divisionLabel).join('・');
+    const text = '大会後、「その技どうやるんですか！？」と質問攻めに！ 新奇性が評価され、一躍人気者になった。（' + divs + '）';
+    return { text: text, effectLines: effectLines, count: n };
+  }
+
   function finishTurn(messages, contestResults) {
     const end = DT.engine.endTurn(state);
     const logs = messages.concat(end.events);
     // このターンの記録を履歴に残す（endTurnでturnは進んでいるので完了ターン=state.turn-1）。あとから見返せるように保存
     const histMsgs = logs.slice();
+    pendingPopularity = null;
     if (contestResults && contestResults.length) {
       contestResults.forEach(r => {
         const pts = r.points ? '・+' + r.points + 'pt' : '';
         const nums = (r.entrants ? '位/' + r.entrants + '人' : '位') + '（' + r.score + '点' + pts + '）';
         histMsgs.push('🏆 ' + r.name + '　' + r.divisionLabel + '　' + r.rank + nums);
       });
+      // 人気者イベント（確定発火）。効果適用＋ログ記録し、大会結果の後に専用ページで表示
+      pendingPopularity = evaluatePopularity(state, contestResults);
+      if (pendingPopularity) histMsgs.push('🌟 人気者になった！', ...pendingPopularity.effectLines);
     }
     if (histMsgs.length) {
       state.logHistory = state.logHistory || [];
@@ -1275,7 +1315,13 @@
       renderRevealStage();
     } else {
       contestReveal = null;
-      afterTurn(pendingLogs);
+      // 人気者イベントが成立していれば、大会結果の後に専用ページを挟む
+      if (pendingPopularity) {
+        const p = pendingPopularity; pendingPopularity = null;
+        showEventNotice('🌟 人気者！', p.text, p.effectLines, () => afterTurn(pendingLogs));
+      } else {
+        afterTurn(pendingLogs);
+      }
     }
   };
 

@@ -171,7 +171,15 @@
         text: '4年生。周りは就活を始めた。ディアボロと将来、どう向き合う……？',
         choices: [
           { label: '競技に専念する', effects: { motivation: 12, study: -5 }, result: '「悔いの残らないように」腹をくくった。' },
-          { label: '将来も見据える', effects: { study: 8, motivation: -3 }, result: '現実と向き合い、二足のわらじを選んだ。' } ] }
+          { label: '将来も見据える', effects: { study: 8, motivation: -3 }, result: '現実と向き合い、二足のわらじを選んだ。' } ] },
+      // 夏合宿（2年6月・国内版の強化合宿）。台湾=新奇性に対し、こちらは難易度/操作を追い込む。疲労大・学業のツケ
+      { turn: 15, id: 'summer_camp', name: '夏合宿', speaker: '☀ 夏合宿',
+        text: '2年の夏。部の強化合宿の季節がやってきた。山ごもりで朝から晩まで技術を追い込むらしい。参加する？',
+        choices: [
+          { label: '参加する', effects: { stats: [{ id: 'difficulty', amount: 4 }, { id: 'control', amount: 4 }], motivation: 5, fatigue: 28, study: -6 },
+            result: '回して回して回しまくった。技術は大きく伸びたが、心身ともにヘトヘトだ……' },
+          { label: '見送る', effects: { fatigue: -12, study: 6, motivation: -2 },
+            result: '合宿は見送り、自分のペースで練習と学業を進めた。' } ] }
     ],
     SCHEDULED_WELCOME_GAIN: 10,
     // JJF(ジャグリング全国大会・ディアボロ): 毎年10月開催・9月予選。大会扱い。
@@ -218,7 +226,8 @@
       { id: 'mikoto', name: '美琴先輩',   role: '理論派の先輩' },
       { id: 'shion',  name: '志音',       role: '同学年の天才ライバル' },
       { id: 'kaito',  name: '魁人',       role: 'AJDC連覇中の王者' },
-      { id: 'irie',   name: 'イリエ',     role: '同期のディアボロ仲間' }
+      { id: 'irie',   name: 'イリエ',     role: '同期のディアボロ仲間' },
+      { id: 'ujiji',  name: 'うじじ',     role: '大陸からの刺客' }
     ],
     EVENTS: {
       probs: { char: 0.125, happening: 0.05 },
@@ -331,7 +340,8 @@
         { id: 'hap_street', text: '地元のイベントで大道芸を披露！ 拍手喝采を浴びて自信がついた。', effects: { stat: { id: 'composition', amount: 2 }, motivation: 12 } },
         { id: 'hap_slump',  text: '原因不明のスランプ……どうにも調子が上がらない。', effects: { motivation: -10 } },
         { id: 'hap_overseas', text: '海外トップ選手の新作動画に衝撃を受けた。新しい発想が湧いてきた。', effects: { stat: { id: 'novelty', amount: 3 }, motivation: 8 } },
-        { id: 'hap_malaysia', text: 'マレーシア合宿で、現地の歌を歌わされた。陽気なノリが構成のヒントになった。', effects: { stat: { id: 'composition', amount: 1 } } }
+        { id: 'hap_malaysia', text: 'マレーシア合宿で、現地の歌を歌わされた。陽気なノリが構成のヒントになった。', effects: { stat: { id: 'composition', amount: 1 } } },
+        { id: 'hap_gainen', text: 'コースケの概念モノマネを見ていたら、ふと新しい技を思いついた！', effects: { genreStat: { genre: 'v1d', id: 'novelty', amount: 3 } } }
       ]
     },
     // v2: ライバル（総合部門に実在する対戦相手）
