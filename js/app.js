@@ -840,8 +840,11 @@
     const cond = DT.events.conditionalEventFor(state);
     if (cond) {
       if (cond.choices) { pendingMessages = messages; renderEvent(cond); return; }
+      // 選択肢なしの状態イベントも専用ページを挟む
       const cr = DT.events.applyConditional(state, cond);
-      finishTurn(messages.concat(cr.messages), null);
+      const page = () => showEventNotice(cond.speaker || '💫 できごと', cond.text, cr.messages.slice(1), () => finishTurn(messages.concat(cr.messages), null));
+      // 覚醒イベントは「覚醒！」エフェクトを一度挟んでから結果ページへ
+      if (cond.id === 'awakening') { showAwakenSplash(page); } else { page(); }
       return;
     }
     const ev = DT.events.roll(state);
@@ -851,11 +854,24 @@
       return;
     }
     if (ev) {
+      // ハプニングも必ず専用ページを挟んで表示（ログだけにしない）
       const h = DT.events.applyHappening(state, ev.event);
-      finishTurn(messages.concat(h.messages), null);
+      showEventNotice('📓 今月のできごと', ev.event.text, h.messages.slice(1), () => finishTurn(messages.concat(h.messages), null));
       return;
     }
     finishTurn(messages, null);
+  }
+
+  // 選択肢のないイベント/ハプニング/状態イベントを1ページ挟んで表示（OKで続行）。効果の増減も一緒に見せる。
+  function showEventNotice(header, text, effectLines, onContinue) {
+    $('#event-char').textContent = header;
+    const nodes = [el('p', '', text)];
+    (effectLines || []).forEach(m => nodes.push(el('div', 'notice-effect', m)));
+    $('#event-text').replaceChildren(...nodes);
+    const b = el('button', 'primary', 'OK');
+    b.onclick = onContinue;
+    $('#event-choices').replaceChildren(b);
+    show('#screen-event');
   }
 
   function onAction(actionId) {
@@ -929,12 +945,14 @@
       b.onclick = () => {
         const r = DT.events.applyChoice(state, event, i);
         const msgs = pendingMessages.concat(r.messages);
-        // 合宿に「行く」(i===0)を選んだら一定確率でトイレ事件に突入
+        // 合宿に「行く」(i===0)を選んだら一定確率でトイレ事件に突入（そのページで結果を見せる）
         if (event.id === 'taiwan_camp' && i === 0 && Math.random() < TAIWAN_TOILET_CHANCE) {
           showTaiwanToilet(extra => finishTurn(msgs.concat(extra), null));
           return;
         }
-        finishTurn(msgs, null);
+        // 選択の結果（結果文＋効果）を専用ページで表示してから続行（ログだけにしない）
+        const header = event.speaker || (chara ? chara.name : '結果');
+        showEventNotice(header, r.messages[0], r.messages.slice(1), () => finishTurn(msgs, null));
       };
       return b;
     });
@@ -954,11 +972,28 @@
         text: 'パニックの果てに何かが弾けた。難しい技も体が勝手に動く……覚醒だ！（やる気は落ちたが……）',
         effects: { motivation: -20, stat: { id: 'difficulty', amount: 4 } } };
       const r = DT.events.applyConditional(state, ev);
-      onDone(r.messages);
+      // 「覚醒！」エフェクト→結果ページ→続行
+      showAwakenSplash(() => showEventNotice('✨ 覚醒', r.messages[0], r.messages.slice(1), () => onDone(r.messages)));
     };
     $('#event-choices').replaceChildren(b);
     show('#screen-event');
   }
+
+  // 全画面エフェクトを一度ドンと表示（タップ or 約1.4秒で続行）。variant='' 覚醒(金) / 'injury' 怪我(赤)
+  function playSplash(word, variant, onDone) {
+    const s = $('#awaken-splash');
+    s.querySelector('.awaken-word').textContent = word;
+    s.classList.remove('hidden', 'play', 'injury');
+    if (variant) s.classList.add(variant);
+    void s.offsetWidth; // アニメ再生をリスタート
+    s.classList.add('play');
+    let done = false;
+    const finish = () => { if (done) return; done = true; s.onclick = null; s.classList.add('hidden'); onDone(); };
+    s.onclick = finish;
+    setTimeout(finish, 1400);
+  }
+  function showAwakenSplash(onDone) { playSplash('覚醒！', '', onDone); }
+  function showInjurySplash(onDone) { playSplash('怪我！', 'injury', onDone); }
 
   function finishTurn(messages, contestResults) {
     const end = DT.engine.endTurn(state);
@@ -979,12 +1014,16 @@
     DT.state.save(state);
     pendingContest = null;
     pendingMessages = [];
-    if (contestResults) {
-      pendingLogs = logs;
-      renderContestResults(contestResults);
-      return;
-    }
-    afterTurn(logs);
+    const proceed = () => {
+      if (contestResults) {
+        pendingLogs = logs;
+        renderContestResults(contestResults);
+      } else {
+        afterTurn(logs);
+      }
+    };
+    // このターンに怪我が発生していたら「怪我！」エフェクトを一度挟んでから続行
+    if (end.injured) { showInjurySplash(proceed); } else { proceed(); }
   }
 
   function afterTurn(logs) {
@@ -1074,11 +1113,13 @@
   // JJF予選の結果をポップアップ表示（sched-popupを流用）
   function showJjfResult(q, onDone) {
     $('#sched-title').textContent = q.passed ? '🎉 JJF予選 突破！' : '💧 JJF予選 敗退';
-    const tierNote = q.tier === 'sure' ? '（確実圏）' : (q.tier === 'half' ? '（当落線・運）' : '（実力不足）');
-    $('#sched-body').replaceChildren(
-      el('p', 'popup-text', q.passed ? '予選突破！ 来月の決勝に進出します。' : '予選敗退。総合バランスをさらに高めよう。'),
-      el('p', 'popup-effect', 'バランス評価: 平均 ' + q.avg + ' ／ 最低 ' + q.min + ' ' + tierNote)
-    );
+    const nodes = [el('p', 'popup-text', q.passed ? '予選突破！ 来月の決勝に進出します。' : '予選敗退。総合バランスをさらに高めよう。')];
+    // 突破時のみバランス評価を表示（敗退時は理由を出さない）
+    if (q.passed) {
+      const tierNote = q.tier === 'sure' ? '（確実圏）' : (q.tier === 'half' ? '（当落線・運）' : '（実力不足）');
+      nodes.push(el('p', 'popup-effect', 'バランス評価: 平均 ' + q.avg + ' ／ 最低 ' + q.min + ' ' + tierNote));
+    }
+    $('#sched-body').replaceChildren(...nodes);
     $('#sched-ok').onclick = () => { $('#sched-popup').classList.add('hidden'); onDone(); };
     $('#sched-popup').classList.remove('hidden');
   }

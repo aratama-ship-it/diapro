@@ -222,6 +222,7 @@
   function endTurn(state, rng) {
     rng = rng || Math.random;
     const events = [];
+    let injured = false; // このターンに新規の怪我が発生したか（演出用にappへ通知）
 
     // やる気の平均回帰: 毎月、初期値50へreversion率で引き戻す（整数丸めで0→+5, 100→-5, 50→0）。
     // 絶好調ボーナス×成功連鎖の正のフィードバックによる0/100二極化を防ぐ減衰項
@@ -245,6 +246,7 @@
       state.injuredTurns = 1;
       state.injuryRisk = 25;
       state.motivation = clamp(state.motivation - 8, 0, 100);
+      injured = true;
       events.push('怪我をしてしまった！ 来月は療養が必要だ。（発生時 体力' + staminaAtInjury + '／疲労' + state.fatigue + '／怪我リスク' + riskAtInjury + '）');
     } else if (state.injuredTurns > 0) {
       state.injuredTurns -= 1;
@@ -275,7 +277,7 @@
 
     state.turn += 1;
     if (state.turn > DT.DATA.TOTAL_TURNS) state.status = 'graduated';
-    return { events };
+    return { events, injured };
   }
 
   // やる気帯ラベル: MOTIVATION.bandsは降順(min大→小)に並んでいる前提。値以下となる最初の帯を返す

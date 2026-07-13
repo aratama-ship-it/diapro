@@ -421,6 +421,49 @@ select:focus { outline: none; box-shadow: var(--pop-shadow-sm); }
 .log-entry-msg { font-size: .8rem; font-weight: 700; color: var(--ink); line-height: 1.55; }
 
 .cond-warn { color: var(--coral-deep); font-weight: 800; font-size: .72rem; }
+/* 選択肢なしイベント/ハプニングの効果表示（ピル） */
+.notice-effect { display: inline-block; margin: 8px 6px 0 0; padding: 3px 12px; font-size: .8rem; font-weight: 800; color: var(--ink); background: #eef1fb; border: 2px solid #d8ddf0; border-radius: 999px; }
+
+/* 覚醒エフェクト（全画面オーバーレイ・光の放射＋文字がドンと弾ける） */
+.awaken-splash {
+  position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; overflow: hidden; cursor: pointer;
+  background: radial-gradient(circle at 50% 45%, rgba(255,244,200,.96), rgba(255,209,102,.9) 42%, rgba(230,80,79,.62) 100%);
+}
+.awaken-splash.hidden { display: none; }
+.awaken-splash.play { animation: awaken-bg .3s ease-out both; }
+@keyframes awaken-bg { from { opacity: 0; } to { opacity: 1; } }
+.awaken-rays {
+  position: absolute; width: 240%; height: 240%; opacity: .55;
+  background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.9) 0deg 5deg, transparent 5deg 15deg);
+}
+.awaken-splash.play .awaken-rays { animation: awaken-spin 1.4s linear both; }
+@keyframes awaken-spin { from { transform: rotate(0deg); } to { transform: rotate(140deg); } }
+.awaken-word {
+  position: relative; font-family: "Baloo 2", "M PLUS Rounded 1c", sans-serif;
+  font-size: 4.4rem; font-weight: 800; letter-spacing: .04em; color: #fff;
+  -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill;
+  text-shadow: 0 0 16px rgba(255,255,255,.95), 0 6px 0 var(--coral-deep), 0 0 44px var(--sun);
+}
+.awaken-splash.play .awaken-word { animation: awaken-pop .6s cubic-bezier(.2,1.7,.35,1) both; }
+@keyframes awaken-pop {
+  0% { transform: scale(.2) rotate(-10deg); opacity: 0; }
+  55% { transform: scale(1.2) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+/* 怪我バリアント（赤／衝撃）。背景を赤系に差し替え、文字はドンと出た後に小刻みに震える */
+.awaken-splash.injury { background: radial-gradient(circle at 50% 45%, rgba(255,220,215,.96), rgba(230,80,79,.92) 42%, rgba(80,20,30,.7) 100%); }
+.awaken-splash.injury .awaken-rays { background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.7) 0deg 5deg, transparent 5deg 15deg); opacity: .4; }
+.awaken-splash.injury.play .awaken-rays { animation: none; }
+.awaken-splash.injury .awaken-word { color: #fff; text-shadow: 0 0 16px rgba(255,120,120,.9), 0 6px 0 #7a1220, 0 0 40px rgba(230,80,79,.9); }
+.awaken-splash.injury.play .awaken-word { animation: injury-hit .6s ease-out both; }
+@keyframes injury-hit {
+  0% { transform: scale(2.2) rotate(-4deg); opacity: 0; }
+  35% { transform: scale(1) rotate(0deg); opacity: 1; }
+  45% { transform: translateX(-6px) rotate(-2deg); }
+  60% { transform: translateX(5px) rotate(2deg); }
+  75% { transform: translateX(-3px); }
+  100% { transform: translateX(0); opacity: 1; }
+}
 
 /* ---------- ボトムナビ ---------- */
 .bottom-nav {
