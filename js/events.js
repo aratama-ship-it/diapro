@@ -45,14 +45,17 @@
     return label + (amount >= 0 ? ' +' : ' ') + amount;
   }
 
+  const signed = n => (n >= 0 ? '+' : '') + n;
+
   function applyEffects(state, effects) {
     const messages = [];
     // stat=単一 / stats=複数（合宿など複数技術が同時に伸びるイベント用）
     if (effects.stat) messages.push(applyStatChange(state, effects.stat.id, effects.stat.amount));
     if (effects.stats) effects.stats.forEach(s => messages.push(applyStatChange(state, s.id, s.amount)));
-    if (effects.motivation) state.motivation = clamp(state.motivation + effects.motivation, 0, 100);
-    if (effects.fatigue) state.fatigue = clamp(state.fatigue + effects.fatigue, 0, 100);
-    if (effects.study) state.study = clamp(state.study + effects.study, 0, 100);
+    // コンディション変化も表示（どの選択でも変化が見えるように）。怪我リスクは非表示のまま。
+    if (effects.motivation) { state.motivation = clamp(state.motivation + effects.motivation, 0, 100); messages.push('やる気 ' + signed(effects.motivation)); }
+    if (effects.fatigue) { state.fatigue = clamp(state.fatigue + effects.fatigue, 0, 100); messages.push('体力 ' + signed(-effects.fatigue)); } // 体力=100-疲労なので符号反転
+    if (effects.study) { state.study = clamp(state.study + effects.study, 0, 100); messages.push('学力 ' + signed(effects.study)); }
     if (effects.injuryRisk) state.injuryRisk = clamp(state.injuryRisk + effects.injuryRisk, 0, 100);
     // outdoor=次の練習セッションのゲイン半減デバフ（体育館工事）。ターン数を積む
     if (effects.outdoor) state.outdoorTurns = (state.outdoorTurns || 0) + effects.outdoor;
