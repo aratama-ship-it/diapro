@@ -153,7 +153,25 @@
     // 定期イベント（固定・非ランダム）: 指定ターンの行動後に必ず1回発生する。
     // welcome=新入生歓迎会: 現在解禁済みジャンルの全技術(難易度/新奇性/操作安定度)が gain ずつ上がる。
     SCHEDULED_EVENTS: [
-      { turn: 1, id: 'welcome', name: '新入生歓迎会', text: '新入生歓迎会！先輩たちが基礎のコツを教えてくれた。' }
+      { turn: 1, id: 'welcome', name: '新入生歓迎会', text: '新入生歓迎会！先輩たちが基礎のコツを教えてくれた。' },
+      // 大会前の緊張（1年7月・初の公式大会OIDCの前月）
+      { turn: 4, id: 'nerves', name: '大会前の緊張', speaker: '💭 大会前',
+        text: '初めての公式大会が近づいてきた。緊張で、少し眠れない夜が続く……',
+        choices: [
+          { label: '深呼吸して落ち着く', effects: { motivation: 8 }, result: '「大丈夫、練習してきた」肩の力がふっと抜けた。' },
+          { label: '本番を想定して詰める', effects: { stat: { id: 'control', amount: 2 }, fatigue: 8 }, result: '通し練習を重ね、不安を自信に変えた。' } ] },
+      // 後輩が入部（2年4月）
+      { turn: 13, id: 'junior', name: '後輩が入部', speaker: '🎋 新学期',
+        text: '2年生になり、後輩が入ってきた。慕われて、教える立場になった。',
+        choices: [
+          { label: '熱心に指導する', effects: { stat: { id: 'control', amount: 2 }, fatigue: 6 }, result: '教えるうちに、自分の基礎も見つめ直せた。' },
+          { label: '背中で見せる', effects: { motivation: 10 }, result: '「あんな先輩になりたい」憧れの目が力になった。' } ] },
+      // 進路の悩み（4年4月）
+      { turn: 37, id: 'career', name: '進路の悩み', speaker: '🎓 進路',
+        text: '4年生。周りは就活を始めた。ディアボロと将来、どう向き合う……？',
+        choices: [
+          { label: '競技に専念する', effects: { motivation: 12, study: -5 }, result: '「悔いの残らないように」腹をくくった。' },
+          { label: '将来も見据える', effects: { study: 8, motivation: -3 }, result: '現実と向き合い、二足のわらじを選んだ。' } ] }
     ],
     SCHEDULED_WELCOME_GAIN: 10,
     // JJF(ジャグリング全国大会・ディアボロ): 毎年10月開催・9月予選。大会扱い。
@@ -196,13 +214,15 @@
     // v2: 登場キャラクター（名前はdata.jsで一元管理 — 変更はここだけでよい）
     CHARACTERS: [
       { id: 'coach',  name: '野中コーチ', role: '部の指導者。元世界チャンピオン' },
-      { id: 'yota',   name: '陽太',       role: '同期のムードメーカー' },
+      { id: 'yota',   name: 'コースケ',   role: '同期のムードメーカー・お調子者' },
       { id: 'mikoto', name: '美琴先輩',   role: '理論派の先輩' },
       { id: 'shion',  name: '志音',       role: '同学年の天才ライバル' },
-      { id: 'kaito',  name: '魁人',       role: 'AJDC連覇中の王者' }
+      { id: 'kaito',  name: '魁人',       role: 'AJDC連覇中の王者' },
+      { id: 'irie',   name: 'イリエ',     role: '同期のディアボロ仲間' }
     ],
     EVENTS: {
       probs: { char: 0.125, happening: 0.05 },
+      // 現状オン（発火する）キャラ別イベント。方針(2026-07): 野中コーチ＋コースケ(旧・陽太)のみ。台湾合宿・YouTubeは状況イベントとして常時オン。
       charEvents: [
         { id: 'coach1', char: 'coach', text: '「基礎ができてない奴に応用はない」野中コーチが反復練習を命じてきた。',
           choices: [
@@ -212,14 +232,49 @@
           choices: [
             { label: '技術を盗む',       effects: { stat: { id: 'difficulty', amount: 3 } },                  result: '世界レベルの技術を目に焼き付けた。' },
             { label: '見せ方を学ぶ',     effects: { stat: { id: 'composition', amount: 3 } },                 result: '「魅せて初めて点になる」深い言葉だった。' } ] },
-        { id: 'yota1', char: 'yota', text: '陽太が「息抜きしようぜ！」とゲームセンターに誘ってきた。',
+        { id: 'coach3', char: 'coach', text: '野中コーチが「お前、本番でこうなったらどうする？」と不測の状況を突きつけてきた。',
+          choices: [
+            { label: '冷静に対処する', effects: { stat: { id: 'control', amount: 3 } }, result: '想定外にも動じない胆力がついた。' },
+            { label: '攻めの一手で返す', effects: { stat: { id: 'difficulty', amount: 2 }, motivation: 6 }, result: '「面白い、それでいい」コーチが珍しく笑った。' } ] },
+        // コースケ（お調子者・同期のムードメーカー。旧・陽太）
+        { id: 'yota1', char: 'yota', text: 'コースケが「息抜きしようぜ！」とゲームセンターに誘ってきた。',
           choices: [
             { label: '付き合う',         effects: { fatigue: -15, motivation: 8 },                            result: '思い切り笑って、心が軽くなった。' },
             { label: '練習を優先',       effects: { stat: { id: 'control', amount: 2 }, motivation: -8 },     result: '断った罪悪感はあるが、腕は上がった。' } ] },
-        { id: 'yota2', char: 'yota', text: '陽太が動画撮影を手伝ってくれると言う。',
+        { id: 'yota2', char: 'yota', text: 'コースケが動画撮影を手伝ってくれると言う。',
           choices: [
             { label: '演技を撮ってもらう', effects: { stat: { id: 'composition', amount: 2 } },               result: '客観的に見ると構成の粗がよく分かった。' },
             { label: '技のスローを撮る',   effects: { stat: { id: 'control', amount: 2 } },                   result: 'フォームの癖を修正できた。' } ] },
+        { id: 'yota3', char: 'yota', text: 'コースケが「お前の演技、俺が実況したら映えると思うんだよな」と言い出した。',
+          choices: [
+            { label: '撮影を頼む', effects: { stat: { id: 'composition', amount: 2 }, motivation: 6 }, result: '賑やかな実況付き動画で、見せ場がはっきり分かった。' },
+            { label: '練習に集中する', effects: { stat: { id: 'control', amount: 2 } }, result: '「相変わらず真面目だなー」呆れ半分、感心半分。' } ] },
+        // イリエ: 過去のキャライベント(旧・美琴先輩「採点規則の読み合わせ」)の内容を流用
+        { id: 'irie1', char: 'irie', text: 'イリエが採点規則の読み合わせに誘ってくれた。',
+          choices: [
+            { label: '構成理論を教わる', effects: { stat: { id: 'composition', amount: 3 } },                 result: '「起承転結は音楽で決まる」目から鱗だった。' },
+            { label: '試験勉強も教わる', effects: { study: 8 },                                               result: 'ついでに レポートの書き方まで教わった。' } ] },
+        // 台湾合宿: 一度きりの大きな決断イベント。行く=技術と刺激だが疲労大・学業のツケ / 行かない=堅実に学業
+        { id: 'taiwan_camp', char: 'saito', speaker: 'SAITO会長',
+          text: 'SAITO会長が「台湾に合宿に行かないか？」と誘ってくれた。海外の強豪と練習できる、めったにない機会だ。',
+          choices: [
+            { label: '行く', effects: { stats: [{ id: 'novelty', amount: 8 }, { id: 'control', amount: 3 }], motivation: 12, fatigue: 25, study: -12 },
+              result: '台湾の強豪から新しい技を数多く吸収した！新奇性が大きく伸び、刺激も持ち帰った。ただし疲労と、休んだ授業のツケも残った……' },
+            { label: '行かない', effects: { study: 6, motivation: -3 },
+              result: '「また次の機会に」丁重に断り、今回は国内での練習と学業に専念した。' } ] },
+        // YouTube解説動画: 3択。コメント=学び(新奇性) / 高評価=やる気 / 低評価=軽い罠
+        { id: 'youtube', char: 'youtube', speaker: '📺 YouTube',
+          text: 'ディアボロの技の解説動画を見つけた。よく分からなかったが……どうする？',
+          choices: [
+            { label: '高評価ボタンを押す', effects: { motivation: 8 },
+              result: 'とりあえず高評価。誰かを応援するのは気持ちがいい。' },
+            { label: 'コメントで質問する', effects: { stat: { id: 'novelty', amount: 2 }, motivation: 3 },
+              result: '思い切って質問をコメント。投稿者が技のコツを丁寧に教えてくれた！' },
+            { label: '低評価ボタンを押す', effects: { motivation: -6 },
+              result: 'よく分からないまま低評価を押した。少し大人げなかったかも……' } ] }
+      ],
+      // 現状オフ（無効化）のキャラ別イベント。ゲームからは未参照。復活時は charEvents へ戻す。（2026-07方針: 美琴先輩・志音・魁人は保留）
+      charEventsDisabled: [
         { id: 'mikoto1', char: 'mikoto', text: '美琴先輩が採点規則の読み合わせに誘ってくれた。',
           choices: [
             { label: '構成理論を教わる', effects: { stat: { id: 'composition', amount: 3 } },                 result: '「起承転結は音楽で決まるのよ」目から鱗だった。' },
@@ -228,6 +283,10 @@
           choices: [
             { label: '詳しく聞く',       effects: { stat: { id: 'novelty', amount: 3 } },                     result: '技の引き出しの偏りを指摘され、新しい技を開拓したくなった。' },
             { label: '聞き流す',         effects: { motivation: 8 },                                          result: '自分のスタイルを貫くのも大事だ。' } ] },
+        { id: 'mikoto3', char: 'mikoto', text: '卒業を控えた美琴先輩が「私の技のノート、あなたに託すわ」と差し出した。',
+          choices: [
+            { label: '構成理論を継ぐ', effects: { stat: { id: 'composition', amount: 3 } }, result: '先輩の理論の結晶。構成の引き出しが増えた。' },
+            { label: '技の記録を継ぐ', effects: { stat: { id: 'novelty', amount: 2 }, motivation: 5 }, result: '書き込まれた技の数々に胸が高鳴った。' } ] },
         { id: 'shion1', char: 'shion', text: '志音の練習を偶然見てしまった。異次元の完成度だった。',
           choices: [
             { label: '闘志を燃やす',     effects: { motivation: 15 },                                          result: '「次の大会で絶対に勝つ」' },
@@ -236,6 +295,10 @@
           choices: [
             { label: '勝負を挑む',       effects: { stat: { id: 'difficulty', amount: 2 }, fatigue: 8 },      result: '即席の技比べ。負けたが、得るものがあった。' },
             { label: '素直に喜ぶ',       effects: { motivation: 8, study: -3 },                               result: '浮かれてその日は勉強が手につかなかった。' } ] },
+        { id: 'shion3', char: 'shion', text: '志音が「次の大会、どっちが上か決着つけようぜ」と不敵に笑った。',
+          choices: [
+            { label: '受けて立つ', effects: { stat: { id: 'difficulty', amount: 2 }, motivation: 10 }, result: 'ライバルの存在が、自分を一段引き上げる。' },
+            { label: '自分の演技に集中', effects: { stat: { id: 'composition', amount: 2 }, motivation: 6 }, result: '「勝負は結果がつける」静かに闘志を燃やした。' } ] },
         { id: 'kaito1', char: 'kaito', text: 'SNSで王者・魁人の新技映像が流れてきた。世界が違う。',
           choices: [
             { label: '何度も見返す',     effects: { stat: { id: 'difficulty', amount: 2 } },                  result: '理屈は分かった。あとは体で覚えるだけだ。' },
@@ -243,7 +306,11 @@
         { id: 'kaito2', char: 'kaito', text: '大会会場で魁人に「学生で面白いのが居ると聞いた」と話しかけられた。',
           choices: [
             { label: '目標です、と言う', effects: { motivation: 15 },                                          result: '「なら早く上がってこい」胸が熱くなった。' },
-            { label: '倒す相手です、と言う', effects: { stat: { id: 'control', amount: 2 }, motivation: 8 },  result: '「…いい目だ」王者は笑った。' } ] }
+            { label: '倒す相手です、と言う', effects: { stat: { id: 'control', amount: 2 }, motivation: 8 },  result: '「…いい目だ」王者は笑った。' } ] },
+        { id: 'kaito3', char: 'kaito', text: '魁人が「お前の演技、去年より断然良くなってる」と真顔で言った。',
+          choices: [
+            { label: '素直に受け取る', effects: { motivation: 12 }, result: '王者に認められた事実が、大きな自信になった。' },
+            { label: 'まだまだです、と返す', effects: { stat: { id: 'control', amount: 2 }, motivation: 8 }, result: '「その飢えがいい」王者は満足げに頷いた。' } ] }
       ],
       happenings: [
         { id: 'hap1', text: 'バイト代で新しいディアボロを購入した！', effects: { stat: { id: 'control', amount: 2 } } },
@@ -256,7 +323,15 @@
         // サーカス観覧: プロのディアボロ演技を見て構成のヒント（演技構成が少しアップ）
         { id: 'hap_circus', text: 'サーカスを見に行った。プロのディアボロ演技に見入り、構成のヒントを得た。', effects: { stat: { id: 'composition', amount: 3 } } },
         // 望月勇作さんに偶然出会う: Mochi Powerで構成力とやる気アップ
-        { id: 'hap_mochi', text: '偶然、望月勇作さんに出会った。「Mochi Power」を浴び、構成力とやる気が上がった！', effects: { stat: { id: 'composition', amount: 5 }, motivation: 10 } }
+        { id: 'hap_mochi', text: '偶然、望月勇作さんに出会った。「Mochi Power」を浴び、構成力とやる気が上がった！', effects: { stat: { id: 'composition', amount: 5 }, motivation: 10 } },
+        // --- 追加ハプニング（2026-07 バッチ） ---
+        { id: 'hap_string', text: 'バイト代で新しいストリングに交換した。手元がぐっと安定した。', effects: { stat: { id: 'control', amount: 2 } } },
+        { id: 'hap_sleep',  text: '課題に追われて寝不足……練習に身が入らなかった。', effects: { fatigue: 12, motivation: -5 } },
+        { id: 'hap_teach',  text: '後輩にディアボロの基礎を教えた。教えることで自分の理解も深まった。', effects: { stat: { id: 'control', amount: 2 }, motivation: 6 } },
+        { id: 'hap_street', text: '地元のイベントで大道芸を披露！ 拍手喝采を浴びて自信がついた。', effects: { stat: { id: 'composition', amount: 2 }, motivation: 12 } },
+        { id: 'hap_slump',  text: '原因不明のスランプ……どうにも調子が上がらない。', effects: { motivation: -10 } },
+        { id: 'hap_overseas', text: '海外トップ選手の新作動画に衝撃を受けた。新しい発想が湧いてきた。', effects: { stat: { id: 'novelty', amount: 3 }, motivation: 8 } },
+        { id: 'hap_malaysia', text: 'マレーシア合宿で、現地の歌を歌わされた。陽気なノリが構成のヒントになった。', effects: { stat: { id: 'composition', amount: 1 } } }
       ]
     },
     // v2: ライバル（総合部門に実在する対戦相手）
@@ -267,22 +342,7 @@
     ],
     // 実装予定のイベント草案（テキストと選択肢のみを記録。効果パラメータは後日設定するため未実装。
     // ゲームループからは未参照 ＝ まだ発生しない）
-    EVENT_DRAFTS: [
-      {
-        id: 'youtube', text: 'YouTube動画の解説を見た。よくわからなかったが……',
-        choices: [
-          { label: '高評価ボタンを押す' },
-          { label: 'コメントをする' },
-          { label: '低評価ボタンを押す' }
-        ]
-      },
-      {
-        id: 'taiwan_camp', text: '斉藤会長が「台湾に合宿に行こう」と誘ってくれた。',
-        choices: [
-          { label: '行く' },
-          { label: '行かない' }
-        ]
-      }
-    ]
+    // 実装予定のイベント草案（未実装・ゲーム未参照）。youtube・taiwan_camp は実装済み（EVENTS.charEvents へ移動）
+    EVENT_DRAFTS: []
   };
 })(typeof window !== 'undefined' ? window : globalThis);

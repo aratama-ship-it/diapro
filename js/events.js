@@ -32,24 +32,28 @@
     return null;
   }
 
+  // 1つの技術系ステータス(difficulty/novelty/control は全ジャンルに/composition は単独)を変化させ、表示メッセージを返す
+  function applyStatChange(state, id, amount) {
+    if (id === 'composition') {
+      state.composition = clamp(state.composition + amount, 0, 100);
+    } else {
+      DT.DATA.GENRES.forEach(g => {
+        state.skills[g.id][id] = clamp(state.skills[g.id][id] + amount, 0, 100);
+      });
+    }
+    const label = (id === 'composition' ? DT.DATA.COMPOSITION : DT.DATA.METHODS.find(s => s.id === id)).label;
+    return label + (amount >= 0 ? ' +' : ' ') + amount;
+  }
+
   function applyEffects(state, effects) {
     const messages = [];
-    if (effects.stat) {
-      const id = effects.stat.id;
-      const amount = effects.stat.amount;
-      if (id === 'composition') {
-        state.composition = clamp(state.composition + amount, 0, 100);
-      } else {
-        DT.DATA.GENRES.forEach(g => {
-          state.skills[g.id][id] = clamp(state.skills[g.id][id] + amount, 0, 100);
-        });
-      }
-      const label = (id === 'composition' ? DT.DATA.COMPOSITION : DT.DATA.METHODS.find(s => s.id === id)).label;
-      messages.push(label + (amount >= 0 ? ' +' : ' ') + amount);
-    }
+    // stat=単一 / stats=複数（合宿など複数技術が同時に伸びるイベント用）
+    if (effects.stat) messages.push(applyStatChange(state, effects.stat.id, effects.stat.amount));
+    if (effects.stats) effects.stats.forEach(s => messages.push(applyStatChange(state, s.id, s.amount)));
     if (effects.motivation) state.motivation = clamp(state.motivation + effects.motivation, 0, 100);
     if (effects.fatigue) state.fatigue = clamp(state.fatigue + effects.fatigue, 0, 100);
     if (effects.study) state.study = clamp(state.study + effects.study, 0, 100);
+    if (effects.injuryRisk) state.injuryRisk = clamp(state.injuryRisk + effects.injuryRisk, 0, 100);
     // outdoor=次の練習セッションのゲイン半減デバフ（体育館工事）。ターン数を積む
     if (effects.outdoor) state.outdoorTurns = (state.outdoorTurns || 0) + effects.outdoor;
     return messages;
@@ -72,6 +76,52 @@
 
   function applyHappening(state, event) {
     const messages = [event.text].concat(applyEffects(state, event.effects));
+    return { messages };
+  }
+
+  // 直近2大会がいずれも表彰台外（best rank>3）なら連敗中とみなす。state.resultsから算出。
+  function losingStreak(state) {
+    const byTurn = {};
+    (state.results || []).forEach(r => {
+      if (r.rank == null) return;
+      byTurn[r.turn] = Math.min(byTurn[r.turn] === undefined ? 99 : byTurn[r.turn], r.rank);
+    });
+    const turns = Object.keys(byTurn).map(Number).sort((a, b) => a - b);
+    if (turns.length < 2) return false;
+    return turns.slice(-2).every(t => byTurn[t] > 3);
+  }
+
+  // 状態依存イベント: 状態条件で発火する特別イベントを返す（ランダム抽選より優先）。無ければnull。
+  //   auto:true=選択肢なし（自動適用） / choicesあり=通常のイベント画面へ。once:true=一度きり(seenで管理)。
+  function conditionalEventFor(state) {
+    const seen = new Set(seenCharEvents(state));
+    // ① 過労で倒れる（繰り返し・自己限定: 発火後fatigueが下がり条件が解ける）
+    if (state.fatigue >= 90) {
+      return { id: 'collapse', speaker: '⚠ 過労', auto: true,
+        text: '無理がたたって練習中に倒れてしまった……！ 強制的に休養することになった。',
+        effects: { fatigue: -45, motivation: -10, injuryRisk: 10 } };
+    }
+    // ② 絶好調で覚醒（一度きり）
+    if (!seen.has('awakening') && state.motivation >= 88) {
+      return { id: 'awakening', speaker: '✨ 覚醒', auto: true, once: true,
+        text: '絶好調の波に乗り、無我夢中で回すうち——ずっと掴めなかった感覚が、突然しっくりきた！',
+        effects: { stats: [{ id: 'novelty', amount: 4 }, { id: 'difficulty', amount: 3 }], motivation: 5 } };
+    }
+    // ③ 連敗中に野中コーチが励ます（一度きり・2択）
+    if (!seen.has('senpai_cheer') && losingStreak(state)) {
+      return { id: 'senpai_cheer', char: 'coach', speaker: '野中コーチ',
+        text: '「結果が出ない時こそ、基礎に立ち返れ」肩を落とす自分に、野中コーチが声をかけてくれた。',
+        choices: [
+          { label: '素直に聞く', effects: { stat: { id: 'control', amount: 2 }, motivation: 8 }, result: '基礎練を見直した。焦りが少し晴れた。' },
+          { label: '自分を信じる', effects: { motivation: 12 }, result: '「私は私のやり方で」不思議と前を向けた。' } ] };
+    }
+    return null;
+  }
+
+  // 状態依存イベント(auto)の効果を適用。once指定なら既読に記録して再発火を防ぐ。
+  function applyConditional(state, event) {
+    const messages = [event.text].concat(applyEffects(state, event.effects));
+    if (event.once) { const seen = seenCharEvents(state); if (!seen.includes(event.id)) seen.push(event.id); }
     return { messages };
   }
 
@@ -100,5 +150,5 @@
     return { messages };
   }
 
-  DT.events = { roll, applyChoice, applyHappening, scheduledEventFor, applyScheduled };
+  DT.events = { roll, applyChoice, applyHappening, scheduledEventFor, applyScheduled, conditionalEventFor, applyConditional };
 })(typeof window !== 'undefined' ? window : globalThis);

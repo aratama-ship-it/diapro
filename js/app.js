@@ -836,6 +836,14 @@
 
   // --- ターン実行フロー ---
   function proceedWithEvents(messages) {
+    // 状態依存イベント（過労で倒れる・絶好調で覚醒・連敗中の励まし等）をランダム抽選より優先
+    const cond = DT.events.conditionalEventFor(state);
+    if (cond) {
+      if (cond.choices) { pendingMessages = messages; renderEvent(cond); return; }
+      const cr = DT.events.applyConditional(state, cond);
+      finishTurn(messages.concat(cr.messages), null);
+      return;
+    }
     const ev = DT.events.roll(state);
     if (ev && ev.kind === 'char') {
       pendingMessages = messages;
@@ -889,6 +897,12 @@
     }
     const sched = DT.events.scheduledEventFor(state);
     if (sched) {
+      // 選択肢つきの定期イベント（大会前の緊張・後輩入部・進路の悩み等）はイベント画面へ
+      if (sched.choices) {
+        pendingMessages = messages;
+        renderEvent(sched);
+        return;
+      }
       const sr = DT.events.applyScheduled(state, sched);
       // 定期イベントはホーム画面の上にポップアップで通知（afterTurnでホーム描画後に表示）
       pendingScheduledPopup = { sched: sched, effects: sr.messages };
@@ -902,19 +916,47 @@
     finishTurn(messages, null);
   }
 
+  // 台湾合宿「行く」で低確率発生するコミカル分岐（トイレ事件→やる気-20だが覚醒）
+  const TAIWAN_TOILET_CHANCE = 0.5;
+
   function renderEvent(event) {
+    // speaker指定があれば優先（CHARACTERSに居ない一度きりのゲストNPC用。例: 斉藤会長）
     const chara = DT.DATA.CHARACTERS.find(c => c.id === event.char);
-    $('#event-char').textContent = chara.name;
+    $('#event-char').textContent = event.speaker || (chara ? chara.name : '');
     $('#event-text').replaceChildren(el('p', '', event.text));
     const buttons = event.choices.map((c, i) => {
       const b = el('button', i === 0 ? 'primary' : '', c.label);
       b.onclick = () => {
         const r = DT.events.applyChoice(state, event, i);
-        finishTurn(pendingMessages.concat(r.messages), null);
+        const msgs = pendingMessages.concat(r.messages);
+        // 合宿に「行く」(i===0)を選んだら一定確率でトイレ事件に突入
+        if (event.id === 'taiwan_camp' && i === 0 && Math.random() < TAIWAN_TOILET_CHANCE) {
+          showTaiwanToilet(extra => finishTurn(msgs.concat(extra), null));
+          return;
+        }
+        finishTurn(msgs, null);
       };
       return b;
     });
     $('#event-choices').replaceChildren(...buttons);
+    show('#screen-event');
+  }
+
+  // 台湾合宿・トイレ事件: やる気-20だが「覚醒モード」で難易度+4・操作安定度+3（合宿ベースの新奇性+8と重複しない軸で表現）
+  function showTaiwanToilet(onDone) {
+    $('#event-char').textContent = '🚽 台湾合宿・珍事件';
+    $('#event-text').replaceChildren(el('p', '',
+      '合宿中、宿舎のトイレが詰まってしまった……！ 言葉も通じない中、助けを求めて必死に走り回る。極限の焦りが、なぜか集中を研ぎ澄ませ——覚醒モードに入った！'));
+    const b = el('button', 'primary', '覚醒する');
+    b.onclick = () => {
+      // 覚醒＝難しい技が急にできる（難易度+4のみ）。ベースの合宿(新奇性+8/操作+3)と役割を分け重複させない
+      const ev = { id: 'taiwan_toilet',
+        text: 'パニックの果てに何かが弾けた。難しい技も体が勝手に動く……覚醒だ！（やる気は落ちたが……）',
+        effects: { motivation: -20, stat: { id: 'difficulty', amount: 4 } } };
+      const r = DT.events.applyConditional(state, ev);
+      onDone(r.messages);
+    };
+    $('#event-choices').replaceChildren(b);
     show('#screen-event');
   }
 
