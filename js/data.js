@@ -111,6 +111,13 @@
       '律', '樹', '陸斗', '海翔', '俊介', '慎之介', '光希', '達也',
       '直樹', '亮平', '拓海', '翔平', '健心', '一颯', '玄', '遼'
     ],
+    // 国際大会(OIDC等)用の対戦相手名: 台湾風・フランス風・アメリカ風を混在
+    OPPONENT_NAMES_INTL: [
+      'Chen Yu-hao', 'Lin Chih-wei', 'Wang Po-han', 'Huang Kai-lin', 'Chang Ming-jie', 'Lee Cheng-en', 'Wu Shang-ju', 'Tsai Ping',
+      'Julien Dubois', 'Antoine Moreau', 'Léo Girard', 'Mathis Roux', 'Baptiste Faure', 'Théo Lambert', 'Rémi Blanc', 'Hugo Mercier',
+      'Jake Miller', 'Ryan Carter', 'Tyler Brooks', 'Ethan Cole', 'Nathan Reed', 'Aaron Scott', 'Dylan Price', 'Cody Turner',
+      'William Lee'
+    ],
     // やる気: 0-100の連続値。帯ラベルと寄与係数
     MOTIVATION: {
       initial: 50,

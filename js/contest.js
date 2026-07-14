@@ -227,8 +227,9 @@
   }
 
   // モブ対戦相手の命名: rngを消費しない決定的割り当て（同一大会内でも式で重複を避ける）
+  // OIDCは国際大会なので国際名プール（台湾/フランス/アメリカ風）を使う
   function opponentName(contest, i) {
-    const names = DT.DATA.OPPONENT_NAMES;
+    const names = contest.type === 'oidc' ? DT.DATA.OPPONENT_NAMES_INTL : DT.DATA.OPPONENT_NAMES;
     return names[(contest.turn * 7 + i * 5) % names.length];
   }
 
