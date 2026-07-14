@@ -168,7 +168,7 @@
     //   テクニカル=低め＆高sd(ランダム強め)。パフォーマンス=構成95付近が優勝ラインになる高めの帯＋低sd。
     shizuoka: {
       base: 55, growth: 1, sd: 15, entrants: 12, // フォールバック（通常はdivLevelsを使用）
-      points: { technical: [20, 12, 8, 4, 1], performance: [20, 12, 8, 4, 1] },
+      points: { technical: [10, 6, 4, 2, 1], performance: [10, 6, 4, 2, 1] },
       divLevels: {
         technical:   { base: 50, sd: 18 },
         performance: { base: 84, sd: 5 }

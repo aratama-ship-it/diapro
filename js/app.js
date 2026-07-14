@@ -1143,10 +1143,10 @@
         msgs.push('JJF予選突破！ 決勝進出（+' + DT.DATA.JJF.finalistPoints + 'pt・やる気アップ）');
         showJjfResult(q, () => finishTurn(pendingMessages.concat(msgs), null));
       } else {
-        // 敗退: 解説ポップアップは出さず、やる気が下がるだけ
+        // 敗退: 専用ページは出すが理由は書かず簡潔に。やる気だけ下げる
         state.motivation = Math.max(0, state.motivation - 8);
         msgs.push('JJF予選敗退… やる気が下がった。');
-        finishTurn(pendingMessages.concat(msgs), null);
+        showEventNotice('💧 JJF予選 敗退', '予選敗退……', ['やる気 -8'], () => finishTurn(pendingMessages.concat(msgs), null));
       }
     };
     const skip = el('button', '', '参加しない');
