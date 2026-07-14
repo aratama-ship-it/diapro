@@ -34,8 +34,15 @@
     return null;
   }
 
+  // 覚醒中(awakenTurns>0)は「能力値のプラスの伸び」だけ1.5倍・繰り上げ(ceil)。マイナスや0はそのまま。
+  //   ※やる気/学力/体力/大会スコアは対象外（能力値の伸びのみ）。
+  function awakenBoost(state, amount) {
+    return (state.awakenTurns > 0 && amount > 0) ? Math.ceil(amount * 1.5) : amount;
+  }
+
   // 1つの技術系ステータス(difficulty/novelty/control は全ジャンルに/composition は単独)を変化させ、表示メッセージを返す
   function applyStatChange(state, id, amount) {
+    amount = awakenBoost(state, amount);
     if (id === 'composition') {
       state.composition = clamp(state.composition + amount, 0, 100);
     } else {
@@ -51,6 +58,7 @@
 
   // 特定ジャンルの技術だけを変化させる（例: 1DVの新奇性+3）。表示は「1DV×新奇性 +3」形式。
   function applyGenreStat(state, genre, id, amount) {
+    amount = awakenBoost(state, amount);
     state.skills[genre][id] = clamp(state.skills[genre][id] + amount, 0, 100);
     const g = DT.DATA.GENRES.find(x => x.id === genre);
     const label = (g ? g.label : genre) + '×' + DT.DATA.METHODS.find(m => m.id === id).label;
@@ -108,6 +116,26 @@
     return turns.slice(-2).every(t => byTurn[t] > 3);
   }
 
+  // 覚醒の発生枠: 1〜2年生(turn1-24)で1回・3〜4年生(turn25-48)で1回。成功時のみ枠を消費する。
+  function awakenSlotUsed(state) {
+    return state.turn <= 24 ? !!state.awakenUsedEarly : !!state.awakenUsedLate;
+  }
+  // 覚醒の持続月数を抽選: 2ヶ月20% / 3ヶ月60% / 4ヶ月20%
+  function rollAwakenDuration(rng) {
+    const r = (rng || Math.random)();
+    if (r < 0.2) return 2;
+    if (r < 0.8) return 3;
+    return 4;
+  }
+  // 覚醒成功: 持続を抽選し、該当年代の枠を消費。開始したターンは減算しない目印(awakenJustStarted)を立てる。持続月数を返す。
+  function startAwakening(state, rng) {
+    const dur = rollAwakenDuration(rng);
+    state.awakenTurns = dur;
+    state.awakenJustStarted = true;
+    if (state.turn <= 24) state.awakenUsedEarly = true; else state.awakenUsedLate = true;
+    return dur;
+  }
+
   // 状態依存イベント: 状態条件で発火する特別イベントを返す（ランダム抽選より優先）。無ければnull。
   //   auto:true=選択肢なし（自動適用） / choicesあり=通常のイベント画面へ。once:true=一度きり(seenで管理)。
   function conditionalEventFor(state) {
@@ -118,11 +146,14 @@
         text: '無理がたたって練習中に倒れてしまった……！ 強制的に休養することになった。',
         effects: { fatigue: -45, motivation: -10, injuryRisk: 10 } };
     }
-    // ② 絶好調で覚醒（一度きり）
-    if (!seen.has('awakening') && state.motivation >= 88) {
-      return { id: 'awakening', speaker: '✨ 覚醒', auto: true, once: true,
-        text: '絶好調の波に乗り、無我夢中で回すうち——ずっと掴めなかった感覚が、突然しっくりきた！',
-        effects: { stats: [{ id: 'novelty', amount: 4 }, { id: 'difficulty', amount: 3 }], motivation: 5 } };
+    // ② 覚醒のきざし（やる気90以上／該当年代の枠が未使用なら選択肢イベント発生）。
+    //    現在すでに覚醒中(awakenTurns>0)なら発生しない。「波に乗る」で50%成功→覚醒モード、失敗でやる気-10。
+    if (!(state.awakenTurns > 0) && state.motivation >= 90 && !awakenSlotUsed(state)) {
+      return { id: 'awaken_trigger', char: 'awaken', speaker: '✨ 覚醒のきざし', awakenTrigger: true,
+        text: '心と体が噛み合い、絶好調の波が高まっている——。この高ぶりに、思いきって身を委ねてみるか？',
+        choices: [
+          { label: '波に乗る（挑戦）', awaken: true },
+          { label: '落ち着いて整える', declineMot: -5, result: '深呼吸して、いつも通りに整えた。高ぶりは静かに引いていった。' } ] };
     }
     // ③ 連敗中に野中コーチが励ます（一度きり・2択）
     if (!seen.has('senpai_cheer') && losingStreak(state)) {
@@ -167,5 +198,5 @@
     return { messages };
   }
 
-  DT.events = { roll, applyChoice, applyHappening, scheduledEventFor, applyScheduled, conditionalEventFor, applyConditional };
+  DT.events = { roll, applyChoice, applyHappening, scheduledEventFor, applyScheduled, conditionalEventFor, applyConditional, startAwakening, awakenSlotUsed };
 })(typeof window !== 'undefined' ? window : globalThis);

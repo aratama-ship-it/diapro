@@ -31,6 +31,12 @@
       lowStudyMonths: 0,
       banTurns: 0,
       outdoorTurns: 0,
+      // 覚醒: awakenTurns=残り月数, awakenUsedEarly/Late=1-2年/3-4年の枠を使ったか, awakenJustStarted=開始ターン目印, awakenEndPending=終了通知待ち
+      awakenTurns: 0,
+      awakenUsedEarly: false,
+      awakenUsedLate: false,
+      awakenJustStarted: false,
+      awakenEndPending: false,
       jjfFinalist: 0,
       didStudy: false,
       didTrain: false,

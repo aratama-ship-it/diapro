@@ -338,6 +338,13 @@ select:focus { outline: none; box-shadow: var(--pop-shadow-sm); }
 }
 .pb-mood .mood-label { font-size: .74rem; font-weight: 800; color: var(--coral-deep); margin-top: 2px; }
 .pb-mood .mood-note { font-size: .54rem; color: var(--ink-soft); }
+.pb-mood .mood-awaken {
+  margin-top: 3px; font-size: .52rem; font-weight: 900; color: #fff;
+  background: linear-gradient(135deg, #ff9d2f, #ff5e7e);
+  padding: 2px 7px; border-radius: 999px; letter-spacing: .5px;
+  box-shadow: 0 1px 4px rgba(255,94,126,.5); animation: awakenPulse 1.4s ease-in-out infinite;
+}
+@keyframes awakenPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
 .pb-meters { display: grid; grid-template-columns: 1fr; gap: 7px; }
 /* 構成メーター（レーダーの下） */
 .pb-comp { margin-top: 6px; }

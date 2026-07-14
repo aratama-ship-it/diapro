@@ -528,6 +528,8 @@
     mood.appendChild(el('div', 'mood-face', MOOD_EMOJI[moodLabel] || '🙂'));
     mood.appendChild(el('div', 'mood-label', moodLabel));
     mood.appendChild(el('div', 'mood-note', 'やる気 ' + state.motivation));
+    // 覚醒中バッジ（やる気の直下に「覚醒」漢字＋残り月数）
+    if (state.awakenTurns > 0) mood.appendChild(el('div', 'mood-awaken', '🔥覚醒 あと' + state.awakenTurns + 'ヶ月'));
     cond.appendChild(mood);
     const meters = el('div', 'pb-meters');
     meters.appendChild(meterRow('体力', 100 - state.fatigue, { warn: state.fatigue >= 60 }));
@@ -849,9 +851,8 @@
       if (cond.choices) { pendingMessages = messages; renderEvent(cond); return; }
       // 選択肢なしの状態イベントも専用ページを挟む
       const cr = DT.events.applyConditional(state, cond);
-      const page = () => showEventNotice(cond.speaker || '💫 できごと', cond.text, cr.messages.slice(1), () => finishTurn(messages.concat(cr.messages), null));
-      // 覚醒イベントは「覚醒！」エフェクトを一度挟んでから結果ページへ
-      if (cond.id === 'awakening') { showAwakenSplash(page); } else { page(); }
+      // 選択肢なしの状態イベント（過労で倒れる等）は専用ページで表示。覚醒は選択肢イベント(awakenTrigger)なので上のchoices側で処理される。
+      showEventNotice(cond.speaker || '💫 できごと', cond.text, cr.messages.slice(1), () => finishTurn(messages.concat(cr.messages), null));
       return;
     }
     const ev = DT.events.roll(state);
@@ -950,6 +951,8 @@
     const buttons = event.choices.map((c, i) => {
       const b = el('button', i === 0 ? 'primary' : '', c.label);
       b.onclick = () => {
+        // 覚醒のきざし: 通常のapplyChoice(既読管理)を通さず専用処理（50%成功／失敗でやる気-10）
+        if (event.awakenTrigger) { handleAwakenChoice(event, i); return; }
         const r = DT.events.applyChoice(state, event, i);
         const msgs = pendingMessages.concat(r.messages);
         // 合宿に「行く」(i===0)を選んだら一定確率でトイレ事件に突入（そのページで結果を見せる）
@@ -965,6 +968,30 @@
     });
     $('#event-choices').replaceChildren(...buttons);
     show('#screen-event');
+  }
+
+  // 覚醒のきざしイベントの選択処理。「波に乗る」=50%で覚醒モード開始／失敗はやる気-10。「落ち着く」=やる気小減。
+  function handleAwakenChoice(event, i) {
+    const choice = event.choices[i];
+    if (choice.awaken) {
+      if (Math.random() < 0.5) {
+        const dur = DT.events.startAwakening(state);
+        const msgs = pendingMessages.concat(['✨ 覚醒モードに入った！（今後' + dur + 'ヶ月間、練習・イベントでの能力の伸びが1.5倍）']);
+        showAwakenSplash(() => showEventNotice('✨ 覚醒', '波に完全に乗った——感覚が研ぎ澄まされ、覚醒モードに入った！',
+          ['今後' + dur + 'ヶ月間 能力の伸び ×1.5'], () => finishTurn(msgs, null)));
+      } else {
+        state.motivation = Math.max(0, state.motivation - 10);
+        const msgs = pendingMessages.concat(['覚醒に失敗… やる気 -10']);
+        showEventNotice('✨ 覚醒のきざし', '波に乗ろうとしたが、力が入りすぎて呑まれてしまった……惜しくも覚醒には至らなかった。',
+          ['やる気 -10'], () => finishTurn(msgs, null));
+      }
+    } else {
+      const d = choice.declineMot || 0;
+      if (d) state.motivation = Math.max(0, Math.min(100, state.motivation + d));
+      const effectLines = d ? ['やる気 ' + d] : [];
+      const msgs = pendingMessages.concat(effectLines);
+      showEventNotice('✨ 覚醒のきざし', choice.result, effectLines, () => finishTurn(msgs, null));
+    }
   }
 
   // 台湾合宿・トイレ事件: やる気-20だが「覚醒モード」で難易度+4・操作安定度+3（合宿ベースの新奇性+8と重複しない軸で表現）
@@ -1072,11 +1099,23 @@
   function afterTurn(logs) {
     if (state.status !== 'playing') { renderEnding(); return; }
     renderHome(logs);
-    // ホーム描画後に、保留中の定期イベントをポップアップ表示
+    // ホーム描画後に、保留中の定期イベントをポップアップ表示。無ければ覚醒終了通知（同じ枠を使うので同時は次ターンへ持ち越し）
     if (pendingScheduledPopup) {
       showScheduledPopup(pendingScheduledPopup);
       pendingScheduledPopup = null;
+    } else if (state.awakenEndPending) {
+      state.awakenEndPending = false;
+      DT.state.save(state); // 通知済みを保存に反映（リロードで再表示しない）
+      showAwakenEndPopup();
     }
+  }
+
+  // 覚醒状態が終わったことを知らせるポップアップ（定期イベントと同じ#sched-popup枠を流用）
+  function showAwakenEndPopup() {
+    $('#sched-title').textContent = '✨ 覚醒 終了';
+    $('#sched-body').replaceChildren(el('p', 'popup-text', '研ぎ澄まされていた感覚が、すっと引いていった。覚醒状態が終わった。'));
+    $('#sched-ok').onclick = () => $('#sched-popup').classList.add('hidden');
+    $('#sched-popup').classList.remove('hidden');
   }
 
   function showScheduledPopup(p) {

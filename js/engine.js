@@ -141,6 +141,8 @@
 
     if (state.specialUnlocked) gain += 1;
     if (state.motivation >= DT.DATA.MOTIVATION.hotLine) gain += DT.DATA.MOTIVATION.hotBonus;
+    // 覚醒中は能力の伸びを1.5倍・繰り上げ(ceil)。マイナス（失敗枠=gain0）は上で早期return済みなので影響なし。
+    if (state.awakenTurns > 0) gain = Math.ceil(gain * 1.5);
     return { gain, timingNote, extraFatigue };
   }
 
@@ -248,6 +250,16 @@
     if (state.banTurns > 0) {
       state.banTurns -= 1;
       if (state.banTurns === 0) events.push('補習期間が終わった！');
+    }
+
+    // 覚醒状態のカウントダウン。開始したターン(awakenJustStarted)は減らさず、翌ターン以降に月を消費する。
+    // 0になったターンに終了通知フラグ(awakenEndPending)を立て、ログにも残す。
+    if (state.awakenTurns > 0) {
+      if (state.awakenJustStarted) { state.awakenJustStarted = false; }
+      else {
+        state.awakenTurns -= 1;
+        if (state.awakenTurns === 0) { state.awakenEndPending = true; events.push('✨ 覚醒状態が終わった。'); }
+      }
     }
 
     if (!state.didStudy) state.study = clamp(state.study - 2, 0, 100);
