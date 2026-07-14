@@ -679,7 +679,13 @@ table.results tr.me-row { color: var(--coral-deep); font-weight: 800; }
 }
 
 /* ---------- イベント選択肢: 全幅・画面下部 ---------- */
-#event-choices { margin-top: auto; margin-bottom: 14px; display: flex; flex-direction: column; gap: 8px; }
+/* イベント画面: 一目でイベントと分かるスポットライト背景＋全要素を中央に寄せる */
+#screen-event {
+  justify-content: center;
+  background: radial-gradient(circle at 50% 42%, #f5f7ff 0%, #e7ecff 52%, #d7e0ff 100%);
+}
+/* 文章(白カード)とボタン群の間に明確な余白を作り、上下分割ではなく中央にまとめる */
+#event-choices { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
 
 /* ---------- 大会エントリー: 下寄せ・均等サイズ・チェックボックス ---------- */
 #entry-divisions { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }

@@ -219,10 +219,27 @@
     return { results, messages, outdoor: outdoor, noveltyGreat: noveltyGreat };
   }
 
+  // 怪我判定は「練習した直後」に行う（大会ターンでも大会より前に解決するため）。didTrain前提。
+  //   発生時はinjuredTurns=1（来月療養）＋injuredThisTurn（当ターンでは回復させない目印）。戻り値でappに通知。
+  function rollInjury(state, rng) {
+    rng = rng || Math.random;
+    if (!state.didTrain) return { injured: false };
+    if (state.fatigue >= 60) state.injuryRisk = clamp(state.injuryRisk + 5, 0, 100);
+    if (rng() < state.injuryRisk / 500) {
+      const staminaAtInjury = 100 - state.fatigue;
+      const riskAtInjury = state.injuryRisk;
+      state.injuredTurns = 1;
+      state.injuredThisTurn = true;
+      state.injuryRisk = 25;
+      state.motivation = clamp(state.motivation - 8, 0, 100);
+      return { injured: true, message: '怪我をしてしまった！ 来月は療養が必要だ。（発生時 体力' + staminaAtInjury + '／疲労' + state.fatigue + '／怪我リスク' + riskAtInjury + '）' };
+    }
+    return { injured: false };
+  }
+
   function endTurn(state, rng) {
     rng = rng || Math.random;
     const events = [];
-    let injured = false; // このターンに新規の怪我が発生したか（演出用にappへ通知）
 
     // やる気の平均回帰: 毎月、初期値50へreversion率で引き戻す（整数丸めで0→+5, 100→-5, 50→0）。
     // 絶好調ボーナス×成功連鎖の正のフィードバックによる0/100二極化を防ぐ減衰項
@@ -235,24 +252,14 @@
 
     if (!state.didStudy) state.study = clamp(state.study - 2, 0, 100);
     state.fatigue = clamp(state.fatigue - 5, 0, 100);
-    if (state.didTrain && state.fatigue >= 60) {
-      state.injuryRisk = clamp(state.injuryRisk + 5, 0, 100);
-    }
 
-    if (state.didTrain && rng() < state.injuryRisk / 500) {
-      // 怪我発生時の体力/疲労/怪我リスクを表示（開発用: 体力が高いのに怪我するバグ調査のため）
-      const staminaAtInjury = 100 - state.fatigue;
-      const riskAtInjury = state.injuryRisk;
-      state.injuredTurns = 1;
-      state.injuryRisk = 25;
-      state.motivation = clamp(state.motivation - 8, 0, 100);
-      injured = true;
-      events.push('怪我をしてしまった！ 来月は療養が必要だ。（発生時 体力' + staminaAtInjury + '／疲労' + state.fatigue + '／怪我リスク' + riskAtInjury + '）');
-    } else if (state.injuredTurns > 0) {
+    // 怪我の回復（発生判定はrollInjuryで練習直後に済ませている）。当ターン新規発生分(injuredThisTurn)は回復させない。
+    if (state.injuredTurns > 0 && !state.injuredThisTurn) {
       state.injuredTurns -= 1;
       state.fatigue = clamp(state.fatigue - 25, 0, 100);
       if (state.injuredTurns === 0) events.push('怪我が治った！');
     }
+    state.injuredThisTurn = false;
 
     if (state.study < DT.DATA.STUDY_MIN) {
       state.lowStudyMonths += 1;
@@ -277,7 +284,7 @@
 
     state.turn += 1;
     if (state.turn > DT.DATA.TOTAL_TURNS) state.status = 'graduated';
-    return { events, injured };
+    return { events };
   }
 
   // やる気帯ラベル: MOTIVATION.bandsは降順(min大→小)に並んでいる前提。値以下となる最初の帯を返す
@@ -292,5 +299,5 @@
     return year + '年生 ' + month + '月';
   }
 
-  DT.engine = { outcomeProbs, rollTier, growthMult, applyAction, applyTraining, endTurn, turnLabel, isMeetupMonth, TIER_MULT, motivationLabel };
+  DT.engine = { outcomeProbs, rollTier, growthMult, applyAction, applyTraining, rollInjury, endTurn, turnLabel, isMeetupMonth, TIER_MULT, motivationLabel };
 })(typeof window !== 'undefined' ? window : globalThis);

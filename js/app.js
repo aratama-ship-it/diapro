@@ -783,13 +783,19 @@
     });
     if (compositionTotal !== 0) changeMsgs.push('📈 演技構成 +' + compositionTotal);
 
-    // 新技開発で大成功した月はSNS投稿イベントを挟む
+    // 新技開発で大成功した月はSNS投稿イベントを挟む。さらに練習の"直後"に怪我判定（大会ターンでも大会より前に解決）
     $('#btn-training-ok').onclick = () => {
       const base = ['練習を終えた。'].concat(changeMsgs);
+      const afterExtras = (extras) => {
+        const inj = DT.engine.rollInjury(state);
+        const msgs = base.concat(extras).concat(inj.injured ? [inj.message] : []);
+        const go = () => continueTurn(msgs, 'training');
+        if (inj.injured) { showInjurySplash(go); } else { go(); }
+      };
       if (tr.noveltyGreat) {
-        showSnsEvent(extra => continueTurn(base.concat(extra ? [extra] : []), 'training'));
+        showSnsEvent(extra => afterExtras(extra ? [extra] : []));
       } else {
-        continueTurn(base, 'training');
+        afterExtras([]);
       }
     };
     show('#screen-training');
@@ -1054,16 +1060,13 @@
     DT.state.save(state);
     pendingContest = null;
     pendingMessages = [];
-    const proceed = () => {
-      if (contestResults) {
-        pendingLogs = logs;
-        renderContestResults(contestResults);
-      } else {
-        afterTurn(logs);
-      }
-    };
-    // このターンに怪我が発生していたら「怪我！」エフェクトを一度挟んでから続行
-    if (end.injured) { showInjurySplash(proceed); } else { proceed(); }
+    // 怪我判定は練習直後(rollInjury)に移したため、ここでは分岐不要
+    if (contestResults) {
+      pendingLogs = logs;
+      renderContestResults(contestResults);
+    } else {
+      afterTurn(logs);
+    }
   }
 
   function afterTurn(logs) {
@@ -1138,10 +1141,13 @@
         // 決勝進出ポイント(+10)を記録（決勝の追加ポイントは決勝側で付与）
         state.results.push({ name: jq.name, type: 'jjf', division: 'qualifier', divisionLabel: 'JJF予選突破', rank: 1, entrants: 0, points: DT.DATA.JJF.finalistPoints, turn: state.turn, standings: [], rivalMessages: [] });
         msgs.push('JJF予選突破！ 決勝進出（+' + DT.DATA.JJF.finalistPoints + 'pt・やる気アップ）');
+        showJjfResult(q, () => finishTurn(pendingMessages.concat(msgs), null));
       } else {
-        msgs.push('JJF予選敗退… 総合力がまだ足りなかった。');
+        // 敗退: 解説ポップアップは出さず、やる気が下がるだけ
+        state.motivation = Math.max(0, state.motivation - 8);
+        msgs.push('JJF予選敗退… やる気が下がった。');
+        finishTurn(pendingMessages.concat(msgs), null);
       }
-      showJjfResult(q, () => finishTurn(pendingMessages.concat(msgs), null));
     };
     const skip = el('button', '', '参加しない');
     skip.onclick = () => finishTurn(pendingMessages, null);
