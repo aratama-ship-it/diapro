@@ -37,6 +37,10 @@
       awakenUsedLate: false,
       awakenJustStarted: false,
       awakenEndPending: false,
+      // カード排出条件用のトラッキング（2026-07-15）: 覚醒成功回数/怪我回数/大凶を引いたか
+      awakenCount: 0,
+      injuryCount: 0,
+      daikyoDrawn: false,
       jjfFinalist: 0,
       didStudy: false,
       didTrain: false,

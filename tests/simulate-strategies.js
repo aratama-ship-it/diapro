@@ -15,6 +15,7 @@ require('../js/state.js');
 require('../js/engine.js');
 require('../js/ending.js');
 require('../js/events.js');
+require('../js/cards.js');
 const DT = globalThis.DT;
 
 function lcg(seed) {
@@ -208,7 +209,13 @@ const all = [];
 console.log('=== 戦略比較（各N=' + N + '・経歴=' + BG_DEF.label + '/' + BG_DEF.difficulty + '） ===\n');
 Object.entries(STRATEGIES).forEach(([id, strat]) => {
   const runs = [];
-  for (let seed = 1; seed <= N; seed++) runs.push(features(playThrough(lcg(seed * 7919 + id.length), strat)));
+  for (let seed = 1; seed <= N; seed++) {
+    const st = playThrough(lcg(seed * 7919 + id.length), strat);
+    const f = features(st);
+    const card = DT.cards.pickCard(st);
+    f.card = card.title + '(' + card.id + ')';
+    runs.push(f);
+  }
   runs.forEach(r => { r.strategy = strat.label; all.push(r); });
   const grads = runs.filter(r => r.status === 'graduated');
   console.log('◆ ' + strat.label);
@@ -235,3 +242,9 @@ console.log('\n最強ジャンル分布: ' + JSON.stringify(tally(all, f => f.st
 console.log('勝ちっぷり分布:   ' + JSON.stringify(tally(all, f => f.winTier)));
 console.log('ランク分布(合算): ' + JSON.stringify(tally(all, f => f.rank)));
 console.log('特別カード該当:   世界王者=' + all.filter(f => f.worldsWin).length + ' / 全日本V=' + all.filter(f => f.ajdcWin).length + ' / 退学=' + all.filter(f => f.status === 'expelled').length);
+
+// 排出カード分布（多い順）
+console.log('\n排出カード分布:');
+const cardTally = tally(all, f => f.card);
+Object.entries(cardTally).sort((a, b) => b[1] - a[1]).forEach(([k, v]) =>
+  console.log('  ' + String(v).padStart(4) + ' × ' + k));

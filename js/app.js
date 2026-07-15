@@ -1441,8 +1441,10 @@
 
   function renderEnding() {
     const e = DT.ending.evaluate(state);
+    const card = DT.cards.pickCard(state); // カード排出（stateクリア前に判定）
     // 個人記録を保存（この周回で一度だけ）。終了したセーブは消して「つづきから」不可＆二重記録防止
     let bestNote = null;
+    let cardNo = DT.state.loadRecords().length + 1; // 何人目の卒業生か（カードNo.）
     if (!state.recorded) {
       const prev = DT.state.loadRecords();
       const prevBest = prev.length ? Math.max.apply(null, prev.map(r => r.totalPoints || 0)) : -1;
@@ -1454,22 +1456,78 @@
         rank: e.rank,
         title: e.title,
         totalPoints: e.totalPoints,
-        abilityAvg: e.abilityAvg
+        abilityAvg: e.abilityAvg,
+        // カード情報（図鑑/一覧のミニカード表示用・Phase3で使用）
+        cardId: card.id, cardTitle: card.title, cardType: card.type, cardCp: card.cp, cardNo: cardNo
       });
       if (state.status !== 'expelled' && e.totalPoints > prevBest) bestNote = '🎉 自己ベスト更新！';
       state.recorded = true;
       DT.state.clear();
     }
     $('#ending-title').textContent = state.status === 'expelled' ? 'GAME OVER' : state.name + '、卒業！';
-    const nodes = [el('div', 'result-big', e.rank), el('p', 'center', e.title)];
+    const nodes = [buildPlayerCard(card, cardNo)];
     if (bestNote) nodes.push(el('p', 'center best-note', bestNote));
     if (e.comment) nodes.push(el('p', 'center', e.comment));
-    nodes.push(textRow('通算ポイント', e.totalPoints + 'pt'));
-    if (e.abilityAvg !== undefined) nodes.push(textRow('最終能力平均', String(e.abilityAvg)));
     if (state.results.length > 0) nodes.push(resultsTable(state.results));
     // ライバル戦績の表示は非表示（スコア計算では引き続き対戦相手として登場）
     $('#ending-detail').replaceChildren(...nodes);
     show('#screen-ending');
+  }
+
+  // ---- 選手カード描画（Phase1: 静的表示。開封演出はPhase2） ----
+  const CARD_RARITY = {
+    S: { label: 'ULTRA RARE', stars: 6 }, A: { label: 'SUPER RARE', stars: 5 },
+    B: { label: 'RARE', stars: 4 }, C: { label: 'NORMAL+', stars: 3 },
+    D: { label: 'NORMAL', stars: 2 }, E: { label: 'NORMAL', stars: 1 },
+    退学: { label: 'GAME OVER', stars: 0 }
+  };
+  // 中央アート: 属性Typeごとの署名ディアボロ（SVG作り置き5種、色はCSSのcurrentColor）
+  const CARD_ART = {
+    power: '<path d="M96 82 L52 58 L58 74 L40 72 L50 88 L36 100 L50 112 L40 128 L58 126 L52 142 L96 118 Z" fill="currentColor"/><path d="M104 82 L148 58 L142 74 L160 72 L150 88 L164 100 L150 112 L160 128 L142 126 L148 142 L104 118 Z" fill="currentColor"/><rect x="94" y="92" width="12" height="16" rx="2" fill="currentColor"/><path d="M20 152 Q100 120 180 152" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".5"/>',
+    innovator: '<path d="M96 86 L48 54 Q30 96 52 138 L96 114 Z" fill="currentColor"/><path d="M104 78 L162 70 Q170 100 158 124 L104 112 Z" fill="currentColor" opacity=".92"/><circle cx="52" cy="64" r="6" fill="currentColor" opacity=".55"/><circle cx="164" cy="128" r="8" fill="currentColor" opacity=".55"/><rect x="94" y="90" width="12" height="16" rx="2" fill="currentColor"/><path d="M22 148 Q100 124 178 156" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".5"/>',
+    technician: '<ellipse cx="52" cy="100" rx="26" ry="40" fill="none" stroke="currentColor" stroke-width="4"/><ellipse cx="52" cy="100" rx="15" ry="26" fill="none" stroke="currentColor" stroke-width="3"/><ellipse cx="52" cy="100" rx="6" ry="12" fill="currentColor"/><ellipse cx="148" cy="100" rx="26" ry="40" fill="none" stroke="currentColor" stroke-width="4"/><ellipse cx="148" cy="100" rx="15" ry="26" fill="none" stroke="currentColor" stroke-width="3"/><ellipse cx="148" cy="100" rx="6" ry="12" fill="currentColor"/><rect x="88" y="94" width="24" height="12" rx="3" fill="currentColor"/><path d="M20 150 Q100 122 180 150" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".5"/>',
+    showman: '<path d="M96 84 L48 62 Q38 100 48 138 L96 116 Z" fill="currentColor"/><path d="M104 84 L152 62 Q162 100 152 138 L104 116 Z" fill="currentColor"/><rect x="94" y="92" width="12" height="16" rx="2" fill="currentColor"/><path d="M100 30 l4 10 10 1 -8 7 3 10 -9 -6 -9 6 3 -10 -8 -7 10 -1 Z" fill="currentColor" opacity=".8"/><path d="M170 52 l3 7 7 1 -5 5 2 7 -7 -4 -6 4 2 -7 -5 -5 7 -1 Z" fill="currentColor" opacity=".6"/><path d="M30 60 l3 7 7 1 -5 5 2 7 -7 -4 -6 4 2 -7 -5 -5 7 -1 Z" fill="currentColor" opacity=".6"/><path d="M16 150 Q100 116 184 150" fill="none" stroke="currentColor" stroke-width="2" opacity=".6"/>',
+    allround: '<path d="M96 84 L44 66 Q34 100 44 134 L96 116 Z" fill="currentColor"/><ellipse cx="44" cy="100" rx="7" ry="34" fill="currentColor"/><path d="M104 84 L156 66 Q166 100 156 134 L104 116 Z" fill="currentColor"/><ellipse cx="156" cy="100" rx="7" ry="34" fill="currentColor"/><rect x="94" y="92" width="12" height="16" rx="2" fill="currentColor"/><path d="M40 100 A60 60 0 0 1 160 100" fill="none" stroke="currentColor" stroke-width="2" opacity=".35" stroke-dasharray="6 8"/><path d="M20 150 Q100 118 180 150" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".5"/>'
+  };
+  function buildPlayerCard(card, cardNo) {
+    const rar = card.expelled ? CARD_RARITY['退学'] : (CARD_RARITY[card.rank] || CARD_RARITY.E);
+    const wrap = el('div', 'pcard rank-' + (card.expelled ? 'X' : card.rank));
+    const inner = el('div', 'pcard-inner');
+    // ヘッダー: レア度＋★／ランクバッジ
+    const head = el('div', 'pcard-head');
+    head.appendChild(el('span', 'pcard-rarity', rar.label + ' ' + '★'.repeat(rar.stars)));
+    head.appendChild(el('span', 'pcard-rankbadge', card.expelled ? '×' : card.rank));
+    inner.appendChild(head);
+    // 名前＋カードタイトル（称号）
+    inner.appendChild(el('div', 'pcard-name', card.name));
+    inner.appendChild(el('div', 'pcard-epithet', '「' + card.title + '」・' + card.typeLabel));
+    // 中央アート（属性別ディアボロ）
+    const art = el('div', 'pcard-art');
+    art.innerHTML = '<svg viewBox="0 0 200 180">' + (CARD_ART[card.type] || CARD_ART.allround) + '</svg>';
+    art.appendChild(el('span', 'pcard-artlabel', 'ART: ' + card.typeLabel));
+    inner.appendChild(art);
+    // 能力CP／通算pt
+    const nums = el('div', 'pcard-nums');
+    const cpBox = el('div', 'pcard-num'); cpBox.appendChild(el('small', '', '能力CP')); cpBox.appendChild(el('b', 'num', String(card.cp)));
+    const ptBox = el('div', 'pcard-num right'); ptBox.appendChild(el('small', '', '通算pt')); ptBox.appendChild(el('b', 'num', String(card.totalPoints)));
+    nums.appendChild(cpBox); nums.appendChild(ptBox);
+    inner.appendChild(nums);
+    // 4系統ステータス
+    const st = el('div', 'pcard-stats');
+    [['難易度', card.stats.difficulty], ['操作', card.stats.control], ['新奇性', card.stats.novelty], ['構成', card.stats.composition]].forEach(([k, v]) => {
+      const row = el('div', 'pcard-stat');
+      row.appendChild(el('span', '', k)); row.appendChild(el('b', 'num', String(v)));
+      st.appendChild(row);
+    });
+    inner.appendChild(st);
+    // フッター: メダル／経歴・No.
+    const foot = el('div', 'pcard-foot');
+    foot.appendChild(el('span', 'pcard-medals', card.medals.join(' ')));
+    const bgLabel = (DT.DATA.BACKGROUNDS.find(b => b.id === card.background) || {}).label || '';
+    foot.appendChild(el('span', 'pcard-no', bgLabel + ' / No.' + String(cardNo).padStart(3, '0')));
+    inner.appendChild(foot);
+    wrap.appendChild(inner);
+    return wrap;
   }
 
   $('#btn-restart').onclick = () => { DT.state.clear(); state = null; initTitle(); };

@@ -253,6 +253,7 @@
       state.injuredTurns = 1;
       state.injuredThisTurn = true;
       state.injuryRisk = 25;
+      state.injuryCount = (state.injuryCount || 0) + 1; // カード「無傷の四年間」判定用
       state.motivation = clamp(state.motivation - 8, 0, 100);
       return { injured: true, message: '怪我をしてしまった！ 来月は療養が必要だ。（発生時 体力' + staminaAtInjury + '／疲労' + state.fatigue + '／怪我リスク' + riskAtInjury + '）' };
     }

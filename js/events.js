@@ -138,6 +138,7 @@
     const dur = rollAwakenDuration(state, rng);
     state.awakenTurns = dur;
     state.awakenJustStarted = true;
+    state.awakenCount = (state.awakenCount || 0) + 1; // カード「覚醒者」判定用
     if (state.turn <= 24) state.awakenUsedEarly = true; else state.awakenUsedLate = true;
     return dur;
   }
@@ -200,6 +201,7 @@
       acc += list[i].p;
       if (r < acc) { fortune = list[i]; break; }
     }
+    if (fortune.id === 'daikyo') state.daikyoDrawn = true; // カード「大凶返し」判定用
     const messages = ['⛩ おみくじ: ' + fortune.label + '　' + fortune.text].concat(applyEffects(state, fortune.effects));
     return { fortune, messages };
   }
