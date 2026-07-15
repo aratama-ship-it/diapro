@@ -1721,6 +1721,59 @@
     return wrap;
   }
 
+  // ---- 全カード見本ギャラリー: 50種すべてを代表データで描画してデザインを一望する（?gallery=1／設定から） ----
+  // 特別/職人カードは実プレイ次第でランク/属性が変わるため、見本では代表値を割り当てる。
+  const GALLERY_REP = {
+    sp_expelled: ['E', 'allround', true], sp_worlds: ['S', 'allround'], sp_grandslam: ['S', 'power'],
+    sp_dynasty: ['S', 'power'], sp_ajdc: ['A', 'power'], sp_jjf: ['A', 'allround'],
+    sp_weed: ['S', 'technician'], sp_daikyo: ['A', 'showman'], sp_awakener: ['A', 'power'],
+    sp_upset: ['B', 'technician'], sp_tokai: ['B', 'showman'], sp_elite: ['S', 'showman'],
+    sp_unhurt: ['A', 'technician'], sp_scholar: ['B', 'allround'], sp_podium: ['B', 'allround'],
+    cr_h1d: ['A', 'technician'], cr_v1d: ['A', 'innovator'], cr_d2: ['A', 'power'],
+    cr_d3: ['A', 'showman'], cr_worlds: ['B', 'allround']
+  };
+  const RANK_BASE = { S: 90, A: 78, B: 66, C: 54, D: 42, E: 30 };
+  const RANK_PT = { S: 1080, A: 860, B: 620, C: 400, D: 190, E: 80 };
+  function sampleCardFor(entry) {
+    let rank, type, expelled = false;
+    if (entry.layer === 'matrix') { rank = entry.rank; type = entry.type; }
+    else { const r = GALLERY_REP[entry.id] || ['A', 'allround']; rank = r[0]; type = r[1]; expelled = !!r[2]; }
+    const base = RANK_BASE[rank] || 55;
+    const stats = { difficulty: base - 3, novelty: base - 1, control: base + 1, composition: base };
+    const bump = { power: 'difficulty', innovator: 'novelty', technician: 'control', showman: 'composition' }[type];
+    if (bump) stats[bump] = Math.min(99, base + 9);
+    return {
+      id: entry.id, title: entry.title, layer: entry.layer,
+      rank: expelled ? '退学' : rank, type: type, typeLabel: DT.cards.TYPE_LABEL[type],
+      cp: RANK_BASE[rank] ? Math.round(RANK_BASE[rank] * 10) : 550,
+      totalPoints: expelled ? 60 : (RANK_PT[rank] || 400), stats: stats, expelled: expelled,
+      medals: [entry.layer === 'special' ? '⭐特別' : (entry.layer === 'craft' ? '🔧職人' : '🃏' + rank)],
+      background: 'highschool', strongestGenre: '1DH', name: '見本'
+    };
+  }
+  function renderCardGallery() {
+    const cats = DT.cards.catalog();
+    const app = document.getElementById('app');
+    let ov = document.getElementById('gallery-overlay');
+    if (ov) ov.remove();
+    ov = el('div', 'gallery-overlay'); ov.id = 'gallery-overlay';
+    const head = el('div', 'gallery-head');
+    head.appendChild(el('span', 'gallery-title', '🎴 全カード見本（' + cats.length + '種）'));
+    const close = el('button', 'gallery-close', '×');
+    close.onclick = () => { ov.remove(); if (state && state.status === 'playing') show('#screen-home'); else initTitle(); };
+    head.appendChild(close);
+    const note = el('p', 'gallery-note', '※特別/職人カードのランク・属性・数値は見本用の代表値です（実際はプレイ内容で変わります）');
+    const grid = el('div', 'card-gallery');
+    cats.forEach(entry => {
+      const cell = el('div', 'gallery-cell');
+      cell.appendChild(buildPlayerCard(sampleCardFor(entry), 0));
+      cell.appendChild(el('div', 'gallery-cell-cap', entry.title));
+      grid.appendChild(cell);
+    });
+    ov.appendChild(head); ov.appendChild(note); ov.appendChild(grid);
+    app.appendChild(ov);
+  }
+
   // ---- カード図鑑（Phase3）: 解禁済みコレクションの一覧・鑑賞・画像保存 ----
   const rankKeyOf = snap => (snap.expelled ? 'X' : snap.rank);
 
@@ -1754,6 +1807,10 @@
       nodes.push(grid);
     });
     $('#zukan-list').replaceChildren(...nodes);
+    $('#zukan-sub').replaceChildren(document.createTextNode('コンプ率 ' + owned + ' / ' + catalog.length + '　'));
+    const galleryLink = el('button', 'zukan-gallery-link', '🎴 全カード見本を見る');
+    galleryLink.onclick = () => { closeZukan(); renderCardGallery(); };
+    $('#zukan-sub').appendChild(galleryLink);
     $('#zukan-modal').classList.remove('hidden');
   }
   function closeZukan() { $('#zukan-modal').classList.add('hidden'); }
@@ -2103,8 +2160,12 @@
     renderEnding();
   }
 
-  const autoParam = new URLSearchParams(location.search).get('auto');
-  if (autoParam) {
+  const params = new URLSearchParams(location.search);
+  const autoParam = params.get('auto');
+  if (params.get('gallery')) {
+    initTitle();
+    renderCardGallery();
+  } else if (autoParam) {
     const bg = DT.DATA.BACKGROUNDS.some(b => b.id === autoParam) ? autoParam : 'highschool';
     autoPlayDemo(bg);
   } else {
