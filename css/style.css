@@ -786,7 +786,7 @@ table.dev-grid tr.locked td { color: #545d85; }
   content: ''; position: absolute; inset: 0;
   background: linear-gradient(115deg, transparent 30%, rgba(150,220,255,.18) 45%, rgba(200,160,255,.18) 55%, transparent 70%);
 }
-.pcard-art svg { width: 130px; height: 118px; color: #8fc4e8; filter: drop-shadow(0 0 8px rgba(120, 190, 255, .45)); }
+.pcard-art svg { width: 166px; height: 148px; color: #8fc4e8; filter: drop-shadow(0 0 8px rgba(120, 190, 255, .45)); }
 .pcard.rank-S .pcard-art svg { color: #8fe6ff; filter: drop-shadow(0 0 12px rgba(140, 220, 255, .7)); }
 .pcard.rank-A .pcard-art svg { color: #ffdf8f; filter: drop-shadow(0 0 10px rgba(255, 210, 120, .55)); }
 .pcard.rank-X .pcard-art svg { color: #8a919c; filter: none; }

@@ -1569,11 +1569,116 @@
   };
   // 中央アート: 属性Typeごとの署名ディアボロ（SVG作り置き5種、色はCSSのcurrentColor）
   const CARD_ART = {
-    power: '<path d="M96 82 L52 58 L58 74 L40 72 L50 88 L36 100 L50 112 L40 128 L58 126 L52 142 L96 118 Z" fill="currentColor"/><path d="M104 82 L148 58 L142 74 L160 72 L150 88 L164 100 L150 112 L160 128 L142 126 L148 142 L104 118 Z" fill="currentColor"/><rect x="94" y="92" width="12" height="16" rx="2" fill="currentColor"/><path d="M20 152 Q100 120 180 152" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".5"/>',
-    innovator: '<path d="M96 86 L48 54 Q30 96 52 138 L96 114 Z" fill="currentColor"/><path d="M104 78 L162 70 Q170 100 158 124 L104 112 Z" fill="currentColor" opacity=".92"/><circle cx="52" cy="64" r="6" fill="currentColor" opacity=".55"/><circle cx="164" cy="128" r="8" fill="currentColor" opacity=".55"/><rect x="94" y="90" width="12" height="16" rx="2" fill="currentColor"/><path d="M22 148 Q100 124 178 156" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".5"/>',
-    technician: '<ellipse cx="52" cy="100" rx="26" ry="40" fill="none" stroke="currentColor" stroke-width="4"/><ellipse cx="52" cy="100" rx="15" ry="26" fill="none" stroke="currentColor" stroke-width="3"/><ellipse cx="52" cy="100" rx="6" ry="12" fill="currentColor"/><ellipse cx="148" cy="100" rx="26" ry="40" fill="none" stroke="currentColor" stroke-width="4"/><ellipse cx="148" cy="100" rx="15" ry="26" fill="none" stroke="currentColor" stroke-width="3"/><ellipse cx="148" cy="100" rx="6" ry="12" fill="currentColor"/><rect x="88" y="94" width="24" height="12" rx="3" fill="currentColor"/><path d="M20 150 Q100 122 180 150" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".5"/>',
-    showman: '<path d="M96 84 L48 62 Q38 100 48 138 L96 116 Z" fill="currentColor"/><path d="M104 84 L152 62 Q162 100 152 138 L104 116 Z" fill="currentColor"/><rect x="94" y="92" width="12" height="16" rx="2" fill="currentColor"/><path d="M100 30 l4 10 10 1 -8 7 3 10 -9 -6 -9 6 3 -10 -8 -7 10 -1 Z" fill="currentColor" opacity=".8"/><path d="M170 52 l3 7 7 1 -5 5 2 7 -7 -4 -6 4 2 -7 -5 -5 7 -1 Z" fill="currentColor" opacity=".6"/><path d="M30 60 l3 7 7 1 -5 5 2 7 -7 -4 -6 4 2 -7 -5 -5 7 -1 Z" fill="currentColor" opacity=".6"/><path d="M16 150 Q100 116 184 150" fill="none" stroke="currentColor" stroke-width="2" opacity=".6"/>',
-    allround: '<path d="M96 84 L44 66 Q34 100 44 134 L96 116 Z" fill="currentColor"/><ellipse cx="44" cy="100" rx="7" ry="34" fill="currentColor"/><path d="M104 84 L156 66 Q166 100 156 134 L104 116 Z" fill="currentColor"/><ellipse cx="156" cy="100" rx="7" ry="34" fill="currentColor"/><rect x="94" y="92" width="12" height="16" rx="2" fill="currentColor"/><path d="M40 100 A60 60 0 0 1 160 100" fill="none" stroke="currentColor" stroke-width="2" opacity=".35" stroke-dasharray="6 8"/><path d="M20 150 Q100 118 180 150" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".5"/>'
+    power: `<defs>
+      <linearGradient id="power-shell-l" x1="0" y1="0" x2="1" y2=".65"><stop stop-color="#effdff"/><stop offset=".2" stop-color="currentColor"/><stop offset=".68" stop-color="currentColor" stop-opacity=".82"/><stop offset="1" stop-color="#102345"/></linearGradient>
+      <linearGradient id="power-shell-r" x1="1" y1="0" x2="0" y2=".65"><stop stop-color="#effdff"/><stop offset=".2" stop-color="currentColor"/><stop offset=".68" stop-color="currentColor" stop-opacity=".82"/><stop offset="1" stop-color="#102345"/></linearGradient>
+      <linearGradient id="power-axle" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f4fdff"/><stop offset=".34" stop-color="#9ae8ff"/><stop offset=".5" stop-color="#274e77"/><stop offset=".72" stop-color="#d5f8ff"/><stop offset="1" stop-color="#17304f"/></linearGradient>
+      <filter id="power-glow" x="-30%" y="-100%" width="160%" height="300%"><feGaussianBlur stdDeviation="2.2"/></filter>
+    </defs>
+    <g stroke-linejoin="miter">
+      <path d="M18 48 L70 70 M182 48 L130 70 M10 118 L56 115 M190 118 L144 115" fill="none" stroke="#54e6ff" stroke-width="2" opacity=".22" filter="url(#power-glow)"/>
+      <path d="M20 68 L38 74 L32 56 L53 75 L63 64 L66 80 L90 92 L90 108 L66 120 L63 136 L53 125 L32 144 L38 126 L20 132 L30 113 L14 109 L28 100 L14 91 L30 87 Z" fill="url(#power-shell-l)" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M20 68 L38 74 L32 56 L53 75 L63 64 L66 80 L90 92 L90 108 L66 120 L63 136 L53 125 L32 144 L38 126 L20 132 L30 113 L14 109 L28 100 L14 91 L30 87 Z" transform="translate(200 0) scale(-1 1)" fill="url(#power-shell-r)" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M28 88 L65 81 L89 94 L62 99 Z M28 112 L62 101 L89 106 L65 119 Z" fill="#dffaff" opacity=".24"/>
+      <path d="M28 88 L65 81 L89 94 L62 99 Z M28 112 L62 101 L89 106 L65 119 Z" transform="translate(200 0) scale(-1 1)" fill="#dffaff" opacity=".24"/>
+      <path d="M31 100 L62 99 M42 75 L66 88 M42 125 L66 112 M169 100 L138 99 M158 75 L134 88 M158 125 L134 112" fill="none" stroke="#effdff" stroke-width="1.2" opacity=".52"/>
+      <path d="M84 95 L116 95 L121 100 L116 105 L84 105 L79 100 Z" fill="url(#power-axle)" stroke="#dffaff" stroke-width="1"/>
+      <path d="M94 91 L106 91 L110 100 L106 109 L94 109 L90 100 Z" fill="#122947" stroke="currentColor" stroke-width="2"/>
+      <circle cx="100" cy="100" r="4" fill="#baf3ff"/>
+      <path d="M22 50 C56 31 144 31 178 50" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="18 7 3 7" opacity=".46"/>
+      <path d="M173 44 L184 51 L172 56 Z" fill="currentColor" opacity=".7"/>
+      <path d="M14 151 C50 166 78 158 94 118 Q100 108 106 118 C122 158 150 166 186 151" fill="none" stroke="#8eeeff" stroke-width="2.2" opacity=".72"/>
+      <path d="M14 151 L7 144 M186 151 L193 144" stroke="currentColor" stroke-width="3"/>
+    </g>`,
+    innovator: `<defs>
+      <linearGradient id="innovator-shell-l" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dffaff"/><stop offset=".18" stop-color="currentColor"/><stop offset=".63" stop-color="#397ca5"/><stop offset="1" stop-color="#122442"/></linearGradient>
+      <linearGradient id="innovator-shell-r" x1="1" y1="0" x2="0" y2="1"><stop stop-color="#b7f5ff"/><stop offset=".22" stop-color="currentColor"/><stop offset=".72" stop-color="#405b93"/><stop offset="1" stop-color="#111d3c"/></linearGradient>
+      <radialGradient id="innovator-node"><stop stop-color="#efffff"/><stop offset=".35" stop-color="#65ecff"/><stop offset="1" stop-color="#31568d"/></radialGradient>
+    </defs>
+    <g stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 79 C35 36 83 37 110 57 C136 76 159 55 181 63" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="2 8" opacity=".3"/>
+      <path d="M25 65 C43 54 58 75 91 91 L91 108 C70 114 48 145 26 132 C12 124 36 113 21 104 C5 94 32 81 25 65 Z" fill="url(#innovator-shell-l)" stroke="currentColor" stroke-width="2"/>
+      <path d="M109 86 C131 67 151 59 171 73 C185 83 158 92 175 102 C190 113 159 120 169 134 C144 142 130 119 109 111 Z" fill="url(#innovator-shell-r)" stroke="currentColor" stroke-width="2"/>
+      <path d="M29 83 C48 75 64 90 84 96 C64 99 45 93 29 107 C37 96 37 91 29 83 Z" fill="#0e1e3c" opacity=".72"/>
+      <path d="M119 91 C134 77 149 74 159 80 C148 87 148 96 164 103 C144 107 132 101 116 105 Z" fill="#0e1e3c" opacity=".68"/>
+      <path d="M35 69 C49 89 67 83 88 98 M25 122 C48 106 65 115 88 103 M119 88 C132 94 145 83 166 76 M118 108 C137 104 146 122 164 128" fill="none" stroke="#c7f8ff" stroke-width="1.35" opacity=".52"/>
+      <path d="M86 94 C91 88 96 91 100 95 C104 88 112 90 115 96 C118 102 111 109 105 107 C101 114 92 111 92 105 C85 105 82 99 86 94 Z" fill="#193354" stroke="currentColor" stroke-width="2"/>
+      <path d="M88 99 C95 97 105 102 113 98" fill="none" stroke="#dcfbff" stroke-width="2.5"/>
+      <circle cx="100" cy="100" r="3.5" fill="url(#innovator-node)"/>
+      <circle cx="24" cy="58" r="5" fill="url(#innovator-node)"/><circle cx="175" cy="62" r="3.5" fill="url(#innovator-node)"/><circle cx="181" cy="128" r="6" fill="none" stroke="currentColor" stroke-width="2" opacity=".7"/>
+      <path d="M15 151 C48 166 75 158 92 121 C97 110 103 110 109 121 C130 160 151 164 185 146" fill="none" stroke="currentColor" stroke-width="2.2" opacity=".72"/>
+      <path d="M15 151 L9 143 M185 146 L193 140" stroke="#8ceeff" stroke-width="3"/>
+      <path d="M42 151 C73 171 132 170 165 151" fill="none" stroke="#65e8ff" stroke-width="1.2" stroke-dasharray="3 7" opacity=".32"/>
+    </g>`,
+    technician: `<defs>
+      <linearGradient id="technician-shell-l" x1="0" y1="0" x2="1" y2="0"><stop stop-color="currentColor"/><stop offset=".22" stop-color="#d9f8ff"/><stop offset=".48" stop-color="currentColor"/><stop offset="1" stop-color="#132746"/></linearGradient>
+      <linearGradient id="technician-shell-r" x1="1" y1="0" x2="0" y2="0"><stop stop-color="currentColor"/><stop offset=".22" stop-color="#d9f8ff"/><stop offset=".48" stop-color="currentColor"/><stop offset="1" stop-color="#132746"/></linearGradient>
+      <linearGradient id="technician-axle" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f4feff"/><stop offset=".3" stop-color="#8de8ff"/><stop offset=".52" stop-color="#1b4165"/><stop offset=".72" stop-color="#c9f6ff"/><stop offset="1" stop-color="#18314e"/></linearGradient>
+    </defs>
+    <g stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="100" cy="100" r="68" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="1 7" opacity=".17"/>
+      <path d="M31 61 C53 67 74 80 91 92 L91 108 C74 120 53 133 31 139 C39 125 43 112 43 100 C43 88 39 75 31 61 Z" fill="url(#technician-shell-l)" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M31 61 C53 67 74 80 91 92 L91 108 C74 120 53 133 31 139 C39 125 43 112 43 100 C43 88 39 75 31 61 Z" transform="translate(200 0) scale(-1 1)" fill="url(#technician-shell-r)" stroke="currentColor" stroke-width="1.6"/>
+      <ellipse cx="31" cy="100" rx="11" ry="39" fill="#142845" stroke="currentColor" stroke-width="2.4"/>
+      <ellipse cx="31" cy="100" rx="7" ry="32" fill="none" stroke="#d9f8ff" stroke-width="1.4" opacity=".8"/>
+      <ellipse cx="31" cy="100" rx="3" ry="23" fill="none" stroke="currentColor" stroke-width="1" opacity=".75"/>
+      <ellipse cx="169" cy="100" rx="11" ry="39" fill="#142845" stroke="currentColor" stroke-width="2.4"/>
+      <ellipse cx="169" cy="100" rx="7" ry="32" fill="none" stroke="#d9f8ff" stroke-width="1.4" opacity=".8"/>
+      <ellipse cx="169" cy="100" rx="3" ry="23" fill="none" stroke="currentColor" stroke-width="1" opacity=".75"/>
+      <path d="M48 76 C57 82 65 87 75 92 M48 124 C57 118 65 113 75 108 M152 76 C143 82 135 87 125 92 M152 124 C143 118 135 113 125 108" fill="none" stroke="#e7fcff" stroke-width="1.2" opacity=".62"/>
+      <path d="M87 94 H113 L118 100 L113 106 H87 L82 100 Z" fill="url(#technician-axle)" stroke="#c9f6ff" stroke-width="1.1"/>
+      <rect x="92" y="91" width="16" height="18" rx="4" fill="#132b49" stroke="currentColor" stroke-width="2"/>
+      <circle cx="100" cy="100" r="5.5" fill="none" stroke="#ddfaff" stroke-width="1.4"/><circle cx="100" cy="100" r="2.2" fill="#9cecff"/>
+      <path d="M38 52 A77 54 0 0 1 162 52" fill="none" stroke="currentColor" stroke-width="1.7" opacity=".5"/>
+      <path d="M38 52 L42 43 M55 43 L57 50 M76 36 L77 46 M100 33 V44 M124 36 L123 46 M145 43 L143 50 M162 52 L158 43" stroke="currentColor" stroke-width="1.2" opacity=".55"/>
+      <path d="M156 47 L166 53 L156 57 Z" fill="currentColor" opacity=".75"/>
+      <path d="M16 151 C52 165 78 157 94 117 Q100 108 106 117 C122 157 148 165 184 151" fill="none" stroke="#8cecff" stroke-width="2" opacity=".7"/>
+      <path d="M16 151 L9 144 M184 151 L191 144" stroke="currentColor" stroke-width="2.8"/>
+    </g>`,
+    showman: `<defs>
+      <linearGradient id="showman-shell-l" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f5fdff"/><stop offset=".18" stop-color="currentColor"/><stop offset=".5" stop-color="#73d9f5"/><stop offset=".76" stop-color="currentColor"/><stop offset="1" stop-color="#17254b"/></linearGradient>
+      <linearGradient id="showman-shell-r" x1="1" y1="0" x2="0" y2="1"><stop stop-color="#f5fdff"/><stop offset=".18" stop-color="currentColor"/><stop offset=".5" stop-color="#73d9f5"/><stop offset=".76" stop-color="currentColor"/><stop offset="1" stop-color="#17254b"/></linearGradient>
+      <radialGradient id="showman-gem"><stop stop-color="#ffffff"/><stop offset=".3" stop-color="#77f1ff"/><stop offset=".67" stop-color="#9b8cff"/><stop offset="1" stop-color="#283667"/></radialGradient>
+      <filter id="showman-glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2"/></filter>
+    </defs>
+    <g stroke-linecap="round" stroke-linejoin="round">
+      <path d="M29 62 C50 66 72 79 91 92 L91 108 C72 121 50 134 29 138 C36 128 40 119 38 112 C28 118 20 110 25 100 C20 90 28 82 38 88 C40 80 36 72 29 62 Z" fill="url(#showman-shell-l)" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M29 62 C50 66 72 79 91 92 L91 108 C72 121 50 134 29 138 C36 128 40 119 38 112 C28 118 20 110 25 100 C20 90 28 82 38 88 C40 80 36 72 29 62 Z" transform="translate(200 0) scale(-1 1)" fill="url(#showman-shell-r)" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M30 72 C48 83 64 85 86 96 M25 100 C48 100 65 99 88 100 M30 128 C48 117 64 115 86 104 M170 72 C152 83 136 85 114 96 M175 100 C152 100 135 99 112 100 M170 128 C152 117 136 115 114 104" fill="none" stroke="#f1fdff" stroke-width="1.25" opacity=".68"/>
+      <path d="M26 62 L31 52 L36 62 L31 70 Z M26 138 L31 130 L36 138 L31 148 Z M174 62 L169 52 L164 62 L169 70 Z M174 138 L169 130 L164 138 L169 148 Z" fill="#d9fbff" stroke="currentColor" stroke-width="1"/>
+      <path d="M86 94 H114 L119 100 L114 106 H86 L81 100 Z" fill="#244a70" stroke="#d9fbff" stroke-width="1.2"/>
+      <path d="M93 91 L100 87 L107 91 L111 100 L107 109 L100 113 L93 109 L89 100 Z" fill="url(#showman-gem)" stroke="currentColor" stroke-width="1.7"/>
+      <circle cx="100" cy="100" r="9" fill="none" stroke="#bcf8ff" stroke-width="2" opacity=".35" filter="url(#showman-glow)"/>
+      <path d="M100 24 L104 34 L115 35 L106 42 L109 53 L100 47 L91 53 L94 42 L85 35 L96 34 Z" fill="currentColor" opacity=".88"/>
+      <path d="M25 38 L28 46 L36 49 L28 52 L25 61 L22 52 L14 49 L22 46 Z M175 42 L178 50 L186 53 L178 56 L175 65 L172 56 L164 53 L172 50 Z" fill="#dffcff" opacity=".85"/>
+      <path d="M51 31 L53 37 L59 39 L53 41 L51 47 L49 41 L43 39 L49 37 Z M149 27 L151 33 L157 35 L151 37 L149 43 L147 37 L141 35 L147 33 Z" fill="currentColor" opacity=".68"/>
+      <path d="M66 51 L68 56 L73 58 L68 60 L66 65 L64 60 L59 58 L64 56 Z M137 49 L139 54 L144 56 L139 58 L137 63 L135 58 L130 56 L135 54 Z" fill="#ffffff" opacity=".7"/>
+      <path d="M12 151 C51 169 77 158 94 118 Q100 108 106 118 C123 158 149 169 188 151" fill="none" stroke="currentColor" stroke-width="2.3" opacity=".76"/>
+      <circle cx="58" cy="158" r="2.5" fill="#dffcff"/><circle cx="142" cy="158" r="2.5" fill="#dffcff"/>
+      <path d="M12 151 L6 143 M188 151 L194 143" stroke="#9defff" stroke-width="3"/>
+    </g>`,
+    allround: `<defs>
+      <linearGradient id="allround-shell-l" x1="0" y1="0" x2="1" y2=".75"><stop stop-color="#ecfcff"/><stop offset=".16" stop-color="currentColor"/><stop offset=".46" stop-color="#79c9e7"/><stop offset=".72" stop-color="currentColor"/><stop offset="1" stop-color="#132846"/></linearGradient>
+      <linearGradient id="allround-shell-r" x1="1" y1="0" x2="0" y2=".75"><stop stop-color="#ecfcff"/><stop offset=".16" stop-color="currentColor"/><stop offset=".46" stop-color="#79c9e7"/><stop offset=".72" stop-color="currentColor"/><stop offset="1" stop-color="#132846"/></linearGradient>
+      <linearGradient id="allround-axle" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f6feff"/><stop offset=".3" stop-color="#9beaff"/><stop offset=".53" stop-color="#214767"/><stop offset=".75" stop-color="#d6f8ff"/><stop offset="1" stop-color="#18314d"/></linearGradient>
+    </defs>
+    <g stroke-linecap="round" stroke-linejoin="round">
+      <path d="M34 62 C55 68 75 80 92 92 L92 108 C75 120 55 132 34 138 C42 125 46 112 46 100 C46 88 42 75 34 62 Z" fill="url(#allround-shell-l)" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M34 62 C55 68 75 80 92 92 L92 108 C75 120 55 132 34 138 C42 125 46 112 46 100 C46 88 42 75 34 62 Z" transform="translate(200 0) scale(-1 1)" fill="url(#allround-shell-r)" stroke="currentColor" stroke-width="1.8"/>
+      <ellipse cx="34" cy="100" rx="10" ry="38" fill="#142a49" stroke="currentColor" stroke-width="2.2"/>
+      <ellipse cx="34" cy="100" rx="5.5" ry="30" fill="none" stroke="#d9f8ff" stroke-width="1.3" opacity=".76"/>
+      <ellipse cx="166" cy="100" rx="10" ry="38" fill="#142a49" stroke="currentColor" stroke-width="2.2"/>
+      <ellipse cx="166" cy="100" rx="5.5" ry="30" fill="none" stroke="#d9f8ff" stroke-width="1.3" opacity=".76"/>
+      <path d="M48 77 C61 82 74 88 88 97 M48 123 C61 118 74 112 88 103 M152 77 C139 82 126 88 112 97 M152 123 C139 118 126 112 112 103" fill="none" stroke="#e9fcff" stroke-width="1.25" opacity=".58"/>
+      <rect x="85" y="95" width="30" height="10" rx="5" fill="url(#allround-axle)" stroke="#d7f8ff" stroke-width="1"/>
+      <rect x="93" y="91" width="14" height="18" rx="5" fill="#16314e" stroke="currentColor" stroke-width="2"/>
+      <circle cx="100" cy="100" r="4" fill="#b8f1ff"/>
+      <path d="M31 56 C62 27 138 27 169 56" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="11 7" opacity=".47"/>
+      <path d="M163 50 L174 57 L163 61 Z" fill="currentColor" opacity=".7"/>
+      <path d="M45 145 C73 169 127 169 155 145" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="8 7" opacity=".28"/>
+      <path d="M15 151 C51 166 78 158 94 117 Q100 108 106 117 C122 158 149 166 185 151" fill="none" stroke="#8beaff" stroke-width="2.2" opacity=".72"/>
+      <path d="M15 151 L8 144 M185 151 L192 144" stroke="currentColor" stroke-width="3"/>
+    </g>`
   };
   function buildPlayerCard(card, cardNo) {
     const rar = card.expelled ? CARD_RARITY['退学'] : (CARD_RARITY[card.rank] || CARD_RARITY.E);
