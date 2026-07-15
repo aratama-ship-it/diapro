@@ -1680,6 +1680,29 @@
       <path d="M15 151 L8 144 M185 151 L192 144" stroke="currentColor" stroke-width="3"/>
     </g>`
   };
+  // 属性Type→イラスト画像パス（リポ同梱=same-origin。canvas書き出しが汚染されない）。
+  // 未登録の型は署名SVGアートにフォールバック。画像が届いたらここに1行足すだけで差し替わる。
+  const CARD_IMAGE = {
+    // 画像が届いたら assets/cards/ に置いて1行足すだけで差し替わる（未登録の型はSVG）:
+    // allround: 'assets/cards/allround.png',
+  };
+  const IMG_VER = 'v=20260716';
+  function cardImageSrc(type) { const s = CARD_IMAGE[type]; return s ? (s + (s.indexOf('?') < 0 ? '?' + IMG_VER : '')) : null; }
+
+  // アートパネルの中身を埋める: 画像があれば<img>(読み込み失敗時はSVGへフォールバック)、無ければ署名SVG。
+  function fillCardArt(artEl, card) {
+    const src = cardImageSrc(card.type);
+    const svg = () => { artEl.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 200 180">' + (CARD_ART[card.type] || CARD_ART.allround) + '</svg>'); };
+    if (src) {
+      const im = el('img', 'pcard-artimg'); im.alt = '';
+      im.onerror = () => { im.remove(); svg(); };
+      im.src = src;
+      artEl.appendChild(im);
+    } else {
+      svg();
+    }
+  }
+
   function buildPlayerCard(card, cardNo) {
     const rar = card.expelled ? CARD_RARITY['退学'] : (CARD_RARITY[card.rank] || CARD_RARITY.E);
     const wrap = el('div', 'pcard rank-' + (card.expelled ? 'X' : card.rank));
@@ -1694,7 +1717,7 @@
     inner.appendChild(el('div', 'pcard-epithet', '「' + card.title + '」・' + card.typeLabel));
     // 中央アート（属性別ディアボロ）
     const art = el('div', 'pcard-art');
-    art.innerHTML = '<svg viewBox="0 0 200 180">' + (CARD_ART[card.type] || CARD_ART.allround) + '</svg>';
+    fillCardArt(art, card);
     art.appendChild(el('span', 'pcard-artlabel', 'ART: ' + card.typeLabel));
     inner.appendChild(art);
     // 能力CP／通算pt
@@ -1864,10 +1887,11 @@
     rr(24, 188, W - 48, 300, 20);
     ctx.fillStyle = card.expelled ? '#252b36' : '#141f3d'; ctx.fill();
     ctx.strokeStyle = card.expelled ? '#3a414f' : '#3b4f86'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = '#7f96b8'; ctx.font = '700 17px ' + FONT;
-    ctx.fillText('ART: ' + card.typeLabel, 44, 474);
-    // 数値・ステータス・フッター（アートSVGのロード後に確定描画→保存）
+    // 数値・ステータス・フッター（アート描画の完了後に確定描画→保存）
     const drawRest = () => {
+      // ART:ラベルはアートの上に載せる（画像がパネル全面を覆うケースにも対応）
+      ctx.fillStyle = '#cbd8ef'; ctx.font = '700 17px ' + FONT;
+      ctx.fillText('ART: ' + card.typeLabel, 44, 474);
       ctx.fillStyle = '#7f97cf'; ctx.font = '800 19px ' + FONT;
       ctx.fillText('能力CP', 34, 530);
       ctx.textAlign = 'right'; ctx.fillText('通算pt', W - 34, 530); ctx.textAlign = 'left';
@@ -1893,13 +1917,32 @@
       ctx.fillText(bgLabel + ' / No.' + String(cardNo).padStart(3, '0'), W - 34, H - 32); ctx.textAlign = 'left';
       done(cv);
     };
-    // 署名ディアボロをSVG→Image化して中央に描画（blob同一オリジンなのでcanvasは汚染されない）
-    const artColor = rankKey === 'S' ? '#8fe6ff' : (rankKey === 'A' ? '#ffdf8f' : (rankKey === 'X' ? '#8a919c' : '#8fc4e8'));
-    const svgMarkup = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="340" height="306" style="color:' + artColor + '">' + (CARD_ART[card.type] || CARD_ART.allround) + '</svg>';
-    const img = new Image();
-    img.onload = () => { ctx.drawImage(img, (W - 340) / 2, 186, 340, 306); URL.revokeObjectURL(img.src); drawRest(); };
-    img.onerror = () => drawRest();
-    img.src = URL.createObjectURL(new Blob([svgMarkup], { type: 'image/svg+xml' }));
+    // アート: 画像(CARD_IMAGE・same-origin)があればPNGをパネルにcover描画、無ければ署名SVG。画像失敗時はSVGへ。
+    const artSrc = cardImageSrc(card.type);
+    const drawSvgArt = () => {
+      const artColor = rankKey === 'S' ? '#8fe6ff' : (rankKey === 'A' ? '#ffdf8f' : (rankKey === 'X' ? '#8a919c' : '#8fc4e8'));
+      const svgMarkup = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="340" height="306" style="color:' + artColor + '">' + (CARD_ART[card.type] || CARD_ART.allround) + '</svg>';
+      const img = new Image();
+      img.onload = () => { ctx.drawImage(img, (W - 340) / 2, 186, 340, 306); URL.revokeObjectURL(img.src); drawRest(); };
+      img.onerror = () => drawRest();
+      img.src = URL.createObjectURL(new Blob([svgMarkup], { type: 'image/svg+xml' }));
+    };
+    if (artSrc) {
+      const pimg = new Image();
+      pimg.onload = () => {
+        ctx.save(); rr(24, 188, W - 48, 300, 20); ctx.clip();
+        const iw = pimg.width, ih = pimg.height, tw = W - 48, th = 300, tr = tw / th; // object-fit: cover
+        let sw, sh, sx, sy;
+        if (iw / ih > tr) { sh = ih; sw = Math.round(ih * tr); sx = Math.round((iw - sw) / 2); sy = 0; }
+        else { sw = iw; sh = Math.round(iw / tr); sx = 0; sy = Math.round((ih - sh) / 2); }
+        ctx.drawImage(pimg, sx, sy, sw, sh, 24, 188, tw, th);
+        ctx.restore(); drawRest();
+      };
+      pimg.onerror = drawSvgArt;
+      pimg.src = artSrc;
+    } else {
+      drawSvgArt();
+    }
   }
 
   // カード下のアクション行（🔗シェア＋📷保存）。エンディング・図鑑詳細で共用
