@@ -1702,5 +1702,99 @@
     );
   }
 
-  initTitle();
+  // ---- おまかせ自動プレイ（デモ/確認用・2026-07-15） ----
+  // URLに ?auto=1 で高校(ノーマル)、?auto=college / juniorhigh で経歴指定。
+  // CPUが4年分を即時プレイしてエンディング(パック開封)へ直行。記録(RECORDS)には保存しない。
+  // リロードするたび新しい結果＝別のカードが出る（開封演出のガチャ的確認ツール）。
+  function autoPlayDemo(backgroundId) {
+    const clampV = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    state = DT.state.newCharacter(undefined, backgroundId);
+    state.name = 'おまかせ';
+    let guard = 0;
+    while (state.status === 'playing' && guard++ < 100) {
+      // 練習前スロット: おみくじ → 状態イベント → ランダム（イベントは先頭選択）
+      let skip = false;
+      if (DT.events.isOmikujiTurn(state.turn)) {
+        DT.events.drawOmikuji(state);
+      } else {
+        const cond = DT.events.conditionalEventFor(state);
+        if (cond) {
+          if (cond.awakenTrigger) {
+            if (Math.random() < 0.5) DT.events.startAwakening(state);
+            else state.motivation = clampV(state.motivation - 20, 0, 100);
+          } else if (cond.choices) { DT.events.applyChoice(state, cond, 0); }
+          else { DT.events.applyConditional(state, cond); if (cond.id === 'collapse') skip = true; }
+        } else {
+          const ev = DT.events.roll(state);
+          if (ev && ev.kind === 'char') DT.events.applyChoice(state, ev.event, 0);
+          else if (ev) DT.events.applyHappening(state, ev.event);
+        }
+      }
+      // 行動: 怪我=療養 / 補習・学力低=勉強 / 疲労高=休養 / それ以外=弱点補強の練習
+      if (!skip) {
+        let act = 'train';
+        if (state.injuredTurns > 0) act = 'injured';
+        else if (state.banTurns > 0) act = state.fatigue > 55 ? 'rest' : 'study';
+        else {
+          const nextExam = DT.DATA.EXAMS.turns.find(t => t >= state.turn);
+          if (nextExam !== undefined && nextExam - state.turn <= 1 && state.study < 45) act = 'study';
+          else if (state.study < 30) act = 'study';
+          else if (state.fatigue > 55) act = 'rest';
+        }
+        if (act === 'train') {
+          const unlockedG = DT.DATA.GENRES.filter(g => DT.contest.isGenreUnlocked(state, g.id));
+          const cells = [];
+          unlockedG.forEach(g => DT.DATA.METHODS.forEach(m => cells.push({ genre: g.id, method: m.id, v: state.skills[g.id][m.id] })));
+          cells.sort((a, b) => a.v - b.v);
+          const s1 = { genre: cells[0].genre, method: cells[0].method };
+          const s2 = cells[1] ? { genre: cells[1].genre, method: cells[1].method } : 'routine';
+          DT.engine.applyTraining(state, [s1, s2, 'routine']);
+          DT.engine.rollInjury(state);
+        } else {
+          DT.engine.applyAction(state, act);
+        }
+      } else { state.didTrain = false; state.didStudy = false; }
+      // 練習後スロット: 大会 → 世界 → JJF → 固定イベント
+      const contest = DT.contest.contestForTurn(state.turn);
+      const wc = DT.contest.worldsContestForTurn(state.turn);
+      const jq = DT.contest.jjfQualifierForTurn(state.turn);
+      const jf = DT.contest.jjfFinalForTurn(state.turn);
+      if (contest) {
+        let ids;
+        if (contest.type === 'shizuoka') { ids = ['technical', 'performance']; }
+        else {
+          const sp = DT.DATA.DIVISIONS.filter(d => d.scoring === 'specialist' && DT.contest.isGenreUnlocked(state, d.id)).map(d => d.id);
+          ids = ['overall'].concat(sp.slice(0, DT.contest.maxEntries(state.turn) - 1));
+        }
+        DT.contest.runAll(state, contest, ids);
+      } else if (wc && DT.contest.worldsQualified(state, state.turn)) {
+        DT.contest.runAll(state, wc, ['overall']);
+      } else if (jq) {
+        const q = DT.contest.jjfQualify(state);
+        if (q.passed) {
+          state.motivation = clampV(state.motivation + DT.DATA.JJF.passMotivation, 0, 100);
+          state.jjfFinalist = 1;
+          state.results.push({ name: jq.name, type: 'jjf', division: 'qualifier', divisionLabel: 'JJF予選突破',
+            rank: 1, entrants: 0, points: DT.DATA.JJF.finalistPoints, turn: state.turn, standings: [], rivalMessages: [] });
+        } else { state.motivation = clampV(state.motivation - 8, 0, 100); }
+      } else if (jf && state.jjfFinalist) {
+        state.jjfFinalist = 0;
+        DT.contest.runJjfFinal(state, jf);
+      } else {
+        const sched = DT.events.scheduledEventFor(state);
+        if (sched) { if (sched.choices) DT.events.applyChoice(state, sched, 0); else DT.events.applyScheduled(state, sched); }
+      }
+      DT.engine.endTurn(state);
+    }
+    state.recorded = true; // デモは記録(RECORDS)を汚さない
+    renderEnding();
+  }
+
+  const autoParam = new URLSearchParams(location.search).get('auto');
+  if (autoParam) {
+    const bg = DT.DATA.BACKGROUNDS.some(b => b.id === autoParam) ? autoParam : 'highschool';
+    autoPlayDemo(bg);
+  } else {
+    initTitle();
+  }
 })();
