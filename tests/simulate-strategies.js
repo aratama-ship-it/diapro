@@ -2,7 +2,8 @@
 // 戦略比較＋カード特徴分布シミュレーション（2026-07-15）
 // 目的: (1)どのプレイ方針が強いかをデータ化 (2)カード用アートの特徴プロファイル
 //       (Type×ランク帯×最強ジャンル×勝ちっぷり) の出現分布を取得
-// 実行: node tests/simulate-strategies.js [N]  (N=戦略ごとの試行数, 既定100)
+// 実行: node tests/simulate-strategies.js [N] [backgroundId]
+//   N=戦略ごとの試行数(既定100) / backgroundId=college(ハード)|highschool(ノーマル,既定)|juniorhigh|childhood
 //
 // test-simulation.js の playThrough を土台に、実ゲームフローへ寄せた追加:
 //   - 練習直後の怪我判定 rollInjury
@@ -102,7 +103,7 @@ const STRATEGIES = {
 
 // ---- 1ゲーム通しプレイ ----
 function playThrough(rng, strat) {
-  const state = DT.state.newCharacter(rng); // 経歴=高校(既定)で統一
+  const state = DT.state.newCharacter(rng, BACKGROUND); // 経歴は引数で指定(既定=高校ノーマル)
   let guard = 0;
   while (state.status === 'playing' && guard++ < 100) {
     // 練習前スロット: 状態依存イベント優先 → ランダム
@@ -194,12 +195,15 @@ function features(state) {
 
 // ---- 実行・集計 ----
 const N = parseInt(process.argv[2], 10) || 100;
+const BACKGROUND = process.argv[3] || 'highschool';
+const BG_DEF = DT.DATA.BACKGROUNDS.find(b => b.id === BACKGROUND);
+if (!BG_DEF) { console.error('未知のbackgroundId: ' + BACKGROUND); process.exit(1); }
 const tally = (arr, key) => arr.reduce((a, f) => { const k = key(f); a[k] = (a[k] || 0) + 1; return a; }, {});
 const avg = (arr, key) => Math.round(arr.reduce((a, f) => a + key(f), 0) / arr.length);
 const pct = (n, d) => Math.round(n / d * 100) + '%';
 
 const all = [];
-console.log('=== 戦略比較（各N=' + N + '・経歴=高校固定） ===\n');
+console.log('=== 戦略比較（各N=' + N + '・経歴=' + BG_DEF.label + '/' + BG_DEF.difficulty + '） ===\n');
 Object.entries(STRATEGIES).forEach(([id, strat]) => {
   const runs = [];
   for (let seed = 1; seed <= N; seed++) runs.push(features(playThrough(lcg(seed * 7919 + id.length), strat)));
