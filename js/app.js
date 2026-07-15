@@ -1001,7 +1001,8 @@
     show('#screen-event');
   }
 
-  // 覚醒のきざしイベントの選択処理。「波に乗る」=50%で覚醒モード開始／失敗はやる気-10。「落ち着く」=やる気小減。onDoneで続行。
+  // 覚醒のきざしイベントの選択処理。「波に乗る」=50%で覚醒モード開始／失敗はやる気-20（再到達を遅らせ頻発を防ぐ）。「落ち着く」=やる気小減。onDoneで続行。
+  const AWAKEN_FAIL_MOT = 20;
   function handleAwakenChoice(event, i, onDone) {
     const choice = event.choices[i];
     if (choice.awaken) {
@@ -1011,9 +1012,9 @@
         showAwakenSplash(() => showEventNotice('✨ 覚醒', '波に完全に乗った——感覚が研ぎ澄まされ、覚醒モードに入った！',
           ['今後' + dur + 'ヶ月間 能力の伸び ×1.5'], () => { pendingMessages.push(line); onDone(); }));
       } else {
-        state.motivation = Math.max(0, state.motivation - 10);
-        showEventNotice('✨ 覚醒のきざし', '波に乗ろうとしたが、力が入りすぎて呑まれてしまった……惜しくも覚醒には至らなかった。',
-          ['やる気 -10'], () => { pendingMessages.push('覚醒に失敗… やる気 -10'); onDone(); });
+        state.motivation = Math.max(0, state.motivation - AWAKEN_FAIL_MOT);
+        showEventNotice('✨ 覚醒のきざし', '波に乗ろうとしたが、力が入りすぎて呑まれてしまった……惜しくも覚醒には至らなかった。反動でどっと気持ちが萎えた。',
+          ['やる気 -' + AWAKEN_FAIL_MOT], () => { pendingMessages.push('覚醒に失敗… やる気 -' + AWAKEN_FAIL_MOT); onDone(); });
       }
     } else {
       const d = choice.declineMot || 0;
