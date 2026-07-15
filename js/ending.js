@@ -24,14 +24,14 @@
     const abilityAvg = Math.round(abilitySum / cellCount);
     const worldsWin = state.results.some(r => r.type === 'worlds' && r.rank === 1);
     const ajdcOverallWin = state.results.some(r => r.type === 'ajdc' && r.division === 'overall' && r.rank === 1);
-    // v3バランス調整（Task4）: LEVELS成長引き上げに伴い、無冠でも中堅相応の合計点になる帯が
-    // 300点未満に増えたため、C閾値を220に引き下げてD一極集中を回避（詳細は同レポート参照）
+    // ポイントのリニア化(2026-07-15)に伴い閾値を引き上げ: 中位順位でも点が入り平均ptが約2.3倍に
+    // なったため、S=伝説が13%も出ていた分布を締める（sim: tests/simulate-strategies.js で検証）
     let rank;
-    if (ajdcOverallWin || points >= 850) rank = 'S';
-    else if (points >= 700) rank = 'A';
-    else if (points >= 450) rank = 'B';
-    else if (points >= 220) rank = 'C';
-    else if (points >= 90) rank = 'D';
+    if (ajdcOverallWin || points >= 1000) rank = 'S';
+    else if (points >= 800) rank = 'A';
+    else if (points >= 550) rank = 'B';
+    else if (points >= 300) rank = 'C';
+    else if (points >= 120) rank = 'D';
     else rank = 'E';
     if (worldsWin) rank = 'S';
     const titles = {
