@@ -96,6 +96,7 @@ h2 { font-size: 1.2rem; text-align: center; color: var(--ink); letter-spacing: .
 
 /* ---------- 汎用ボタン（title/create/event/entry 等の縦積みボタン） ---------- */
 .screen > button,
+.cta-wrap button,
 #create-bg button,
 #event-choices button,
 #entry-divisions button {
@@ -108,6 +109,7 @@ h2 { font-size: 1.2rem; text-align: center; color: var(--ink); letter-spacing: .
   box-shadow: var(--pop-shadow-sm);
 }
 .screen > button:active,
+.cta-wrap button:active,
 #event-choices button:active,
 #entry-divisions button:active { transform: translateY(3px); box-shadow: none; }
 button.primary { background: var(--coral); color: #fff; }
@@ -118,13 +120,17 @@ button.primary { background: var(--coral); color: #fff; }
 button:disabled { opacity: .45; cursor: default; box-shadow: none; }
 
 /* 画面末尾の主要ボタン（CTA）を下部に固定して、内容が長くても必ず見えるようにする */
-#screen-contest > button.primary,
-#screen-ending > button.primary,
-#screen-training > button.primary,
-#screen-entry > button.primary {
-  /* 最下端に貼り付けず少し上げる（タップしやすく。ホームバー等も避ける） */
-  position: sticky; bottom: 14px; z-index: 3; margin-top: auto;
+/* 画面末尾CTA: ラッパー(.cta-wrap)でsticky化し、背後にクリーム背景を敷いて
+   下に透けるリスト（成績表等）を隠す（2026-07-15。ボタン単体sticky+疑似要素は
+   描画順の仕様でボタンが薄くなるため廃止） */
+.cta-wrap {
+  position: sticky; bottom: -10px; z-index: 3; margin-top: auto;
+  /* 画面(.screen)のpadding(左右14/下10)を打ち消して下端までフルブリードに */
+  margin-left: -14px; margin-right: -14px; margin-bottom: -10px;
+  padding: 12px 14px 16px;
+  background: linear-gradient(180deg, rgba(255, 248, 236, 0), var(--cream) 40%);
 }
+.cta-wrap button { width: 100%; }
 .cta-bar {
   position: sticky; bottom: 14px; z-index: 3; margin-top: auto;
   display: flex; gap: 8px;
