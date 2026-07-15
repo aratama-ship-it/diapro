@@ -17,6 +17,8 @@
   let pendingContest = null;
   let selectedBackground = 'highschool';
   let pendingActionId = null;
+  let pendingSlots = null;          // 練習ターンのスロット構成（前スロット→練習実行まで保持）
+  let pendingSkipAction = false;    // 過労で倒れる等で当ターンの行動をキャンセルするか
   let pendingScheduledPopup = null;
   let pendingPopularity = null;
 
@@ -731,7 +733,7 @@
 
   $('#btn-training-go').onclick = () => {
     const slots = slotsUI.map(s => (s === 'routine' ? 'routine' : { genre: s.genre, method: s.method }));
-    renderTrainingResult(DT.engine.applyTraining(state, slots));
+    startTurn('training', slots);
   };
 
   // --- 練習結果 ---
@@ -785,19 +787,23 @@
     });
     if (compositionTotal !== 0) changeMsgs.push('📈 演技構成 +' + compositionTotal);
 
-    // 新技開発で大成功した月はSNS投稿イベントを挟む。さらに練習の"直後"に怪我判定（大会ターンでも大会より前に解決）
+    // 練習の結果として、怪我判定→SNS投稿の順で処理（怪我は練習の直接結果なのでSNSより先）。その後に練習後スロットへ。
     $('#btn-training-ok').onclick = () => {
-      const base = ['練習を終えた。'].concat(changeMsgs);
-      const afterExtras = (extras) => {
-        const inj = DT.engine.rollInjury(state);
-        const msgs = base.concat(extras).concat(inj.injured ? [inj.message] : []);
-        const go = () => continueTurn(msgs, 'training');
-        if (inj.injured) { showInjurySplash(go); } else { go(); }
+      pendingMessages.push('練習を終えた。');
+      changeMsgs.forEach(m => pendingMessages.push(m));
+      const inj = DT.engine.rollInjury(state);
+      // 新技開発で大成功した月のみSNS投稿イベントを挟む
+      const doSns = () => {
+        if (tr.noveltyGreat) {
+          showSnsEvent(extra => { if (extra) pendingMessages.push(extra); runPostSlot(); });
+        } else {
+          runPostSlot();
+        }
       };
-      if (tr.noveltyGreat) {
-        showSnsEvent(extra => afterExtras(extra ? [extra] : []));
+      if (inj.injured) {
+        showInjurySplash(() => { pendingMessages.push(inj.message); doSns(); });
       } else {
-        afterExtras([]);
+        doSns();
       }
     };
     show('#screen-training');
@@ -844,30 +850,63 @@
   }
 
   // --- ターン実行フロー ---
-  function proceedWithEvents(messages) {
-    // 状態依存イベント（過労で倒れる・絶好調で覚醒・連敗中の励まし等）をランダム抽選より優先
+  // 1ターンの流れ: startTurn → ①練習前スロット(runPreSlot) → ②行動実行(runActionPhase: 練習は怪我・SNS込み)
+  //                → ③練習後スロット(runPostSlot: 大会・固定イベント) → finishTurn
+  //   イベント枠は「練習前=状態/ランダム」「練習後=固定/大会」。怪我・SNSは練習の一部（枠外）。
+  const pushMsgs = arr => arr.forEach(m => pendingMessages.push(m));
+
+  function startTurn(actionId, slots) {
+    pendingMessages = [];
+    pendingActionId = actionId;
+    pendingSlots = slots || null;
+    pendingSkipAction = false;
+    if (actionId === 'injured') { runActionPhase(); return; } // 療養ターンは前スロット無し
+    runPreSlot();
+  }
+
+  // ① 練習前スロット: 状態イベント（過労/覚醒/励まし）優先→ランダム（キャラ/ハプニング）。最大1件。
+  function runPreSlot() {
     const cond = DT.events.conditionalEventFor(state);
     if (cond) {
-      if (cond.choices) { pendingMessages = messages; renderEvent(cond); return; }
-      // 選択肢なしの状態イベントも専用ページを挟む
+      if (cond.choices) { renderEvent(cond, afterPreSlot); return; } // 覚醒のきざし・連敗の励まし等
+      // 選択肢なしの状態イベント（過労で倒れる）。倒れた場合は当ターンの行動をキャンセル（強制休養）
       const cr = DT.events.applyConditional(state, cond);
-      // 選択肢なしの状態イベント（過労で倒れる等）は専用ページで表示。覚醒は選択肢イベント(awakenTrigger)なので上のchoices側で処理される。
-      showEventNotice(cond.speaker || '💫 できごと', cond.text, cr.messages.slice(1), () => finishTurn(messages.concat(cr.messages), null));
+      pushMsgs(cr.messages);
+      if (cond.id === 'collapse') pendingSkipAction = true;
+      showEventNotice(cond.speaker || '💫 できごと', cond.text, cr.messages.slice(1), afterPreSlot);
       return;
     }
     const ev = DT.events.roll(state);
-    if (ev && ev.kind === 'char') {
-      pendingMessages = messages;
-      renderEvent(ev.event);
-      return;
-    }
-    if (ev) {
-      // ハプニングも必ず専用ページを挟んで表示（ログだけにしない）
+    if (ev && ev.kind === 'char') { renderEvent(ev.event, afterPreSlot); return; }
+    if (ev) { // ハプニング
       const h = DT.events.applyHappening(state, ev.event);
-      showEventNotice('📓 今月のできごと', ev.event.text, h.messages.slice(1), () => finishTurn(messages.concat(h.messages), null));
+      pushMsgs(h.messages);
+      showEventNotice('📓 今月のできごと', ev.event.text, h.messages.slice(1), afterPreSlot);
       return;
     }
-    finishTurn(messages, null);
+    afterPreSlot();
+  }
+
+  function afterPreSlot() {
+    if (pendingSkipAction) {
+      // 過労で倒れた→当ターンの行動をスキップ（前ターンのdidTrain/didStudyが残らないようリセット）
+      state.didTrain = false;
+      state.didStudy = false;
+      runPostSlot();
+      return;
+    }
+    runActionPhase();
+  }
+
+  // ② 行動実行。練習は結果画面→怪我→SNSの順（renderTrainingResultのOKでrunPostSlotへ）。休養/勉強/療養は即runPostSlot。
+  function runActionPhase() {
+    if (pendingActionId === 'training') {
+      renderTrainingResult(DT.engine.applyTraining(state, pendingSlots));
+      return;
+    }
+    const r = DT.engine.applyAction(state, pendingActionId);
+    pushMsgs(r.messages);
+    runPostSlot();
   }
 
   // 選択肢のないイベント/ハプニング/状態イベントを1ページ挟んで表示（OKで続行）。効果の増減も一緒に見せる。
@@ -883,30 +922,27 @@
   }
 
   function onAction(actionId) {
-    const result = DT.engine.applyAction(state, actionId);
-    continueTurn(result.messages, actionId);
+    startTurn(actionId, null);
   }
 
-  function continueTurn(messages, actionId) {
+  // ③ 練習後スロット: 大会（通常大会/世界大会/JJF）→ 固定イベント の順で1件処理し、無ければターン終了。
+  //   ランダム・状態イベントは練習前スロット(runPreSlot)で処理済みなのでここでは扱わない。
+  function runPostSlot() {
     const contest = DT.contest.contestForTurn(state.turn);
     if (contest) {
-      pendingMessages = messages;
       pendingContest = contest;
       renderEntry(contest);
       return;
     }
     const wc = DT.contest.worldsContestForTurn(state.turn);
     if (wc && DT.contest.worldsQualified(state, state.turn)) {
-      pendingMessages = messages;
       pendingContest = wc;
-      pendingActionId = actionId;
       renderWorldsEntry(wc);
       return;
     }
     // JJF予選（9月）: 参加するか選ぶ
     const jq = DT.contest.jjfQualifierForTurn(state.turn);
     if (jq) {
-      pendingMessages = messages;
       pendingContest = jq;
       renderJjfQualifier(jq);
       return;
@@ -916,34 +952,30 @@
     if (jf && state.jjfFinalist) {
       state.jjfFinalist = 0;
       const results = DT.contest.runJjfFinal(state, jf);
-      finishTurn(messages, results);
+      finishTurn(pendingMessages, results);
       return;
     }
     const sched = DT.events.scheduledEventFor(state);
     if (sched) {
-      // 選択肢つきの定期イベント（大会前の緊張・後輩入部・進路の悩み等）はイベント画面へ
+      // 選択肢つきの固定イベント（大会前の緊張・後輩入部・進路の悩み等）はイベント画面へ
       if (sched.choices) {
-        pendingMessages = messages;
-        renderEvent(sched);
+        renderEvent(sched, () => finishTurn(pendingMessages, null));
         return;
       }
       const sr = DT.events.applyScheduled(state, sched);
-      // 定期イベントはホーム画面の上にポップアップで通知（afterTurnでホーム描画後に表示）
+      // 固定イベントはホーム画面の上にポップアップで通知（afterTurnでホーム描画後に表示）
       pendingScheduledPopup = { sched: sched, effects: sr.messages };
-      finishTurn(messages.concat(sr.messages), null);
+      finishTurn(pendingMessages.concat(sr.messages), null);
       return;
     }
-    if (actionId !== 'injured') {
-      proceedWithEvents(messages);
-      return;
-    }
-    finishTurn(messages, null);
+    finishTurn(pendingMessages, null);
   }
 
   // 台湾合宿「行く」で低確率発生するコミカル分岐（トイレ事件→やる気-20だが覚醒）
   const TAIWAN_TOILET_CHANCE = 0.5;
 
-  function renderEvent(event) {
+  // イベント(選択肢あり)を表示。解決後にonDone()を呼ぶ（練習前スロット→行動 / 練習後スロット→ターン終了 を継続）。
+  function renderEvent(event, onDone) {
     // speaker指定があれば優先（CHARACTERSに居ない一度きりのゲストNPC用。例: 斉藤会長）
     const chara = DT.DATA.CHARACTERS.find(c => c.id === event.char);
     $('#event-char').textContent = event.speaker || (chara ? chara.name : '');
@@ -952,17 +984,16 @@
       const b = el('button', i === 0 ? 'primary' : '', c.label);
       b.onclick = () => {
         // 覚醒のきざし: 通常のapplyChoice(既読管理)を通さず専用処理（50%成功／失敗でやる気-10）
-        if (event.awakenTrigger) { handleAwakenChoice(event, i); return; }
+        if (event.awakenTrigger) { handleAwakenChoice(event, i, onDone); return; }
         const r = DT.events.applyChoice(state, event, i);
-        const msgs = pendingMessages.concat(r.messages);
         // 合宿に「行く」(i===0)を選んだら一定確率でトイレ事件に突入（そのページで結果を見せる）
         if (event.id === 'taiwan_camp' && i === 0 && Math.random() < TAIWAN_TOILET_CHANCE) {
-          showTaiwanToilet(extra => finishTurn(msgs.concat(extra), null));
+          showTaiwanToilet(extra => { pushMsgs(r.messages); pushMsgs(extra); onDone(); });
           return;
         }
         // 選択の結果（結果文＋効果）を専用ページで表示してから続行（ログだけにしない）
         const header = event.speaker || (chara ? chara.name : '結果');
-        showEventNotice(header, r.messages[0], r.messages.slice(1), () => finishTurn(msgs, null));
+        showEventNotice(header, r.messages[0], r.messages.slice(1), () => { pushMsgs(r.messages); onDone(); });
       };
       return b;
     });
@@ -970,27 +1001,25 @@
     show('#screen-event');
   }
 
-  // 覚醒のきざしイベントの選択処理。「波に乗る」=50%で覚醒モード開始／失敗はやる気-10。「落ち着く」=やる気小減。
-  function handleAwakenChoice(event, i) {
+  // 覚醒のきざしイベントの選択処理。「波に乗る」=50%で覚醒モード開始／失敗はやる気-10。「落ち着く」=やる気小減。onDoneで続行。
+  function handleAwakenChoice(event, i, onDone) {
     const choice = event.choices[i];
     if (choice.awaken) {
       if (Math.random() < 0.5) {
         const dur = DT.events.startAwakening(state);
-        const msgs = pendingMessages.concat(['✨ 覚醒モードに入った！（今後' + dur + 'ヶ月間、練習・イベントでの能力の伸びが1.5倍）']);
+        const line = '✨ 覚醒モードに入った！（今後' + dur + 'ヶ月間、練習・イベントでの能力の伸びが1.5倍）';
         showAwakenSplash(() => showEventNotice('✨ 覚醒', '波に完全に乗った——感覚が研ぎ澄まされ、覚醒モードに入った！',
-          ['今後' + dur + 'ヶ月間 能力の伸び ×1.5'], () => finishTurn(msgs, null)));
+          ['今後' + dur + 'ヶ月間 能力の伸び ×1.5'], () => { pendingMessages.push(line); onDone(); }));
       } else {
         state.motivation = Math.max(0, state.motivation - 10);
-        const msgs = pendingMessages.concat(['覚醒に失敗… やる気 -10']);
         showEventNotice('✨ 覚醒のきざし', '波に乗ろうとしたが、力が入りすぎて呑まれてしまった……惜しくも覚醒には至らなかった。',
-          ['やる気 -10'], () => finishTurn(msgs, null));
+          ['やる気 -10'], () => { pendingMessages.push('覚醒に失敗… やる気 -10'); onDone(); });
       }
     } else {
       const d = choice.declineMot || 0;
       if (d) state.motivation = Math.max(0, Math.min(100, state.motivation + d));
       const effectLines = d ? ['やる気 ' + d] : [];
-      const msgs = pendingMessages.concat(effectLines);
-      showEventNotice('✨ 覚醒のきざし', choice.result, effectLines, () => finishTurn(msgs, null));
+      showEventNotice('✨ 覚醒のきざし', choice.result, effectLines, () => { if (d) pendingMessages.push('やる気 ' + d); onDone(); });
     }
   }
 
@@ -1156,10 +1185,8 @@
       finishTurn(pendingMessages, results);
     };
     const skip = el('button', '', '見送る');
-    skip.onclick = () => {
-      if (pendingActionId !== 'injured') { proceedWithEvents(pendingMessages); }
-      else { finishTurn(pendingMessages, null); }
-    };
+    // 世界大会は練習後スロット。ランダム/状態イベントは練習前スロットで処理済みなので、見送り時はそのままターン終了。
+    skip.onclick = () => { finishTurn(pendingMessages, null); };
     $('#entry-divisions').replaceChildren(enter, skip);
     $('#btn-entry-go').classList.add('hidden');
     show('#screen-entry');
