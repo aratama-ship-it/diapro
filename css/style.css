@@ -920,3 +920,13 @@ table.dev-grid tr.locked td { color: #545d85; }
 .card-dl-btn:active { transform: translateY(2px); box-shadow: none; }
 /* 記録一覧の排出カード行 */
 .event-cardtitle { font-size: .6rem; color: #8a5c3a; font-weight: 800; }
+
+/* ==== カード シェア/保存アクション（Phase3.5・2026-07-15） ==== */
+.card-actions { display: flex; gap: 8px; justify-content: center; margin: 4px 0 6px; }
+.card-actions .card-dl-btn, .card-actions .card-share-btn { margin: 0; }
+.card-share-btn {
+  padding: 9px 20px; border: 2px solid var(--ink); border-radius: 999px;
+  background: var(--coral); color: #fff;
+  font-size: .82rem; font-weight: 800; box-shadow: 0 2px 0 var(--ink);
+}
+.card-share-btn:active { transform: translateY(2px); box-shadow: none; }

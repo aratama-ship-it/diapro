@@ -1476,9 +1476,7 @@
     cardEl.classList.add('hidden');
     const rest = el('div', 'ending-rest hidden');
     if (newCardNote) rest.appendChild(el('p', 'center best-note', '✨ NEWカード！図鑑に「' + card.title + '」を登録した'));
-    const dlBtn = el('button', 'card-dl-btn', '📷 カード画像を保存');
-    dlBtn.onclick = () => downloadCardImage(card, cardNo);
-    rest.appendChild(dlBtn);
+    rest.appendChild(buildCardActions(card, cardNo));
     if (bestNote) rest.appendChild(el('p', 'center best-note', bestNote));
     if (e.comment) rest.appendChild(el('p', 'center', e.comment));
     if (state.results.length > 0) rest.appendChild(resultsTable(state.results));
@@ -1660,9 +1658,7 @@
     const dateStr = isNaN(d) ? '' : (d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate());
     const cardEl = buildPlayerCard(got.snap, got.cardNo);
     const info = el('p', 'center zukan-date', '初解禁 ' + dateStr);
-    const dl = el('button', 'card-dl-btn', '📷 カード画像を保存');
-    dl.onclick = () => downloadCardImage(got.snap, got.cardNo);
-    $('#zukan-detail-body').replaceChildren(cardEl, info, dl);
+    $('#zukan-detail-body').replaceChildren(cardEl, info, buildCardActions(got.snap, got.cardNo));
     $('#zukan-detail').classList.remove('hidden');
   }
   function closeZukanDetail() { $('#zukan-detail').classList.add('hidden'); }
@@ -1674,7 +1670,8 @@
     D: ['#46577a', '#46577a', '#5b6b82'], E: ['#7a8aa8', '#7a8aa8', '#8a9ab8'],
     X: ['#6b7280', '#4b5563', '#6b7280']
   };
-  function downloadCardImage(card, cardNo) {
+  // カードをcanvasに描画し、完成したcanvasを done(cv) で返す（downloadとshareで共用）
+  function renderCardCanvas(card, cardNo, done) {
     const rankKey = card.expelled ? 'X' : card.rank;
     const rar = card.expelled ? CARD_RARITY['退学'] : (CARD_RARITY[card.rank] || CARD_RARITY.E);
     const W = 640, H = 940;
@@ -1732,13 +1729,7 @@
       const bgLabel = (DT.DATA.BACKGROUNDS.find(b => b.id === card.background) || {}).label || '';
       ctx.fillStyle = '#8a9ac0'; ctx.font = '700 19px ' + FONT; ctx.textAlign = 'right';
       ctx.fillText(bgLabel + ' / No.' + String(cardNo).padStart(3, '0'), W - 34, H - 32); ctx.textAlign = 'left';
-      cv.toBlob(b => {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(b);
-        a.download = 'diabolo-card-No' + String(cardNo).padStart(3, '0') + '-' + card.id + '.png';
-        document.body.appendChild(a); a.click();
-        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1200);
-      }, 'image/png');
+      done(cv);
     };
     // 署名ディアボロをSVG→Image化して中央に描画（blob同一オリジンなのでcanvasは汚染されない）
     const artColor = rankKey === 'S' ? '#8fe6ff' : (rankKey === 'A' ? '#ffdf8f' : (rankKey === 'X' ? '#8a919c' : '#8fc4e8'));
@@ -1747,6 +1738,79 @@
     img.onload = () => { ctx.drawImage(img, (W - 340) / 2, 186, 340, 306); URL.revokeObjectURL(img.src); drawRest(); };
     img.onerror = () => drawRest();
     img.src = URL.createObjectURL(new Blob([svgMarkup], { type: 'image/svg+xml' }));
+  }
+
+  // カード下のアクション行（🔗シェア＋📷保存）。エンディング・図鑑詳細で共用
+  function buildCardActions(card, cardNo) {
+    const row = el('div', 'card-actions');
+    row.appendChild(buildShareButton(card, cardNo));
+    const dl = el('button', 'card-dl-btn', '📷 保存');
+    dl.onclick = () => downloadCardImage(card, cardNo);
+    row.appendChild(dl);
+    return row;
+  }
+
+  const cardFileName = (card, cardNo) => 'diabolo-card-No' + String(cardNo).padStart(3, '0') + '-' + card.id + '.png';
+
+  // カードをPNGのFileにして返す（シェア用に先読みしておく）
+  function renderCardFile(card, cardNo) {
+    return new Promise(resolve => {
+      renderCardCanvas(card, cardNo, cv => cv.toBlob(
+        b => resolve(b ? new File([b], cardFileName(card, cardNo), { type: 'image/png' }) : null), 'image/png'));
+    });
+  }
+
+  function downloadCardImage(card, cardNo) {
+    renderCardCanvas(card, cardNo, cv => cv.toBlob(b => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(b);
+      a.download = cardFileName(card, cardNo);
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1200);
+    }, 'image/png'));
+  }
+
+  // シェア文言＋URL（バックエンドなし＝ゲームのURL。?auto等のクエリは落とす）
+  function shareText(card) {
+    return 'ディアボロ選手育成で「' + card.title + '」に！\n#ディアボロ選手育成';
+  }
+  function shareUrl() { return location.origin + location.pathname; }
+
+  // シェアボタン: 表示時に画像を先読み(filePromise)し、クリック(ユーザー操作)時に即share
+  function buildShareButton(card, cardNo) {
+    const btn = el('button', 'card-share-btn', '🔗 シェア');
+    const filePromise = renderCardFile(card, cardNo).catch(() => null);
+    btn.onclick = () => doShareCard(card, cardNo, filePromise);
+    return btn;
+  }
+
+  async function doShareCard(card, cardNo, filePromise) {
+    const text = shareText(card);
+    const url = shareUrl();
+    let file = null;
+    try { file = await filePromise; } catch (e) { file = null; }
+    const canFile = file && navigator.canShare && navigator.canShare({ files: [file] });
+    try {
+      if (navigator.share && canFile) { await navigator.share({ files: [file], text: text, url: url }); return; }
+      if (navigator.share) { await navigator.share({ text: text, url: url }); return; }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return; // ユーザーがシェアシートを閉じただけ
+      // それ以外はフォールバックへ
+    }
+    shareFallback(text, url, file, card, cardNo);
+  }
+
+  // PC/非対応: X(Twitter) intentを開く＋画像を手動添付できるようDL
+  function shareFallback(text, url, file, card, cardNo) {
+    if (file) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(file);
+      a.download = cardFileName(card, cardNo);
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1200);
+    }
+    const intent = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text + '\n' + url);
+    window.open(intent, '_blank', 'noopener');
   }
 
   $('#btn-restart').onclick = () => { DT.state.clear(); state = null; initTitle(); };
