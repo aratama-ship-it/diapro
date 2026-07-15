@@ -34,6 +34,13 @@
     return 1.0;
   }
 
+  // 構成専用の成長減衰（バランス修正a・2026-07-15）: カーブはDATA.SLOTS.compositionCurve（降順前提）。
+  // 85以上でmult 0＝ルーチン練習では伸びない（イベントでのみ上振れ）。
+  function compositionGrowthMult(value) {
+    const band = DT.DATA.SLOTS.compositionCurve.find(b => value >= b.min);
+    return band ? band.mult : 1.0;
+  }
+
   function methodLabel(id) {
     return DT.DATA.METHODS.find(s => s.id === id).label;
   }
@@ -119,7 +126,14 @@
       return { gain: 0, timingNote, extraFatigue };
     }
 
-    let mult = TIER_MULT[tier] * growthMult(growthValue);
+    // 構成(routine)は専用の減衰カーブ。mult 0（構成85以上）は練習では伸びない:
+    // 最低+1保証・特別指導/絶好調ボーナスも通さずgain 0で確定（イベントでのみ上振れする領域）。
+    const growth = key === 'routine' ? compositionGrowthMult(growthValue) : growthMult(growthValue);
+    if (growth === 0) {
+      if (tm && tm.extraFatiguePerSlot) { extraFatigue = tm.extraFatiguePerSlot; timingNote = tm.note; }
+      return { gain: 0, timingNote, extraFatigue, capped: true };
+    }
+    let mult = TIER_MULT[tier] * growth;
     if (tm) {
       mult *= tm.gainMult;
       timingNote = tm.note;
@@ -166,7 +180,7 @@
       if (tier === '失敗' && key !== 'novelty') tier = '普通';
 
       if (isRoutine) {
-        const { gain, timingNote, extraFatigue } = computeSlotGain(state, 'routine', DT.DATA.SLOTS.routineGain, state.composition, tier);
+        const { gain, timingNote, extraFatigue, capped } = computeSlotGain(state, 'routine', DT.DATA.SLOTS.routineGain, state.composition, tier);
         state.composition = clamp(state.composition + gain, 0, 100);
         state.fatigue = clamp(state.fatigue + DT.DATA.SLOTS.fatigue.routine + extraFatigue, 0, 100);
         state.injuryRisk = clamp(state.injuryRisk + DT.DATA.SLOTS.risk.routine, 0, 100);
@@ -175,6 +189,9 @@
         results.push({ slot, tier, gain });
         if (tier === '失敗') {
           messages.push('ルーチン構成（失敗）: うまくいかず疲れだけが残った……' + timingNote);
+        } else if (capped) {
+          // 構成85以上: 練習では伸びない領域（イベント＝実戦とひらめきでのみ上振れ）
+          messages.push('ルーチン構成（' + tier + '）: 演技構成は円熟の域（+0）…ここから先は実戦とひらめきで磨かれる' + timingNote);
         } else {
           messages.push('ルーチン構成（' + tier + '）: 演技構成 +' + gain + timingNote);
         }
@@ -311,5 +328,5 @@
     return year + '年生 ' + month + '月';
   }
 
-  DT.engine = { outcomeProbs, rollTier, growthMult, applyAction, applyTraining, rollInjury, endTurn, turnLabel, isMeetupMonth, TIER_MULT, motivationLabel };
+  DT.engine = { outcomeProbs, rollTier, growthMult, compositionGrowthMult, applyAction, applyTraining, rollInjury, endTurn, turnLabel, isMeetupMonth, TIER_MULT, motivationLabel };
 })(typeof window !== 'undefined' ? window : globalThis);
