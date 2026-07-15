@@ -491,11 +491,14 @@
   function renderSettingsMain() {
     const records = el('button', '', '🏅 これまでの記録');
     records.onclick = () => { closeSettings(); openRecords(); };
+    const zukan = el('button', '', '📖 カード図鑑');
+    zukan.onclick = () => { closeSettings(); openZukan(); };
     const retire = el('button', 'retire', 'リタイア（最初から）');
     retire.onclick = renderSettingsConfirm;
     $('#settings-body').replaceChildren(
       el('p', 'settings-note', 'ゲームの設定'),
       records,
+      zukan,
       retire
     );
   }
