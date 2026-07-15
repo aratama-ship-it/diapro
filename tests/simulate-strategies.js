@@ -106,10 +106,12 @@ function playThrough(rng, strat) {
   const state = DT.state.newCharacter(rng, BACKGROUND); // 経歴は引数で指定(既定=高校ノーマル)
   let guard = 0;
   while (state.status === 'playing' && guard++ < 100) {
-    // 練習前スロット: 状態依存イベント優先 → ランダム
+    // 練習前スロット: 1月=おみくじ(固定) → 状態依存イベント → ランダム
     let skipAction = false;
-    const cond = DT.events.conditionalEventFor(state);
-    if (cond) {
+    const cond = DT.events.isOmikujiTurn(state.turn) ? null : DT.events.conditionalEventFor(state);
+    if (DT.events.isOmikujiTurn(state.turn)) {
+      DT.events.drawOmikuji(state, rng);
+    } else if (cond) {
       if (cond.awakenTrigger) {
         if (rng() < 0.5) DT.events.startAwakening(state, rng);
         else state.motivation = clamp(state.motivation - 20, 0, 100);

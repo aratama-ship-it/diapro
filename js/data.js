@@ -150,12 +150,33 @@
       failPenalty: 3      // 練習失敗（＝新技開発の失敗のみ）でのやる気低下
     },
     // 覚醒モードの調整値（2026-07-15）。hard=経歴「大学から」(college)限定の強化:
-    //   ハードは覚醒が「Sへの賭けルート」になる設計（やる気78で発動・×2.5・3-5ヶ月・回数無制限）。
-    //   sim実測(N=600): 全ジャンル育成の最適プレイでS≈2%（弱点補強2.2%/全力疾走2.0%）、特化型はSなしのD安定。
-    //   ノーマル/イージーは従来どおり（motivationLine 90・×1.5・2-4ヶ月・年代枠1回ずつ）＝分布不変。
+    //   ハードは覚醒が「Sへの賭けルート」になる設計（やる気80で発動・×2.4・3-5ヶ月・回数無制限）。
+    //   sim実測(N=800・おみくじ導入後): 全ジャンル育成の最適プレイでS≈2%（弱点補強2.5%/全力疾走1.75%）。
+    //   ※おみくじの好運勢(やる気+)がハードの覚醒頻度を押し上げるため、発動線80/倍率2.4で相殺調整済み。
+    //   ノーマル/イージーは従来どおり（motivationLine 90・×1.5・2-4ヶ月・年代枠1回ずつ）。
     AWAKEN: {
       mult: 1.5, motivationLine: 90, durationBonus: 0,
-      hard: { mult: 2.5, motivationLine: 78, durationBonus: 1, noSlotLimit: true }
+      hard: { mult: 2.4, motivationLine: 80, durationBonus: 1, noSlotLimit: true }
+    },
+    // 初詣おみくじ（2026-07-15）: 毎年1月(turn 10/22/34/46)の頭に全モード共通で発生する固定イベント。
+    //   大凶=能力マイナスの「大変悪いレアイベント」枠。ランクの下振れ(D/E)を残すための運要素。
+    //   確率は合計1.0。効果は events の applyEffects 形式（能力プラスは覚醒中ブースト対象になる）。
+    OMIKUJI: {
+      turns: [10, 22, 34, 46],
+      fortunes: [
+        { id: 'daikichi', label: '大吉', p: 0.12, text: 'なんと大吉！ 今年は何をやってもうまくいく気がする！',
+          effects: { stats: [{ id: 'difficulty', amount: 2 }, { id: 'novelty', amount: 2 }, { id: 'control', amount: 2 }], motivation: 10 } },
+        { id: 'chukichi', label: '中吉', p: 0.20, text: '中吉。「思い描いた舞台に近づく年」だそうだ。',
+          effects: { stat: { id: 'composition', amount: 3 }, motivation: 6 } },
+        { id: 'shokichi', label: '小吉', p: 0.25, text: '小吉。焦らずコツコツ、が吉らしい。',
+          effects: { motivation: 5, fatigue: -5 } },
+        { id: 'suekichi', label: '末吉', p: 0.23, text: '末吉。まあ、こんなものか。',
+          effects: { motivation: 2 } },
+        { id: 'kyo', label: '凶', p: 0.15, text: '凶……。「慢心に足元をすくわれる」と書いてある。',
+          effects: { stat: { id: 'control', amount: -2 }, motivation: -6 } },
+        { id: 'daikyo', label: '大凶', p: 0.05, text: '大凶——！ 帰り道で転び、ディアボロも川に流れた。今年は前途多難だ……',
+          effects: { stats: [{ id: 'difficulty', amount: -6 }, { id: 'novelty', amount: -6 }, { id: 'control', amount: -6 }, { id: 'composition', amount: -6 }], motivation: -15, fatigue: 10 } }
+      ]
     },
     // 新技開発の大成功で発生するSNS投稿イベント（投稿=高確率バズでやる気↑・低確率で既存技判明↓）
     SNS_EVENT: { viralChance: 0.8, viralMotivation: 15, existingPenalty: 8 },

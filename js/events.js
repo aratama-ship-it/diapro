@@ -184,6 +184,26 @@
     return DT.DATA.SCHEDULED_EVENTS.find(e => e.turn === state.turn) || null;
   }
 
+  // 初詣おみくじ（毎年1月・全モード共通）: 今月がおみくじ月か
+  function isOmikujiTurn(turn) {
+    return DT.DATA.OMIKUJI.turns.indexOf(turn) >= 0;
+  }
+  // おみくじを引く: 確率テーブル(p合計1.0)から1つ抽選し、効果を適用して {fortune, messages} を返す。
+  // 大凶=能力マイナスの大変悪いレアイベント枠。能力プラスは覚醒中ブースト(applyEffects経由)の対象。
+  function drawOmikuji(state, rng) {
+    rng = rng || Math.random;
+    const list = DT.DATA.OMIKUJI.fortunes;
+    const r = rng();
+    let acc = 0;
+    let fortune = list[list.length - 1];
+    for (let i = 0; i < list.length; i++) {
+      acc += list[i].p;
+      if (r < acc) { fortune = list[i]; break; }
+    }
+    const messages = ['⛩ おみくじ: ' + fortune.label + '　' + fortune.text].concat(applyEffects(state, fortune.effects));
+    return { fortune, messages };
+  }
+
   // 定期イベントの効果を適用しメッセージを返す。
   // welcome=新入生歓迎会: 現在解禁済みジャンルの全技術(難易度/新奇性/操作安定度)を +gain（clamp 0-100）。
   //   未解禁ジャンル・演技構成は対象外。解禁判定は DT.contest.isGenreUnlocked を使う。
@@ -204,5 +224,5 @@
     return { messages };
   }
 
-  DT.events = { roll, applyChoice, applyHappening, scheduledEventFor, applyScheduled, conditionalEventFor, applyConditional, startAwakening, awakenSlotUsed, awakenConf };
+  DT.events = { roll, applyChoice, applyHappening, scheduledEventFor, applyScheduled, conditionalEventFor, applyConditional, startAwakening, awakenSlotUsed, awakenConf, isOmikujiTurn, drawOmikuji };
 })(typeof window !== 'undefined' ? window : globalThis);

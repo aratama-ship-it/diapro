@@ -864,8 +864,9 @@
     runPreSlot();
   }
 
-  // ① 練習前スロット: 状態イベント（過労/覚醒/励まし）優先→ランダム（キャラ/ハプニング）。最大1件。
+  // ① 練習前スロット: 1月=初詣おみくじ（固定・全モード）＞状態イベント（過労/覚醒/励まし）＞ランダム。最大1件。
   function runPreSlot() {
+    if (DT.events.isOmikujiTurn(state.turn)) { renderOmikuji(); return; }
     const cond = DT.events.conditionalEventFor(state);
     if (cond) {
       if (cond.choices) { renderEvent(cond, afterPreSlot); return; } // 覚醒のきざし・連敗の励まし等
@@ -885,6 +886,20 @@
       return;
     }
     afterPreSlot();
+  }
+
+  // 初詣おみくじ（毎年1月の頭・全モード共通）。「引く」で抽選→結果ページ（大吉〜大凶で能力・やる気が上下）→行動へ
+  function renderOmikuji() {
+    $('#event-char').textContent = '⛩ 初詣';
+    $('#event-text').replaceChildren(el('p', '', '新年あけましておめでとう！ 部のみんなと初詣に来た。今年の運勢を占ってみよう。'));
+    const b = el('button', 'primary', 'おみくじを引く');
+    b.onclick = () => {
+      const r = DT.events.drawOmikuji(state);
+      pushMsgs(r.messages);
+      showEventNotice('⛩ おみくじ「' + r.fortune.label + '」', r.fortune.text, r.messages.slice(1), afterPreSlot);
+    };
+    $('#event-choices').replaceChildren(b);
+    show('#screen-event');
   }
 
   function afterPreSlot() {
