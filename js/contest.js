@@ -227,11 +227,13 @@
     return DT.DATA.RIVALS.filter(r => r.contests.includes(contest.type));
   }
 
-  // モブ対戦相手の命名: rngを消費しない決定的割り当て（同一大会内でも式で重複を避ける）
+  // モブ対戦相手の命名: rngを消費しない決定的割り当て。添字iを連番で足すことで1部門内は必ず異なる名前になる
+  //   （参加人数<名前数のため衝突しない）。turn*7でオフセットして大会・年ごとに顔ぶれを変える。
+  //   ※以前は i*5 だったが、名前数が5の倍数(国際名25)のとき5つおきに同名衝突していた（gcd(5,25)=5）ため連番に変更。
   // OIDCは国際大会なので国際名プール（台湾/フランス/アメリカ風）を使う
   function opponentName(contest, i) {
     const names = contest.type === 'oidc' ? DT.DATA.OPPONENT_NAMES_INTL : DT.DATA.OPPONENT_NAMES;
-    return names[(contest.turn * 7 + i * 5) % names.length];
+    return names[(contest.turn * 7 + i) % names.length];
   }
 
   // 順位表: 全参加者をスコア降順ソートし、上位3名＋自分＋ライバル（重複除去）にrankを付与して返す
