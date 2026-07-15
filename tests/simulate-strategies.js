@@ -3,7 +3,7 @@
 // 目的: (1)どのプレイ方針が強いかをデータ化 (2)カード用アートの特徴プロファイル
 //       (Type×ランク帯×最強ジャンル×勝ちっぷり) の出現分布を取得
 // 実行: node tests/simulate-strategies.js [N] [backgroundId]
-//   N=戦略ごとの試行数(既定100) / backgroundId=college(ハード)|highschool(ノーマル,既定)|juniorhigh|childhood
+//   N=戦略ごとの試行数(既定100) / backgroundId=college(ハード)|highschool(ノーマル,既定)|juniorhigh(イージー)
 //
 // test-simulation.js の playThrough を土台に、実ゲームフローへ寄せた追加:
 //   - 練習直後の怪我判定 rollInjury

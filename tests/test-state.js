@@ -106,7 +106,7 @@ test('SAVE_KEYはv9・OLD_KEYSにv1〜v8を含む', () => {
 test('newCharacter: announcedUnlocksは開始時解禁済みジャンルで初期化される', () => {
   const hard = DT.state.newCharacter(() => 0, 'college'); // 技術0 → h1dのみ解禁
   assert.deepStrictEqual(hard.announcedUnlocks, ['h1d']);
-  const easy = DT.state.newCharacter(() => 0.999, 'childhood'); // 全マス55 → 全解禁
+  const easy = DT.state.newCharacter(() => 0.999, 'juniorhigh'); // 全マス45 → 全解禁
   assert.deepStrictEqual(easy.announcedUnlocks.sort(), ['d2', 'd3', 'h1d', 'v1d']);
 });
 
@@ -155,9 +155,9 @@ test('newCharacter: 経歴で初期能力レンジが変わる（大学は技術
   assert.strictEqual(hard.study, 40);
   assert.strictEqual(hard.background, 'college');
 
-  const easyMax = DT.state.newCharacter(() => 0.999, 'childhood');
-  DT.DATA.GENRES.forEach(g => DT.DATA.METHODS.forEach(m => assert.strictEqual(easyMax.skills[g.id][m.id], 55)));
-  assert.strictEqual(easyMax.composition, 55); // 他経歴はcompMin未指定→従来通りstatと同レンジ
+  const easyMax = DT.state.newCharacter(() => 0.999, 'juniorhigh');
+  DT.DATA.GENRES.forEach(g => DT.DATA.METHODS.forEach(m => assert.strictEqual(easyMax.skills[g.id][m.id], 45)));
+  assert.strictEqual(easyMax.composition, 45); // 他経歴はcompMin未指定→従来通りstatと同レンジ
   assert.strictEqual(easyMax.study, 60);
 
   const def = DT.state.newCharacter(() => 0);

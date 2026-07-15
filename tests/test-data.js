@@ -124,8 +124,8 @@ test('DATA: 大会はOIDC(8月)×4・AJDC(3月)×4・静岡DC(1月)×4', () => {
   });
 });
 
-test('DATA: 経歴は4種で初期値レンジが昇順', () => {
-  assert.strictEqual(DT.DATA.BACKGROUNDS.length, 4);
+test('DATA: 経歴は3種で初期値レンジが昇順（幼少期は2026-07-15廃止）', () => {
+  assert.strictEqual(DT.DATA.BACKGROUNDS.length, 3);
   assert.ok(DT.DATA.BACKGROUNDS.some(b => b.id === 'highschool'));
   for (let i = 1; i < DT.DATA.BACKGROUNDS.length; i++) {
     assert.ok(DT.DATA.BACKGROUNDS[i].statMin > DT.DATA.BACKGROUNDS[i - 1].statMin);
