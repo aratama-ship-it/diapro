@@ -164,13 +164,14 @@
             points: { overall: [100, 70, 50, 20, 5], specialist: [50, 35, 25, 10, 3] } },
     worlds: { base: 85, growth: 1, sd: 11, entrants: 16,
               points: { overall: [150, 100, 70, 30, 10], specialist: [75, 50, 35, 15, 5] } },
-    // 静岡DC(1月): 参加資格全員・レベル低め・ポイントは通常の半分程度。部門ごとに相手レベルを変える(divLevels)。
-    //   テクニカル=低め＆高sd(ランダム強め)。パフォーマンス=構成95付近が優勝ラインになる高めの帯＋低sd。
+    // 静岡DC(1月): 参加資格全員・ポイントは通常の半分程度。部門ごとに相手レベルを変える(divLevels)。
+    //   テクニカル=優勝ラインが80点超になる高めの帯＋中sd(実測: 最上位中央値82〜85, p10でも80超)。
+    //   パフォーマンス=構成95付近が優勝ラインになる高めの帯＋低sd(最上位88〜91)。
     shizuoka: {
       base: 55, growth: 1, sd: 15, entrants: 12, // フォールバック（通常はdivLevelsを使用）
       points: { technical: [10, 6, 4, 2, 1], performance: [10, 6, 4, 2, 1] },
       divLevels: {
-        technical:   { base: 50, sd: 18 },
+        technical:   { base: 77, sd: 6 },
         performance: { base: 84, sd: 5 }
       }
     }
