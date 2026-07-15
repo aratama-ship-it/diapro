@@ -155,8 +155,11 @@
 
     if (state.specialUnlocked) gain += 1;
     if (state.motivation >= DT.DATA.MOTIVATION.hotLine) gain += DT.DATA.MOTIVATION.hotBonus;
-    // 覚醒中は能力の伸びを1.5倍・繰り上げ(ceil)。マイナス（失敗枠=gain0）は上で早期return済みなので影響なし。
-    if (state.awakenTurns > 0) gain = Math.ceil(gain * 1.5);
+    // 覚醒中は能力の伸びを倍率(標準1.5/ハード2.0=DATA.AWAKEN)・繰り上げ(ceil)。失敗枠=gain0は上で早期return済み。
+    if (state.awakenTurns > 0) {
+      const aw = state.background === 'college' ? DT.DATA.AWAKEN.hard : DT.DATA.AWAKEN;
+      gain = Math.ceil(gain * aw.mult);
+    }
     return { gain, timingNote, extraFatigue };
   }
 

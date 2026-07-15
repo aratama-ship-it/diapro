@@ -1008,9 +1008,10 @@
     if (choice.awaken) {
       if (Math.random() < 0.5) {
         const dur = DT.events.startAwakening(state);
-        const line = '✨ 覚醒モードに入った！（今後' + dur + 'ヶ月間、練習・イベントでの能力の伸びが1.5倍）';
+        const mult = DT.events.awakenConf(state).mult; // 標準1.5 / ハード(大学から)2.0
+        const line = '✨ 覚醒モードに入った！（今後' + dur + 'ヶ月間、練習・イベントでの能力の伸びが' + mult + '倍）';
         showAwakenSplash(() => showEventNotice('✨ 覚醒', '波に完全に乗った——感覚が研ぎ澄まされ、覚醒モードに入った！',
-          ['今後' + dur + 'ヶ月間 能力の伸び ×1.5'], () => { pendingMessages.push(line); onDone(); }));
+          ['今後' + dur + 'ヶ月間 能力の伸び ×' + mult], () => { pendingMessages.push(line); onDone(); }));
       } else {
         state.motivation = Math.max(0, state.motivation - AWAKEN_FAIL_MOT);
         showEventNotice('✨ 覚醒のきざし', '波に乗ろうとしたが、力が入りすぎて呑まれてしまった……惜しくも覚醒には至らなかった。反動でどっと気持ちが萎えた。',

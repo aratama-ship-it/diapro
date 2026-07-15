@@ -149,6 +149,14 @@
       noveltySuccessBonus: 3, // 新技開発が成功したときのやる気上昇（新しい技を覚えた高揚。大成功はgreatBonus側）
       failPenalty: 3      // 練習失敗（＝新技開発の失敗のみ）でのやる気低下
     },
+    // 覚醒モードの調整値（2026-07-15）。hard=経歴「大学から」(college)限定の強化:
+    //   ハードは覚醒が「Sへの賭けルート」になる設計（やる気78で発動・×2.5・3-5ヶ月・回数無制限）。
+    //   sim実測(N=600): 全ジャンル育成の最適プレイでS≈2%（弱点補強2.2%/全力疾走2.0%）、特化型はSなしのD安定。
+    //   ノーマル/イージーは従来どおり（motivationLine 90・×1.5・2-4ヶ月・年代枠1回ずつ）＝分布不変。
+    AWAKEN: {
+      mult: 1.5, motivationLine: 90, durationBonus: 0,
+      hard: { mult: 2.5, motivationLine: 78, durationBonus: 1, noSlotLimit: true }
+    },
     // 新技開発の大成功で発生するSNS投稿イベント（投稿=高確率バズでやる気↑・低確率で既存技判明↓）
     SNS_EVENT: { viralChance: 0.8, viralMotivation: 15, existingPenalty: 8 },
     STUDY: { id: 'study', label: '勉強', gain: 10, fatigue: 4 },

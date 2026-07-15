@@ -34,10 +34,15 @@
     return null;
   }
 
-  // 覚醒中(awakenTurns>0)は「能力値のプラスの伸び」だけ1.5倍・繰り上げ(ceil)。マイナスや0はそのまま。
+  // 覚醒の調整値: ハード(経歴=大学から)は強化版（DATA.AWAKEN.hard）、それ以外は標準（DATA.AWAKEN）
+  function awakenConf(state) {
+    return state.background === 'college' ? DT.DATA.AWAKEN.hard : DT.DATA.AWAKEN;
+  }
+
+  // 覚醒中(awakenTurns>0)は「能力値のプラスの伸び」だけ倍率(標準1.5/ハード2.0)・繰り上げ(ceil)。マイナスや0はそのまま。
   //   ※やる気/学力/体力/大会スコアは対象外（能力値の伸びのみ）。
   function awakenBoost(state, amount) {
-    return (state.awakenTurns > 0 && amount > 0) ? Math.ceil(amount * 1.5) : amount;
+    return (state.awakenTurns > 0 && amount > 0) ? Math.ceil(amount * awakenConf(state).mult) : amount;
   }
 
   // 1つの技術系ステータス(difficulty/novelty/control は全ジャンルに/composition は単独)を変化させ、表示メッセージを返す
@@ -117,19 +122,20 @@
   }
 
   // 覚醒の発生枠: 1〜2年生(turn1-24)で1回・3〜4年生(turn25-48)で1回。成功時のみ枠を消費する。
+  // ハードは枠制限なし（noSlotLimit）＝覚醒を引き続ければSに届く「賭けルート」。
   function awakenSlotUsed(state) {
+    if (awakenConf(state).noSlotLimit) return false;
     return state.turn <= 24 ? !!state.awakenUsedEarly : !!state.awakenUsedLate;
   }
-  // 覚醒の持続月数を抽選: 2ヶ月20% / 3ヶ月60% / 4ヶ月20%
-  function rollAwakenDuration(rng) {
+  // 覚醒の持続月数を抽選: 2ヶ月20% / 3ヶ月60% / 4ヶ月20%（ハードはdurationBonusで+1）
+  function rollAwakenDuration(state, rng) {
     const r = (rng || Math.random)();
-    if (r < 0.2) return 2;
-    if (r < 0.8) return 3;
-    return 4;
+    const base = r < 0.2 ? 2 : (r < 0.8 ? 3 : 4);
+    return base + awakenConf(state).durationBonus;
   }
   // 覚醒成功: 持続を抽選し、該当年代の枠を消費。開始したターンは減算しない目印(awakenJustStarted)を立てる。持続月数を返す。
   function startAwakening(state, rng) {
-    const dur = rollAwakenDuration(rng);
+    const dur = rollAwakenDuration(state, rng);
     state.awakenTurns = dur;
     state.awakenJustStarted = true;
     if (state.turn <= 24) state.awakenUsedEarly = true; else state.awakenUsedLate = true;
@@ -146,9 +152,9 @@
         text: '無理がたたって練習中に倒れてしまった……！ 強制的に休養することになった。',
         effects: { fatigue: -45, motivation: -10, injuryRisk: 10 } };
     }
-    // ② 覚醒のきざし（やる気90以上／該当年代の枠が未使用なら選択肢イベント発生）。
-    //    現在すでに覚醒中(awakenTurns>0)なら発生しない。「波に乗る」で50%成功→覚醒モード、失敗でやる気-10。
-    if (!(state.awakenTurns > 0) && state.motivation >= 90 && !awakenSlotUsed(state)) {
+    // ② 覚醒のきざし（やる気が基準以上／枠が未使用なら選択肢イベント発生。基準=標準90/ハード85）。
+    //    現在すでに覚醒中(awakenTurns>0)なら発生しない。「波に乗る」で50%成功→覚醒モード、失敗でやる気-20。
+    if (!(state.awakenTurns > 0) && state.motivation >= awakenConf(state).motivationLine && !awakenSlotUsed(state)) {
       return { id: 'awaken_trigger', char: 'awaken', speaker: '✨ 覚醒のきざし', awakenTrigger: true,
         text: '心と体が噛み合い、絶好調の波が高まっている——。この高ぶりに、思いきって身を委ねてみるか？',
         choices: [
@@ -198,5 +204,5 @@
     return { messages };
   }
 
-  DT.events = { roll, applyChoice, applyHappening, scheduledEventFor, applyScheduled, conditionalEventFor, applyConditional, startAwakening, awakenSlotUsed };
+  DT.events = { roll, applyChoice, applyHappening, scheduledEventFor, applyScheduled, conditionalEventFor, applyConditional, startAwakening, awakenSlotUsed, awakenConf };
 })(typeof window !== 'undefined' ? window : globalThis);
