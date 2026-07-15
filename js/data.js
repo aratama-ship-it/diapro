@@ -243,7 +243,8 @@
       { id: 'kaito',  name: '魁人',       role: 'AJDC連覇中の王者' },
       { id: 'irie',   name: 'イリエ',     role: '同期のディアボロ仲間' },
       { id: 'ujiji',  name: 'うじじ',     role: '大陸からの刺客' },
-      { id: 'kazuki', name: 'Dr. Kazuki', role: '（役割・イベントは後日設定）' }
+      { id: 'kazuki', name: 'Dr. Kazuki', role: '（役割・イベントは後日設定）' },
+      { id: 'george', name: '大道芸人ジョージ', role: '流しの大道芸人。魅せる技術の達人' }
     ],
     EVENTS: {
       probs: { char: 0.125, happening: 0.05 },
@@ -297,7 +298,30 @@
             { label: 'コメントで質問する', effects: { stat: { id: 'novelty', amount: 2 }, motivation: 3 },
               result: '思い切って質問をコメント。投稿者が技のコツを丁寧に教えてくれた！' },
             { label: '低評価ボタンを押す', effects: { motivation: -6 },
-              result: 'よく分からないまま低評価を押した。少し大人げなかったかも……' } ] }
+              result: 'よく分からないまま低評価を押した。少し大人げなかったかも……' } ] },
+        // 大道芸人ジョージ（流しの大道芸人・NPC）: 魅せる技術＝演技構成/新奇性に効く人物イベント
+        { id: 'george1', char: 'george',
+          text: '街角で大道芸人のジョージが人だかりを作っていた。声をかけてみる？',
+          choices: [
+            { label: '見せ技を教わる', effects: { stat: { id: 'novelty', amount: 3 } },
+              result: 'ジョージ直伝の"魅せ技"を伝授された。「技はよ、驚かせてナンボだぜ」' },
+            { label: '飛び入りで共演する', effects: { stat: { id: 'composition', amount: 2 }, motivation: 6 },
+              result: '路上ライブに飛び入り。観客の熱気の中で、構成の組み立て方を体で掴んだ。' } ] },
+        { id: 'george2', char: 'george',
+          text: 'ジョージが「相棒、次の街まで一緒に流さねえか？」と誘ってきた。',
+          choices: [
+            { label: 'ついて行く（週末だけ）', effects: { stat: { id: 'composition', amount: 3 }, fatigue: 6 },
+              result: 'あちこちで投げ銭ライブ。人前で魅せる度胸と構成力がついた。' },
+            { label: '練習を優先する', effects: { stat: { id: 'control', amount: 2 }, motivation: 4 },
+              result: '「真面目だねぇ」ジョージは笑って旅立っていった。地道な反復に集中できた。' } ] },
+        // マレーシア国際大会（海外遠征の決断イベント）: 台湾合宿(新奇性)と役割を分け、舞台度胸＝演技構成/やる気に振る
+        { id: 'malaysia_trip', char: 'malaysia', speaker: '✈ マレーシア遠征',
+          text: 'マレーシアの国際大会に招待が届いた。海外の舞台で腕試しできる、またとない機会だ。遠征する？',
+          choices: [
+            { label: '遠征する', effects: { stats: [{ id: 'composition', amount: 5 }, { id: 'novelty', amount: 3 }], motivation: 15, fatigue: 22, study: -10 },
+              result: '灼熱の会場、多国籍のパフォーマーたち。刺激的な舞台で度胸と構成力を持ち帰った！（疲労と、休んだ授業のツケも残った……）' },
+            { label: '国内に専念する', effects: { study: 6, motivation: -2 },
+              result: '「また次の機会に」丁重に断り、今回は国内の練習と学業に専念した。' } ] }
       ],
       // 現状オフ（無効化）のキャラ別イベント。ゲームからは未参照。復活時は charEvents へ戻す。（2026-07方針: 美琴先輩・志音・魁人は保留）
       charEventsDisabled: [
@@ -358,7 +382,9 @@
         { id: 'hap_slump',  text: '原因不明のスランプ……どうにも調子が上がらない。', effects: { motivation: -10 } },
         { id: 'hap_overseas', text: '海外トップ選手の新作動画に衝撃を受けた。新しい発想が湧いてきた。', effects: { stat: { id: 'novelty', amount: 3 }, motivation: 8 } },
         { id: 'hap_malaysia', text: 'マレーシア合宿で、現地の歌を歌わされた。陽気なノリが構成のヒントになった。', effects: { stat: { id: 'composition', amount: 1 } } },
-        { id: 'hap_gainen', text: 'コースケの概念モノマネを見ていたら、ふと新しい技を思いついた！', effects: { genreStat: { genre: 'v1d', id: 'novelty', amount: 3 } } }
+        { id: 'hap_gainen', text: 'コースケの概念モノマネを見ていたら、ふと新しい技を思いついた！', effects: { genreStat: { genre: 'v1d', id: 'novelty', amount: 3 } } },
+        // 大谷はちみつ園（地元スポンサー）: 差し入れで体力回復＋やる気アップ
+        { id: 'hap_honey', text: '地元の大谷はちみつ園がスポンサーについてくれた！ 差し入れのはちみつで、疲れが吹き飛んだ。', effects: { motivation: 10, fatigue: -8 } }
       ]
     },
     // v2: ライバル（総合部門に実在する対戦相手）
