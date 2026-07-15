@@ -801,3 +801,81 @@ table.dev-grid tr.locked td { color: #545d85; }
 }
 .pcard-medals { font-size: .6rem; color: #ffe4a3; white-space: nowrap; }
 .pcard-no { font-size: .52rem; color: #6d80ad; white-space: nowrap; margin-left: auto; }
+
+/* ==== パック開封演出（Phase2・2026-07-15） ==== */
+.pack-stage { position: relative; display: grid; place-items: center; }
+.pack-stage > .pcard { grid-area: 1 / 1; }
+.card-pack {
+  grid-area: 1 / 1;
+  width: min(300px, 88%); height: 430px; border-radius: 18px; padding: 5px;
+  background: linear-gradient(160deg, #2b3a67, #16224a 55%, #33436f);
+  cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+  animation: packFloat 2.2s ease-in-out infinite;
+}
+.card-pack-inner {
+  height: 100%; border-radius: 14px; background: #0e1830; color: #eaf2ff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  overflow: hidden; position: relative;
+}
+.pack-logo svg { width: 150px; height: 135px; color: #24345f; }
+.pack-q {
+  position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%);
+  font-family: 'Baloo 2', sans-serif; font-size: 3.2rem; font-weight: 800; color: #8fc4e8;
+  text-shadow: 0 0 18px rgba(120, 190, 255, .55);
+}
+.pack-tap { position: absolute; bottom: 26px; font-size: .72rem; letter-spacing: 3px; color: #7f96b8; animation: tapPulse 1.4s ease-in-out infinite; }
+@keyframes packFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes tapPulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+/* レア度の気配（発光色のみ・枠色は開封まで伏せる） */
+.card-pack.glow-S { animation: packFloat 2.2s ease-in-out infinite, glowS 2.2s ease-in-out infinite; }
+.card-pack.glow-A { animation: packFloat 2.2s ease-in-out infinite, glowA 2.2s ease-in-out infinite; }
+.card-pack.glow-B { animation: packFloat 2.2s ease-in-out infinite, glowB 2.2s ease-in-out infinite; }
+.card-pack.glow-C, .card-pack.glow-D, .card-pack.glow-E { box-shadow: 0 10px 26px rgba(30, 45, 80, .35); }
+.card-pack.glow-X { background: repeating-linear-gradient(135deg, #4b5563 0 12px, #374151 12px 24px); box-shadow: 0 10px 26px rgba(0, 0, 0, .4); }
+@keyframes glowS {
+  0%, 100% { box-shadow: 0 10px 26px rgba(30,45,80,.35), 0 0 22px rgba(103,232,249,.55), 0 0 44px rgba(192,132,252,.35); }
+  50%      { box-shadow: 0 10px 26px rgba(30,45,80,.35), 0 0 34px rgba(255,138,212,.65), 0 0 60px rgba(129,140,248,.45); }
+}
+@keyframes glowA {
+  0%, 100% { box-shadow: 0 10px 26px rgba(30,45,80,.35), 0 0 20px rgba(255,215,106,.5); }
+  50%      { box-shadow: 0 10px 26px rgba(30,45,80,.35), 0 0 36px rgba(255,215,106,.75); }
+}
+@keyframes glowB {
+  0%, 100% { box-shadow: 0 10px 26px rgba(30,45,80,.35), 0 0 14px rgba(195,208,222,.4); }
+  50%      { box-shadow: 0 10px 26px rgba(30,45,80,.35), 0 0 24px rgba(195,208,222,.6); }
+}
+/* 開封: 震え→白フラッシュ */
+.card-pack.opening { animation: packShake .7s ease-in-out forwards; }
+.card-pack.opening .card-pack-inner::after {
+  content: ''; position: absolute; inset: 0; background: #fff; opacity: 0;
+  animation: packFlash .7s ease-in forwards;
+}
+@keyframes packShake {
+  0% { transform: rotate(0); } 15% { transform: rotate(-3deg) scale(1.02); }
+  30% { transform: rotate(3deg) scale(1.04); } 45% { transform: rotate(-4deg) scale(1.06); }
+  60% { transform: rotate(4deg) scale(1.08); } 80% { transform: rotate(-2deg) scale(1.12); }
+  100% { transform: rotate(0) scale(1.18); }
+}
+@keyframes packFlash { 0% { opacity: 0; } 70% { opacity: .1; } 100% { opacity: 1; } }
+/* カード出現 */
+.pcard.reveal { animation: cardReveal .65s cubic-bezier(.2, 1.35, .4, 1); }
+@keyframes cardReveal {
+  0% { transform: scale(.55) rotateY(80deg); opacity: 0; }
+  60% { opacity: 1; }
+  100% { transform: scale(1) rotateY(0); opacity: 1; }
+}
+/* バースト・パーティクル */
+.pack-burst { position: absolute; left: 50%; top: 45%; width: 0; height: 0; pointer-events: none; z-index: 5; }
+.pk-particle {
+  position: absolute; width: 9px; height: 9px; border-radius: 3px;
+  background: var(--c, #9fc8ee);
+  transform: rotate(var(--a)) translateY(0);
+  animation: pkFly .95s ease-out forwards;
+}
+@keyframes pkFly {
+  0% { transform: rotate(var(--a)) translateY(-30px) scale(1); opacity: 1; }
+  100% { transform: rotate(var(--a)) translateY(calc(var(--d) * -1 - 60px)) scale(.3); opacity: 0; }
+}
+/* 成績表エリアのフェードイン */
+.ending-rest { display: flex; flex-direction: column; gap: 6px; animation: restIn .5s ease-out; }
+@keyframes restIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

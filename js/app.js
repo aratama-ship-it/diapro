@@ -1465,13 +1465,91 @@
       DT.state.clear();
     }
     $('#ending-title').textContent = state.status === 'expelled' ? 'GAME OVER' : state.name + '、卒業！';
-    const nodes = [buildPlayerCard(card, cardNo)];
-    if (bestNote) nodes.push(el('p', 'center best-note', bestNote));
-    if (e.comment) nodes.push(el('p', 'center', e.comment));
-    if (state.results.length > 0) nodes.push(resultsTable(state.results));
+    // パック開封演出（Phase2）: パック(裏面)→タップ開封→バースト→カード出現→数値カウントアップ→成績表フェードイン
+    const cardEl = buildPlayerCard(card, cardNo);
+    cardEl.classList.add('hidden');
+    const rest = el('div', 'ending-rest hidden');
+    if (bestNote) rest.appendChild(el('p', 'center best-note', bestNote));
+    if (e.comment) rest.appendChild(el('p', 'center', e.comment));
+    if (state.results.length > 0) rest.appendChild(resultsTable(state.results));
     // ライバル戦績の表示は非表示（スコア計算では引き続き対戦相手として登場）
-    $('#ending-detail').replaceChildren(...nodes);
+    const stage = el('div', 'pack-stage');
+    const pack = buildCardPack(card);
+    stage.appendChild(pack);
+    stage.appendChild(cardEl);
+    pack.onclick = () => openPack(stage, pack, cardEl, rest, card);
+    $('#ending-detail').replaceChildren(stage, rest);
     show('#screen-ending');
+  }
+
+  // カードパック（裏面）。レア度の気配だけ滲ませる（枠色は開封まで伏せ、発光色のみ）
+  function buildCardPack(card) {
+    const rankKey = card.expelled ? 'X' : card.rank;
+    const pack = el('div', 'card-pack glow-' + rankKey);
+    const inner = el('div', 'card-pack-inner');
+    const logo = el('div', 'pack-logo');
+    logo.innerHTML = '<svg viewBox="0 0 200 180">' + CARD_ART.allround + '</svg>';
+    inner.appendChild(logo);
+    inner.appendChild(el('div', 'pack-q', '?'));
+    inner.appendChild(el('div', 'pack-tap', 'タップして開封'));
+    pack.appendChild(inner);
+    return pack;
+  }
+
+  // 開封: パックを震わせ→バースト→カード出現(reveal)→CP/pt/ステータスをカウントアップ→成績表を表示
+  function openPack(stage, pack, cardEl, rest, card) {
+    if (pack.classList.contains('opening')) return;
+    pack.classList.add('opening');
+    setTimeout(() => {
+      spawnBurst(stage, card);
+      pack.classList.add('hidden');
+      cardEl.classList.remove('hidden');
+      cardEl.classList.add('reveal');
+      countUpCardNumbers(cardEl);
+      setTimeout(() => rest.classList.remove('hidden'), 800);
+    }, 700);
+  }
+
+  // レア度色のパーティクルを放射（CSSアニメ。S=虹/A=金/B=銀/他=淡青/X=灰少なめ）
+  function spawnBurst(stage, card) {
+    const rankKey = card.expelled ? 'X' : card.rank;
+    const colors = {
+      S: ['#67e8f9', '#c084fc', '#ff8ad4', '#ffd76a', '#818cf8'],
+      A: ['#ffd76a', '#fff3c4', '#e8a12b'],
+      B: ['#c3d0de', '#eef4fa', '#8fa8c8'],
+      X: ['#9ca3af', '#6b7280']
+    }[rankKey] || ['#9fc8ee', '#dceafc'];
+    const n = rankKey === 'S' ? 26 : (rankKey === 'A' ? 20 : (rankKey === 'X' ? 8 : 14));
+    const burst = el('div', 'pack-burst');
+    for (let i = 0; i < n; i++) {
+      const p = el('span', 'pk-particle');
+      const ang = (360 / n) * i + (i % 3) * 9;
+      p.style.setProperty('--a', ang + 'deg');
+      p.style.setProperty('--d', (70 + (i % 5) * 26) + 'px');
+      p.style.setProperty('--c', colors[i % colors.length]);
+      p.style.animationDelay = (i % 4) * 40 + 'ms';
+      burst.appendChild(p);
+    }
+    stage.appendChild(burst);
+    setTimeout(() => burst.remove(), 1400);
+  }
+
+  // .pcard内の数値(CP/通算pt/4系統)を0から目標値へカウントアップ（約0.9秒・easeOut）
+  function countUpCardNumbers(cardEl) {
+    const targets = [];
+    cardEl.querySelectorAll('.pcard-num b, .pcard-stat b').forEach(b => {
+      const v = parseInt(b.textContent, 10);
+      if (!isNaN(v)) { targets.push({ eln: b, v }); b.textContent = '0'; }
+    });
+    const t0 = performance.now();
+    const DUR = 900;
+    function tick(now) {
+      const k = Math.min(1, (now - t0) / DUR);
+      const ease = 1 - Math.pow(1 - k, 3);
+      targets.forEach(t => { t.eln.textContent = String(Math.round(t.v * ease)); });
+      if (k < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
   }
 
   // ---- 選手カード描画（Phase1: 静的表示。開封演出はPhase2） ----
