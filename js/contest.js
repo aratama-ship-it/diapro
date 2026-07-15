@@ -157,19 +157,22 @@
   // 目標: 1位は突出して80点以上（勝者はほぼ確実に80台）、中央は下げてばらつきを持たせ下位は戦える。
   //   OIDC(mean72/sd12): 1位平均≒84（約9割が80以上）・中プレイヤーは約7位。AJDC/世界大会はさらに高帯。
   //   実乱数のため個々の大会では稀に80をわずかに下回る（壁化を避けるためsdを残す）。ポイント配分は不変。
+  // ポイントのリニア化(2026-07-15): 旧5段階テーブル(1位/2位/3位/上位半分/下位)を廃止し、
+  // points は「1位の獲得pt」のみ定義。獲得pt = round(top × (entrants−rank)/(entrants−1))
+  // （1位=top、最下位=0、間は順位に等間隔）。JJF決勝の上位3名ボーナスは別系統のため従来どおり。
   const LEVELS = {
     oidc: { base: 72, growth: 1, sd: 12, entrants: 16,
-            points: { overall: [40, 25, 15, 8, 2], specialist: [20, 13, 8, 4, 1] } },
+            points: { overall: 40, specialist: 20 } },
     ajdc: { base: 76, growth: 1.5, sd: 12, entrants: 16,
-            points: { overall: [100, 70, 50, 20, 5], specialist: [50, 35, 25, 10, 3] } },
+            points: { overall: 100, specialist: 50 } },
     worlds: { base: 85, growth: 1, sd: 11, entrants: 16,
-              points: { overall: [150, 100, 70, 30, 10], specialist: [75, 50, 35, 15, 5] } },
+              points: { overall: 150, specialist: 75 } },
     // 静岡DC(1月): 参加資格全員・ポイントは通常の半分程度。部門ごとに相手レベルを変える(divLevels)。
     //   テクニカル=優勝ラインが80点超になる高めの帯＋中sd(実測: 最上位中央値82〜85, p10でも80超)。
     //   パフォーマンス=構成95付近が優勝ラインになる高めの帯＋低sd(最上位88〜91)。
     shizuoka: {
       base: 55, growth: 1, sd: 15, entrants: 12, // フォールバック（通常はdivLevelsを使用）
-      points: { technical: [10, 6, 4, 2, 1], performance: [10, 6, 4, 2, 1] },
+      points: { technical: 10, performance: 10 },
       divLevels: {
         technical:   { base: 77, sd: 6 },
         performance: { base: 84, sd: 5 }
@@ -284,14 +287,10 @@
 
     const allScores = opponents.map(o => o.score).concat(rivalEntries.map(e => e.score));
     const rank = 1 + allScores.filter(o => o > p.score).length;
-    const half = Math.ceil(lv.entrants / 2);
     const div = divisionOf(divisionId);
-    const table = lv.points[div.scoring];
-    const points = rank === 1 ? table[0]
-      : rank === 2 ? table[1]
-      : rank === 3 ? table[2]
-      : rank <= half ? table[3]
-      : table[4];
+    // リニア配点: 1位=top、最下位=0、間は順位に等間隔（旧5段階テーブルは廃止）
+    const top = lv.points[div.scoring];
+    const points = Math.round(top * (lv.entrants - rank) / (lv.entrants - 1));
     const rivalOutcomes = rivalEntries.map(e => ({
       id: e.rival.id, name: e.rival.name, score: e.score, beat: p.score > e.score
     }));

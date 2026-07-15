@@ -294,7 +294,7 @@ test('runAll: 総合+スペシャ1部門で結果2件・疲労が演技間に加
   assert.strictEqual(rs[1].divisionLabel, '1ディアボロ垂直軸部門');
   // v6: all50のspecialist素点70 < OIDC相手72 → スペシャは最下位(16位)。総合(79)は勝てるが専門は相手が上
   assert.strictEqual(rs[1].rank, 16);
-  assert.strictEqual(rs[1].points, 1); // 最下位ティア（specialist points[20,13,8,4,1]）
+  assert.strictEqual(rs[1].points, 0); // リニア配点: 最下位=0（top20 × (16-16)/15）
   assert.strictEqual(s.fatigue, 6);     // 2演技目の前に+6
   assert.strictEqual(s.results.length, 2);
 });
