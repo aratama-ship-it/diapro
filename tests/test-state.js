@@ -166,4 +166,24 @@ test('newCharacter: 経歴で初期能力レンジが変わる（大学は技術
   assert.strictEqual(def.composition, 10);
 });
 
+test('collection: 追加→ロード→重複はスキップ（初回スナップショット保持）', () => {
+  const store = {
+    data: {},
+    setItem(k, v) { this.data[k] = v; },
+    getItem(k) { return (k in this.data) ? this.data[k] : null; },
+    removeItem(k) { delete this.data[k]; }
+  };
+  const card = { id: 'mx_C_showman', title: 'ムードメーカー', rank: 'C', cp: 500 };
+  assert.strictEqual(DT.state.addToCollection(card, 1, store), true);  // 新規解禁
+  const col = DT.state.loadCollection(store);
+  assert.strictEqual(col.mx_C_showman.cardNo, 1);
+  assert.strictEqual(col.mx_C_showman.snap.title, 'ムードメーカー');
+  // 同じカードを再取得 → falseで初回スナップを保持
+  assert.strictEqual(DT.state.addToCollection({ id: 'mx_C_showman', cp: 999 }, 2, store), false);
+  assert.strictEqual(DT.state.loadCollection(store).mx_C_showman.snap.cp, 500);
+  // 壊れたデータは空オブジェクトにフォールバック
+  store.setItem(DT.state.COLLECTION_KEY, '{broken');
+  assert.deepStrictEqual(DT.state.loadCollection(store), {});
+});
+
 summary();

@@ -885,3 +885,38 @@ table.dev-grid tr.locked td { color: #545d85; }
 /* 成績表エリアのフェードイン */
 .ending-rest { display: flex; flex-direction: column; gap: 6px; animation: restIn .5s ease-out; }
 @keyframes restIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* ==== カード図鑑（Phase3・2026-07-15） ==== */
+.zukan-layer { font-size: .7rem; font-weight: 800; color: var(--ink-soft); letter-spacing: .08em; margin: 8px 2px 4px; }
+.zukan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.zukan-tile {
+  border: 2px solid var(--ink); border-radius: 12px; padding: 8px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  min-height: 58px; justify-content: center; font-family: inherit;
+  background: #0e1830; color: #eaf2ff; box-shadow: 0 2px 0 var(--ink);
+}
+.zukan-tile:active { transform: translateY(2px); box-shadow: none; }
+.zukan-tile .zt-title { font-size: .62rem; font-weight: 800; line-height: 1.25; text-align: center; }
+.zukan-tile .zt-sub { font-size: .5rem; color: #8fa4d6; }
+.zukan-tile .zt-q { font-size: 1.1rem; font-weight: 800; color: #b6bedb; }
+.zukan-tile.locked { background: #e7e9f2; color: #a7afc9; border-color: #b6bedb; box-shadow: none; }
+.zukan-tile.locked .zt-title { color: #a7afc9; }
+/* 解禁済みタイルの縁色＝レア度 */
+.zukan-tile.zrank-S { border-color: #7dd3fc; box-shadow: 0 2px 0 #4338ca, 0 0 10px rgba(129, 140, 248, .5); }
+.zukan-tile.zrank-A { border-color: #e8a12b; box-shadow: 0 2px 0 #a16207; }
+.zukan-tile.zrank-B { border-color: #8fa8c8; box-shadow: 0 2px 0 #5b6b82; }
+.zukan-tile.zrank-C { border-color: #b07a50; box-shadow: 0 2px 0 #8a5c3a; }
+.zukan-tile.zrank-X { background: #1c2129; border-color: #6b7280; }
+.zukan-date { font-size: .66rem; color: var(--ink-soft); margin: 4px 0 2px; }
+#zukan-detail .popup-card { max-height: 86%; overflow-y: auto; }
+#zukan-detail .pcard { margin-top: 2px; }
+/* カード画像保存ボタン（エンディング・図鑑共通） */
+.card-dl-btn {
+  display: block; margin: 2px auto 4px; padding: 9px 18px;
+  border: 2px solid var(--ink); border-radius: 999px;
+  background: var(--paper); color: var(--ink);
+  font-size: .78rem; font-weight: 800; box-shadow: 0 2px 0 var(--ink);
+}
+.card-dl-btn:active { transform: translateY(2px); box-shadow: none; }
+/* 記録一覧の排出カード行 */
+.event-cardtitle { font-size: .6rem; color: #8a5c3a; font-weight: 800; }

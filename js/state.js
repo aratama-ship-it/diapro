@@ -104,5 +104,29 @@
     return trimmed;
   }
 
-  DT.state = { newCharacter, save, load, clear, SAVE_KEY, loadRecords, addRecord, RECORDS_KEY };
+  // --- カード図鑑（コレクション）: 解禁したカードを永続保存。値は初解禁日＋初解禁時のカードスナップショット ---
+  // 軽量(1件あたり数百バイト・最大50件)なので上限なし。画像は保存しない(表示時に都度描画)。
+  const COLLECTION_KEY = 'diabolo-trainer-collection-v1';
+
+  function loadCollection(storage) {
+    const s = storage || global.localStorage;
+    try {
+      const obj = JSON.parse(s.getItem(COLLECTION_KEY));
+      return (obj && typeof obj === 'object') ? obj : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  // 新規解禁ならtrueを返す（演出用）。既に解禁済みのカードは初回スナップショットを保持したまま何もしない。
+  function addToCollection(card, cardNo, storage) {
+    const s = storage || global.localStorage;
+    const col = loadCollection(s);
+    if (col[card.id]) return false;
+    col[card.id] = { date: Date.now(), cardNo: cardNo, snap: card };
+    s.setItem(COLLECTION_KEY, JSON.stringify(col));
+    return true;
+  }
+
+  DT.state = { newCharacter, save, load, clear, SAVE_KEY, loadRecords, addRecord, RECORDS_KEY, loadCollection, addToCollection, COLLECTION_KEY };
 })(typeof window !== 'undefined' ? window : globalThis);

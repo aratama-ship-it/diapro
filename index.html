@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20260715m">
+<link rel="stylesheet" href="css/style.css?v=20260715n">
 </head>
 <body>
 <div id="app">
@@ -20,6 +20,7 @@
       <button id="btn-new" class="primary">はじめから</button>
       <button id="btn-continue">つづきから</button>
       <button id="btn-records">🏅 これまでの記録</button>
+      <button id="btn-zukan">📖 カード図鑑</button>
       <div class="app-version" id="app-version"></div>
     </section>
 
@@ -191,6 +192,28 @@
     </div>
   </div>
 
+  <!-- ======== カード図鑑モーダル（タイトルから開く。全50種・未解禁はシルエット） ======== -->
+  <div id="zukan-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close-zukan></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <span class="modal-title">📖 カード図鑑</span>
+        <button class="modal-close" data-close-zukan aria-label="閉じる">×</button>
+      </div>
+      <div class="modal-sub" id="zukan-sub"></div>
+      <div class="modal-list" id="zukan-list"></div>
+    </div>
+  </div>
+
+  <!-- ======== 図鑑カード拡大（鑑賞・画像保存） ======== -->
+  <div id="zukan-detail" class="modal center hidden">
+    <div class="modal-backdrop" data-close-zukan-detail></div>
+    <div class="modal-card popup-card">
+      <div id="zukan-detail-body"></div>
+      <button class="go-btn popup-ok" data-close-zukan-detail>閉じる</button>
+    </div>
+  </div>
+
   <!-- ======== 設定モーダル（ホーム右下の設定ボタンで開く。リタイア可） ======== -->
   <div id="settings-modal" class="modal center hidden">
     <div class="modal-backdrop" data-close-settings></div>
@@ -256,14 +279,14 @@
   </div>
 </aside>
 
-<script src="js/data.js?v=20260715m"></script>
-<script src="js/state.js?v=20260715m"></script>
-<script src="js/engine.js?v=20260715m"></script>
-<script src="js/contest.js?v=20260715m"></script>
-<script src="js/events.js?v=20260715m"></script>
-<script src="js/ending.js?v=20260715m"></script>
-<script src="js/cards.js?v=20260715m"></script>
-<script src="js/radar.js?v=20260715m"></script>
-<script src="js/app.js?v=20260715m"></script>
+<script src="js/data.js?v=20260715n"></script>
+<script src="js/state.js?v=20260715n"></script>
+<script src="js/engine.js?v=20260715n"></script>
+<script src="js/contest.js?v=20260715n"></script>
+<script src="js/events.js?v=20260715n"></script>
+<script src="js/ending.js?v=20260715n"></script>
+<script src="js/cards.js?v=20260715n"></script>
+<script src="js/radar.js?v=20260715n"></script>
+<script src="js/app.js?v=20260715n"></script>
 </body>
 </html>

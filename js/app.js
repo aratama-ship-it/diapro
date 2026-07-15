@@ -471,6 +471,7 @@
         const dateStr = isNaN(d) ? '' : (d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate());
         meta.appendChild(el('div', 'event-when', (r.name || '主人公') + '・' + (r.background || '') + (dateStr ? '・' + dateStr : '')));
         meta.appendChild(el('div', 'event-name', '卒業ランク ' + r.rank + (r.status === 'expelled' ? '（退学）' : '') + (r.abilityAvg !== undefined ? '／能力' + r.abilityAvg : '')));
+        if (r.cardTitle) meta.appendChild(el('div', 'event-cardtitle', '🃏「' + r.cardTitle + '」'));
         row.appendChild(meta);
         row.appendChild(el('span', 'event-badge', (r.totalPoints || 0) + 'pt'));
         rows.push(row);
@@ -1444,8 +1445,10 @@
     const card = DT.cards.pickCard(state); // カード排出（stateクリア前に判定）
     // 個人記録を保存（この周回で一度だけ）。終了したセーブは消して「つづきから」不可＆二重記録防止
     let bestNote = null;
+    let newCardNote = false;
     let cardNo = DT.state.loadRecords().length + 1; // 何人目の卒業生か（カードNo.）
     if (!state.recorded) {
+      newCardNote = DT.state.addToCollection(card, cardNo); // 図鑑へ登録（初解禁ならNEW表示）
       const prev = DT.state.loadRecords();
       const prevBest = prev.length ? Math.max.apply(null, prev.map(r => r.totalPoints || 0)) : -1;
       DT.state.addRecord({
@@ -1469,6 +1472,10 @@
     const cardEl = buildPlayerCard(card, cardNo);
     cardEl.classList.add('hidden');
     const rest = el('div', 'ending-rest hidden');
+    if (newCardNote) rest.appendChild(el('p', 'center best-note', '✨ NEWカード！図鑑に「' + card.title + '」を登録した'));
+    const dlBtn = el('button', 'card-dl-btn', '📷 カード画像を保存');
+    dlBtn.onclick = () => downloadCardImage(card, cardNo);
+    rest.appendChild(dlBtn);
     if (bestNote) rest.appendChild(el('p', 'center best-note', bestNote));
     if (e.comment) rest.appendChild(el('p', 'center', e.comment));
     if (state.results.length > 0) rest.appendChild(resultsTable(state.results));
@@ -1608,6 +1615,137 @@
     return wrap;
   }
 
+  // ---- カード図鑑（Phase3）: 解禁済みコレクションの一覧・鑑賞・画像保存 ----
+  const rankKeyOf = snap => (snap.expelled ? 'X' : snap.rank);
+
+  function openZukan() {
+    const col = DT.state.loadCollection();
+    const catalog = DT.cards.catalog();
+    const owned = catalog.filter(c => col[c.id]).length;
+    $('#zukan-sub').textContent = 'コンプ率 ' + owned + ' / ' + catalog.length;
+    const layers = [
+      { key: 'special', label: '⭐ 特別カード' },
+      { key: 'craft', label: '🔧 職人カード' },
+      { key: 'matrix', label: '🃏 ランク×タイプ' }
+    ];
+    const nodes = [];
+    layers.forEach(l => {
+      nodes.push(el('div', 'zukan-layer', l.label));
+      const grid = el('div', 'zukan-grid');
+      catalog.filter(c => c.layer === l.key).forEach(c => {
+        const got = col[c.id];
+        const tile = el('button', 'zukan-tile' + (got ? ' owned zrank-' + rankKeyOf(got.snap) : ' locked'));
+        if (got) {
+          tile.appendChild(el('span', 'zt-title', c.title));
+          tile.appendChild(el('span', 'zt-sub', (got.snap.expelled ? '×' : got.snap.rank) + ' / No.' + String(got.cardNo).padStart(3, '0')));
+          tile.onclick = () => openZukanDetail(got);
+        } else {
+          tile.appendChild(el('span', 'zt-q', '？'));
+          tile.appendChild(el('span', 'zt-title', '？？？'));
+        }
+        grid.appendChild(tile);
+      });
+      nodes.push(grid);
+    });
+    $('#zukan-list').replaceChildren(...nodes);
+    $('#zukan-modal').classList.remove('hidden');
+  }
+  function closeZukan() { $('#zukan-modal').classList.add('hidden'); }
+
+  function openZukanDetail(got) {
+    const d = new Date(got.date);
+    const dateStr = isNaN(d) ? '' : (d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate());
+    const cardEl = buildPlayerCard(got.snap, got.cardNo);
+    const info = el('p', 'center zukan-date', '初解禁 ' + dateStr);
+    const dl = el('button', 'card-dl-btn', '📷 カード画像を保存');
+    dl.onclick = () => downloadCardImage(got.snap, got.cardNo);
+    $('#zukan-detail-body').replaceChildren(cardEl, info, dl);
+    $('#zukan-detail').classList.remove('hidden');
+  }
+  function closeZukanDetail() { $('#zukan-detail').classList.add('hidden'); }
+
+  // ---- カード画像ダウンロード（Phase3）: canvasに描画してPNG保存（外部ライブラリ不使用） ----
+  const CARD_FRAME_COLORS = {
+    S: ['#67e8f9', '#818cf8', '#c084fc'], A: ['#ffd76a', '#e8a12b', '#fff3c4'],
+    B: ['#c3d0de', '#5b6b82', '#e2eaf2'], C: ['#d9a37c', '#9a6a44', '#e8c3a4'],
+    D: ['#46577a', '#46577a', '#5b6b82'], E: ['#7a8aa8', '#7a8aa8', '#8a9ab8'],
+    X: ['#6b7280', '#4b5563', '#6b7280']
+  };
+  function downloadCardImage(card, cardNo) {
+    const rankKey = card.expelled ? 'X' : card.rank;
+    const rar = card.expelled ? CARD_RARITY['退学'] : (CARD_RARITY[card.rank] || CARD_RARITY.E);
+    const W = 640, H = 940;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+    const FONT = '"M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif';
+    const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+    // フレーム（レア度グラデ）＋本体
+    const fc = CARD_FRAME_COLORS[rankKey] || CARD_FRAME_COLORS.E;
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, fc[0]); g.addColorStop(.5, fc[1]); g.addColorStop(1, fc[2]);
+    ctx.fillStyle = g; rr(0, 0, W, H, 36); ctx.fill();
+    ctx.fillStyle = card.expelled ? '#1c2129' : '#0e1830'; rr(10, 10, W - 20, H - 20, 28); ctx.fill();
+    // ヘッダー: レア度＋★／ランクバッジ
+    const accent = rankKey === 'S' ? '#8fe6ff' : (rankKey === 'A' ? '#ffd76a' : '#9fb6e8');
+    ctx.fillStyle = accent; ctx.font = '800 22px ' + FONT; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(rar.label + ' ' + '★'.repeat(rar.stars), 34, 62);
+    ctx.fillStyle = rankKey === 'S' ? '#67e8f9' : (rankKey === 'A' ? '#ffd76a' : '#b9c8dc');
+    rr(W - 90, 28, 56, 56, 14); ctx.fill();
+    ctx.fillStyle = '#0e1830'; ctx.font = '800 34px ' + FONT; ctx.textAlign = 'center';
+    ctx.fillText(card.expelled ? '×' : card.rank, W - 62, 70); ctx.textAlign = 'left';
+    // 名前・称号
+    ctx.fillStyle = card.expelled ? '#c8ccd4' : '#eaf2ff'; ctx.font = '800 46px ' + FONT;
+    ctx.fillText(card.name, 34, 130);
+    ctx.fillStyle = '#a9c4ff'; ctx.font = '700 23px ' + FONT;
+    ctx.fillText('「' + card.title + '」・' + card.typeLabel, 34, 166);
+    // アートパネル
+    rr(24, 188, W - 48, 300, 20);
+    ctx.fillStyle = card.expelled ? '#252b36' : '#141f3d'; ctx.fill();
+    ctx.strokeStyle = card.expelled ? '#3a414f' : '#3b4f86'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#7f96b8'; ctx.font = '700 17px ' + FONT;
+    ctx.fillText('ART: ' + card.typeLabel, 44, 474);
+    // 数値・ステータス・フッター（アートSVGのロード後に確定描画→保存）
+    const drawRest = () => {
+      ctx.fillStyle = '#7f97cf'; ctx.font = '800 19px ' + FONT;
+      ctx.fillText('能力CP', 34, 530);
+      ctx.textAlign = 'right'; ctx.fillText('通算pt', W - 34, 530); ctx.textAlign = 'left';
+      ctx.fillStyle = rankKey === 'S' ? '#8fe6ff' : '#eaf2ff'; ctx.font = '800 54px ' + FONT;
+      ctx.fillText(String(card.cp), 34, 584);
+      ctx.fillStyle = '#eaf2ff'; ctx.textAlign = 'right'; ctx.fillText(String(card.totalPoints), W - 34, 584); ctx.textAlign = 'left';
+      const stats = [['難易度', card.stats.difficulty, '操作', card.stats.control], ['新奇性', card.stats.novelty, '構成', card.stats.composition]];
+      ctx.font = '700 24px ' + FONT;
+      stats.forEach((row, i) => {
+        const y = 640 + i * 42;
+        ctx.fillStyle = '#a9c4ff'; ctx.fillText(row[0], 34, y);
+        ctx.fillStyle = '#eaf2ff'; ctx.textAlign = 'right'; ctx.fillText(String(row[1]), 300, y); ctx.textAlign = 'left';
+        ctx.fillStyle = '#a9c4ff'; ctx.fillText(row[2], 350, y);
+        ctx.fillStyle = '#eaf2ff'; ctx.textAlign = 'right'; ctx.fillText(String(row[3]), W - 34, y); ctx.textAlign = 'left';
+      });
+      // フッター帯（本体の角丸内にクリップして塗る）
+      rr(10, 10, W - 20, H - 20, 28); ctx.save(); ctx.clip();
+      ctx.fillStyle = 'rgba(0, 0, 0, .35)'; ctx.fillRect(10, H - 108, W - 20, 98); ctx.restore();
+      ctx.fillStyle = '#ffe4a3'; ctx.font = '700 23px ' + FONT;
+      ctx.fillText(card.medals.join(' '), 34, H - 64);
+      const bgLabel = (DT.DATA.BACKGROUNDS.find(b => b.id === card.background) || {}).label || '';
+      ctx.fillStyle = '#8a9ac0'; ctx.font = '700 19px ' + FONT; ctx.textAlign = 'right';
+      ctx.fillText(bgLabel + ' / No.' + String(cardNo).padStart(3, '0'), W - 34, H - 32); ctx.textAlign = 'left';
+      cv.toBlob(b => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(b);
+        a.download = 'diabolo-card-No' + String(cardNo).padStart(3, '0') + '-' + card.id + '.png';
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1200);
+      }, 'image/png');
+    };
+    // 署名ディアボロをSVG→Image化して中央に描画（blob同一オリジンなのでcanvasは汚染されない）
+    const artColor = rankKey === 'S' ? '#8fe6ff' : (rankKey === 'A' ? '#ffdf8f' : (rankKey === 'X' ? '#8a919c' : '#8fc4e8'));
+    const svgMarkup = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="340" height="306" style="color:' + artColor + '">' + (CARD_ART[card.type] || CARD_ART.allround) + '</svg>';
+    const img = new Image();
+    img.onload = () => { ctx.drawImage(img, (W - 340) / 2, 186, 340, 306); URL.revokeObjectURL(img.src); drawRest(); };
+    img.onerror = () => drawRest();
+    img.src = URL.createObjectURL(new Blob([svgMarkup], { type: 'image/svg+xml' }));
+  }
+
   $('#btn-restart').onclick = () => { DT.state.clear(); state = null; initTitle(); };
 
   // --- ボトムナビ・戻る ---
@@ -1622,6 +1760,9 @@
   document.querySelectorAll('[data-close-radar]').forEach(b => { b.onclick = closeRadar; });
   document.querySelectorAll('[data-close-log]').forEach(b => { b.onclick = closeLog; });
   $('#btn-records').onclick = openRecords;
+  $('#btn-zukan').onclick = openZukan;
+  document.querySelectorAll('[data-close-zukan]').forEach(b => { b.onclick = closeZukan; });
+  document.querySelectorAll('[data-close-zukan-detail]').forEach(b => { b.onclick = closeZukanDetail; });
 
   // --- 開発用パラメータパネル ---
   function devRow(k, v, cls) {
