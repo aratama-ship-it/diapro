@@ -145,9 +145,9 @@ function playThrough(rng, strat) {
     const jq = DT.contest.jjfQualifierForTurn(state.turn);
     const jf = DT.contest.jjfFinalForTurn(state.turn);
     if (contest) {
-      DT.contest.runAll(state, contest, strat.entry(state.turn, state), rng);
+      DT.contest.runAll(state, contest, strat.entry(state.turn, state), rng, POLICY);
     } else if (wc && DT.contest.worldsQualified(state, state.turn)) {
-      DT.contest.runAll(state, wc, ['overall'], rng);
+      DT.contest.runAll(state, wc, ['overall'], rng, POLICY);
     } else if (jq) {
       const q = DT.contest.jjfQualify(state, rng);
       if (q.passed) {
@@ -199,6 +199,8 @@ function features(state) {
 // ---- 実行・集計 ----
 const N = parseInt(process.argv[2], 10) || 100;
 const BACKGROUND = process.argv[3] || 'highschool';
+// 第4引数: 演技方針(safe/normal/attack、改善プラン#1のバランス検証用)。全大会に固定適用
+const POLICY = process.argv[4] || 'normal';
 const BG_DEF = DT.DATA.BACKGROUNDS.find(b => b.id === BACKGROUND);
 if (!BG_DEF) { console.error('未知のbackgroundId: ' + BACKGROUND); process.exit(1); }
 const tally = (arr, key) => arr.reduce((a, f) => { const k = key(f); a[k] = (a[k] || 0) + 1; return a; }, {});

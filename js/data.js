@@ -116,6 +116,17 @@
       specialDeduction: 3,
       entryFatigue: 6
     },
+    // 演技方針（改善プラン#1・2026-07-16）: 大会ごとに1回選び全部門共通。
+    // 難易度点(diffMult)とミス率(missDelta)だけを動かす＝相手レベル(v5調整)は不変。
+    // 値は事前sim(tests/simulate-strategies.js 第4引数)で検証して確定する
+    // missMult=乗算の根拠(2026-07-16 sim): 固定加算(±15/±25)では方針の損益がゲーム状態に依存せず、
+    // どちらかが常に支配/無意味になった(±15=攻め支配、±25=安全微優位)。ミス率を乗算にすると
+    // 「操作安定度が高い(素のミス率が低い)選手ほど攻めのコストが安い」＝状態依存の賭けとして機能する
+    POLICIES: {
+      safe:   { id: 'safe',   label: '安全にまとめる', icon: '🛡️', diffMult: 0.90, missMult: 0.5, hint: '難易度を落とす代わりにミスを減らす' },
+      normal: { id: 'normal', label: 'いつも通り',     icon: '🎯', diffMult: 1.0,  missMult: 1.0, hint: '練習どおりの構成で臨む' },
+      attack: { id: 'attack', label: '攻め切る',       icon: '🔥', diffMult: 1.10, missMult: 1.5, hint: '難易度を上げる代わりにミスが増える' }
+    },
     // v4: モブ対戦相手の命名プール（日本人選手風）。runDivisionでrngを消費せず決定的に割り当てる
     OPPONENT_NAMES: [
       '蒼真', '隼人', '玲於', '悠斗', '湊', '葵', '颯太', '大和',

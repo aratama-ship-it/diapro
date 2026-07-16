@@ -105,10 +105,13 @@
 
   // v4新ミスモデル: rate = clamp(base − control×controlCoef + fatigue×fatigueCoef, min, max)
   // v3で復活: 怪我中(injuredTurns>0)はミス率+15%（ユーザー指定機能。V4移行時に脱落していたため再導入）
-  function missRate(state, divisionId) {
+  // policyId: 演技方針（改善プラン#1）。素のミス率にmissMultを乗算（怪我ペナルティは対象外・省略時=通常で従来と同一）
+  // 乗算なので操作安定度が高い(素のミス率が低い)ほど攻めのコストが安い＝状態依存の意思決定になる
+  function missRate(state, divisionId, policyId) {
     const miss = DT.DATA.SCORING.miss;
+    const pol = DT.DATA.POLICIES[policyId] || DT.DATA.POLICIES.normal;
     const control = controlRef(state, divisionId);
-    const rate = miss.base - control * miss.controlCoef + state.fatigue * miss.fatigueCoef;
+    const rate = (miss.base - control * miss.controlCoef + state.fatigue * miss.fatigueCoef) * pol.missMult;
     return clamp(Math.round(rate) + (state.injuredTurns > 0 ? miss.injuredPenalty : 0), miss.min, miss.max);
   }
 
@@ -118,9 +121,14 @@
     return miss.rolls + (hard ? miss.hardBonusRolls : 0);
   }
 
-  function playerScore(state, divisionId, rng) {
+  function playerScore(state, divisionId, rng, policyId) {
     rng = rng || Math.random;
+    const pol = DT.DATA.POLICIES[policyId] || DT.DATA.POLICIES.normal;
     const parts = breakdown(state, divisionId);
+    // 演技方針: 難易度点だけを増減（技術/パフォーマンス採点など難易度項が無い部門はミス率のみ効く）
+    if (parts.difficulty !== undefined && pol.diffMult !== 1) {
+      parts.difficulty = Math.round(parts.difficulty * pol.diffMult * 10) / 10;
+    }
     const rawTotal = Object.values(parts).reduce((a, v) => a + v, 0);
 
     const scale = DT.DATA.SCORING.scale;
@@ -130,7 +138,7 @@
     total += judgeMod;
 
     const rolls = missRollCount(state, divisionId);
-    const rate = missRate(state, divisionId);
+    const rate = missRate(state, divisionId, policyId);
     let misses = 0;
     let execDeduction = 0;
     for (let i = 0; i < rolls; i++) {
@@ -261,7 +269,7 @@
     return picked;
   }
 
-  function runDivision(state, contest, divisionId, rng) {
+  function runDivision(state, contest, divisionId, rng, policyId) {
     const lv = LEVELS[contest.type];
     // 部門別の相手レベル上書き(divLevels)があればそれを使う。無ければ大会共通のlv（既存大会は挙動不変）
     const dlv = (lv.divLevels && lv.divLevels[divisionId]) ? lv.divLevels[divisionId] : lv;
@@ -283,7 +291,7 @@
       const raw = mean + (g - 0.5) * 2 * sd * 1.8;
       opponents.push({ name: opponentName(contest, i), score: round1(scale.base + raw * scale.mult) });
     }
-    const p = playerScore(state, divisionId, rng);
+    const p = playerScore(state, divisionId, rng, policyId);
 
     const allScores = opponents.map(o => o.score).concat(rivalEntries.map(e => e.score));
     const rank = 1 + allScores.filter(o => o > p.score).length;
@@ -310,14 +318,14 @@
     };
   }
 
-  function runAll(state, contest, divisionIds, rng) {
+  function runAll(state, contest, divisionIds, rng, policyId) {
     rng = rng || Math.random;
     const order = divisionIds || [];
     if (order.length === 0) return [];
     const results = [];
     order.forEach((id, i) => {
       if (i > 0) state.fatigue = clamp(state.fatigue + DT.DATA.SCORING.entryFatigue, 0, 100);
-      const r = runDivision(state, contest, id, rng);
+      const r = runDivision(state, contest, id, rng, policyId);
       state.results.push(r);
       if (id === 'overall') {
         const rivalMessages = [];

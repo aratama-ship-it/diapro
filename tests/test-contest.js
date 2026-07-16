@@ -656,4 +656,41 @@ test('JJF決勝: 10人・上位3名のみ追加ポイント・resultsに記録',
   else assert.strictEqual(r.points, 0);
 });
 
+// ---- 演技方針（改善プラン#1・2026-07-16）----
+
+test('演技方針: missRateは乗算(素の率×missMult)・省略/normalは従来と同一', () => {
+  const s = allFifty(); // control50, fatigue0 → 素の率 = 70-25 = 45
+  assert.strictEqual(DT.contest.missRate(s, 'overall'), 45);            // 省略=従来
+  assert.strictEqual(DT.contest.missRate(s, 'overall', 'normal'), 45);
+  assert.strictEqual(DT.contest.missRate(s, 'overall', 'safe'), 23);    // 45×0.5=22.5→round23
+  assert.strictEqual(DT.contest.missRate(s, 'overall', 'attack'), 68);  // 45×1.5=67.5→round68
+  // 怪我ペナルティは乗算の外（フラット+15）
+  s.injuredTurns = 1;
+  assert.strictEqual(DT.contest.missRate(s, 'overall', 'safe'), 23 + 15);
+});
+
+test('演技方針: 難易度点だけがdiffMult倍・rng消費順は方針に依らず同一', () => {
+  const mkRng = () => { let i = 0; const seq = [0.5, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99]; return () => seq[(i++) % seq.length]; };
+  const s = allFifty();
+  const pn = DT.contest.playerScore(s, 'overall', mkRng(), 'normal');
+  const pa = DT.contest.playerScore(s, 'overall', mkRng(), 'attack');
+  const ps = DT.contest.playerScore(s, 'overall', mkRng(), 'safe');
+  // 難易度点のみ±10%（他のpartsは不変）
+  assert.strictEqual(pa.parts.difficulty, Math.round(pn.parts.difficulty * 1.1 * 10) / 10);
+  assert.strictEqual(ps.parts.difficulty, Math.round(pn.parts.difficulty * 0.9 * 10) / 10);
+  assert.strictEqual(pa.parts.composition, pn.parts.composition);
+  assert.strictEqual(pa.parts.control, pn.parts.control);
+  // 同一rng系列でミスが出ない(0.99>rate)場合、スコア差=難易度点差のみ
+  assert.strictEqual(pa.misses, 0);
+  assert.strictEqual(Math.round((pa.score - pn.score) * 10) / 10, Math.round((pa.parts.difficulty - pn.parts.difficulty) * 10) / 10);
+});
+
+test('演技方針: 難易度項の無い部門(静岡パフォーマンス)はミス率のみ効く', () => {
+  const s = allFifty();
+  const pn = DT.contest.playerScore(s, 'performance', () => 0.99, 'normal');
+  const pa = DT.contest.playerScore(s, 'performance', () => 0.99, 'attack');
+  assert.deepStrictEqual(pa.parts, pn.parts); // 採点内訳は不変
+  assert.ok(DT.contest.missRate(s, 'performance', 'attack') > DT.contest.missRate(s, 'performance', 'normal'));
+});
+
 summary();

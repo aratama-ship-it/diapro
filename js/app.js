@@ -1245,6 +1245,36 @@
     );
   }
 
+  // --- 演技方針（改善プラン#1）: 大会ごとに1回選び全部門共通。エントリー画面で選択 ---
+  let entryPolicy = 'normal';
+  function policySelector() {
+    entryPolicy = 'normal'; // 大会ごとにリセット（引きずらない）
+    const wrap = el('div', 'policy-box');
+    wrap.appendChild(el('div', 'board-label', '演技方針（全部門共通）'));
+    const row = el('div', 'policy-row');
+    const hint = el('div', 'policy-hint');
+    const pols = DT.DATA.POLICIES;
+    const btns = {};
+    Object.keys(pols).forEach(id => {
+      const p = pols[id];
+      const b = el('button', 'policy-btn' + (id === entryPolicy ? ' selected' : ''));
+      b.appendChild(el('span', 'policy-icon', p.icon));
+      b.appendChild(el('span', 'policy-label', p.label));
+      b.onclick = () => {
+        entryPolicy = id;
+        Object.values(btns).forEach(x => x.classList.remove('selected'));
+        b.classList.add('selected');
+        hint.textContent = p.hint;
+      };
+      btns[id] = b;
+      row.appendChild(b);
+    });
+    hint.textContent = pols[entryPolicy].hint;
+    wrap.appendChild(row);
+    wrap.appendChild(hint);
+    return wrap;
+  }
+
   // --- 世界大会 出場選択 ---
   function renderWorldsEntry(wc) {
     renderEntryStatus();
@@ -1253,13 +1283,13 @@
       (state.injuredTurns > 0 ? '　⚠ 怪我の影響でミス率+15%！' : '');
     const enter = el('button', 'primary', '出場する');
     enter.onclick = () => {
-      const results = DT.contest.runAll(state, pendingContest, ['overall']);
+      const results = DT.contest.runAll(state, pendingContest, ['overall'], null, entryPolicy);
       finishTurn(pendingMessages, results);
     };
     const skip = el('button', '', '見送る');
     // 世界大会は練習後スロット。ランダム/状態イベントは練習前スロットで処理済みなので、見送り時はそのままターン終了。
     skip.onclick = () => { finishTurn(pendingMessages, null); };
-    $('#entry-divisions').replaceChildren(enter, skip);
+    $('#entry-divisions').replaceChildren(policySelector(), enter, skip);
     $('#btn-entry-go').classList.add('hidden');
     show('#screen-entry');
   }
@@ -1345,13 +1375,13 @@
         return b;
       });
     updateHint();
-    $('#entry-divisions').replaceChildren(emptyHint, ...options);
+    $('#entry-divisions').replaceChildren(emptyHint, ...options, policySelector());
     show('#screen-entry');
   }
 
   $('#btn-entry-go').onclick = () => {
     if (entrySelection.length === 0) return;
-    const results = DT.contest.runAll(state, pendingContest, entrySelection);
+    const results = DT.contest.runAll(state, pendingContest, entrySelection, null, entryPolicy);
     finishTurn(pendingMessages, results);
   };
 
