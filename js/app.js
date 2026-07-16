@@ -470,7 +470,7 @@
         const d = new Date(r.date);
         const dateStr = isNaN(d) ? '' : (d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate());
         meta.appendChild(el('div', 'event-when', (r.name || '主人公') + '・' + (r.background || '') + (dateStr ? '・' + dateStr : '')));
-        meta.appendChild(el('div', 'event-name', '卒業ランク ' + r.rank + (r.status === 'expelled' ? '（退学）' : '') + (r.abilityAvg !== undefined ? '／能力' + r.abilityAvg : '')));
+        meta.appendChild(el('div', 'event-name', (r.status === 'retired' ? 'キャリアランク ' : '卒業ランク ') + r.rank + (r.status === 'expelled' ? '（退学）' : (r.status === 'retired' ? '（2年引退）' : '')) + (r.abilityAvg !== undefined ? '／能力' + r.abilityAvg : '')));
         if (r.cardTitle) meta.appendChild(el('div', 'event-cardtitle', '🃏「' + r.cardTitle + '」'));
         row.appendChild(meta);
         row.appendChild(el('span', 'event-badge', (r.totalPoints || 0) + 'pt'));
@@ -1148,6 +1148,12 @@
 
   function afterTurn(logs) {
     if (state.status !== 'playing') { renderEnding(); return; }
+    // 改善プラン#4: 2年AJDC(24ターン)を終えた25ターン目(3年生4月)の頭に一度だけ、早期引退の選択を出す
+    if (state.turn === 25 && !state.retireOfferSeen) { renderRetireOffer(logs); return; }
+    renderHomeWithPopups(logs);
+  }
+
+  function renderHomeWithPopups(logs) {
     renderHome(logs);
     // ホーム描画後に、保留中の定期イベントをポップアップ表示。無ければ覚醒終了通知（同じ枠を使うので同時は次ターンへ持ち越し）
     if (pendingScheduledPopup) {
@@ -1158,6 +1164,51 @@
       DT.state.save(state); // 通知済みを保存に反映（リロードで再表示しない）
       showAwakenEndPopup();
     }
+  }
+
+  // ---- 早期引退（改善プラン#4）: 2年AJDC後に「競技を続ける／区切りをつける」を選ぶ ----
+  // 引退するとstatus='retired'（退学とは別扱い）で即エンディング＝現時点の実績でカード化。
+  // E/Dランクのカード回収が「わざと弱く4年遊ぶ」苦行にならないための自然な導線。
+  function renderRetireOffer(logs) {
+    const e = DT.ending.evaluate(state);
+    const top = DT.cards.pickCandidates(Object.assign({}, state, { status: 'retired' }))[0];
+    $('#event-char').textContent = '🌸 3年生の春';
+    const info = el('div', 'retire-info');
+    info.appendChild(el('div', 'retire-info-head', '📈 いま区切りをつけた場合の評価'));
+    info.appendChild(el('div', '', 'キャリアランク ' + e.rank + '／タイプ ' + top.typeLabel));
+    info.appendChild(el('div', '', '🃏 カード「' + top.title + '」'));
+    $('#event-text').replaceChildren(
+      el('p', '', '2年間、ディアボロに打ち込んできた。ここから先の2年をどう使うかは自分次第だ。このまま競技を続けるか、それとも——。'),
+      info
+    );
+    const cont = el('button', 'primary', '🔥 競技を続ける（4年生まで）');
+    cont.onclick = () => {
+      state.retireOfferSeen = true;
+      DT.state.save(state); // リロードで再提案しない
+      renderHomeWithPopups(logs);
+    };
+    const retire = el('button', '', '🌅 ここで競技生活に区切りをつける');
+    retire.onclick = () => renderRetireConfirm(logs);
+    $('#event-choices').replaceChildren(cont, retire);
+    show('#screen-event');
+  }
+
+  function renderRetireConfirm(logs) {
+    $('#event-char').textContent = '🌅 本当に区切りをつける？';
+    $('#event-text').replaceChildren(
+      el('p', '', '引退すると3〜4年生はプレイせず、いまの実績でエンディングになる。この決断は取り消せない。')
+    );
+    const yes = el('button', 'retire', '引退してエンディングへ');
+    yes.onclick = () => {
+      state.retireOfferSeen = true;
+      state.status = 'retired';
+      DT.state.save(state);
+      renderEnding();
+    };
+    const no = el('button', 'primary', 'やっぱり続ける');
+    no.onclick = () => renderRetireOffer(logs);
+    $('#event-choices').replaceChildren(no, yes);
+    show('#screen-event');
   }
 
   // 覚醒状態が終わったことを知らせるポップアップ（定期イベントと同じ#sched-popup枠を流用）
@@ -1464,7 +1515,7 @@
 
   // カード選択画面（#screen-ending流用・改善プラン#3）。選ぶと永続化→パック開封へ
   function renderCardChoice(e, top, others) {
-    $('#ending-title').textContent = state.status === 'expelled' ? 'GAME OVER' : state.name + '、卒業！';
+    $('#ending-title').textContent = state.status === 'expelled' ? 'GAME OVER' : (state.status === 'retired' ? state.name + '、新たな道へ' : state.name + '、卒業！');
     const LAYER_LABEL = { special: '⭐特別', craft: '🔧職人', matrix: '🃏ランク×タイプ' };
     const wrap = el('div', 'card-choice');
     wrap.appendChild(el('p', 'center choice-lead', 'この4年間で複数の称号の条件を満たした！\nこの選手のどの物語をカードとして残しますか？'));
@@ -1510,7 +1561,7 @@
       state.recorded = true;
       DT.state.clear();
     }
-    $('#ending-title').textContent = state.status === 'expelled' ? 'GAME OVER' : state.name + '、卒業！';
+    $('#ending-title').textContent = state.status === 'expelled' ? 'GAME OVER' : (state.status === 'retired' ? state.name + '、新たな道へ' : state.name + '、卒業！');
     // パック開封演出（Phase2）: パック(裏面)→タップ開封→バースト→カード出現→数値カウントアップ→成績表フェードイン
     const cardEl = buildPlayerCard(card, cardNo);
     cardEl.classList.add('hidden');

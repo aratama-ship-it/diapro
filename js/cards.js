@@ -68,6 +68,7 @@
     return {
       rank: e.rank, title: e.title, totalPoints: e.totalPoints,
       expelled: state.status === 'expelled',
+      retired: state.status === 'retired', // 早期引退（2年AJDC後・改善プラン#4）
       worldsWin: !!e.worldsWin, ajdcWin: !!e.ajdcOverallWin, ajdcStreak,
       jjfFinalWin, worldsEntered, worldsTop8, grandSlam, shizuokaDouble,
       wins, podium, podiumRate, entries: ranked.length, divWins,
@@ -99,8 +100,9 @@
     { id: 'sp_upset',     title: '下剋上',               when: f => f.isHard && (f.rank === 'B' || f.rank === 'A') },
     { id: 'sp_tokai',     title: '東海二冠',             when: f => f.shizuokaDouble },
     { id: 'sp_elite',     title: '英才教育の結晶',       when: f => f.isEasy && f.rank === 'S' && f.wins >= 5 },
-    { id: 'sp_unhurt',    title: '無傷の四年間',         when: f => f.injuryCount === 0 && (f.rank === 'S' || f.rank === 'A') && f.entries >= 10 },
-    { id: 'sp_scholar',   title: '文武両道',             when: f => f.study >= 90 && 'SAB'.indexOf(f.rank) >= 0 },
+    // 「無傷の四年間」「文武両道」は明示的に4年間の完走を要求 → 早期引退(retired)では取れない（改善プラン#4）
+    { id: 'sp_unhurt',    title: '無傷の四年間',         when: f => !f.retired && f.injuryCount === 0 && (f.rank === 'S' || f.rank === 'A') && f.entries >= 10 },
+    { id: 'sp_scholar',   title: '文武両道',             when: f => !f.retired && f.study >= 90 && 'SAB'.indexOf(f.rank) >= 0 },
     { id: 'sp_podium',    title: '表彰台の常連',         when: f => f.entries >= 8 && f.podiumRate >= 0.6 }
   ];
 

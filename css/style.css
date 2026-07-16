@@ -974,3 +974,7 @@ table.dev-grid tr.locked td { color: #545d85; }
 .choice-title { font-size: 1.02em; }
 .choice-layer { font-size: .76em; opacity: .85; flex-shrink: 0; }
 .choice-note { font-size: .8em; opacity: .9; }
+
+/* 早期引退の提案（改善プラン#4）: 現時点評価の情報ボックス */
+.retire-info { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(46, 196, 182, .12); border: 2px solid rgba(46, 196, 182, .4); display: flex; flex-direction: column; gap: 4px; font-weight: 700; }
+.retire-info-head { font-size: .85em; opacity: .85; }
