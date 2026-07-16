@@ -133,20 +133,8 @@
     return list;
   }
 
-  // ---- 排出判定: 特別 → 職人 → マトリクス の順で最初に該当した1枚 ----
-  function pickCard(state) {
-    const f = features(state);
-    let hit = SPECIALS.find(c => c.when(f)) || CRAFTSMEN.find(c => c.when(f));
-    let id, title, layer;
-    if (hit) {
-      id = hit.id; title = hit.title;
-      layer = hit.id.indexOf('sp_') === 0 ? 'special' : 'craft';
-    } else {
-      const rank = f.rank in MATRIX ? f.rank : 'E';
-      id = 'mx_' + rank + '_' + f.type;
-      title = MATRIX[rank][f.type];
-      layer = 'matrix';
-    }
+  // 判定済みのカード枠(id/title/layer)を、この周の選手データ付きの完全なカードにする
+  function materialize(id, title, layer, f) {
     return {
       id, title, layer,
       rank: f.rank, type: f.type, typeLabel: TYPE_LABEL[f.type],
@@ -156,6 +144,28 @@
       background: f.background, strongestGenre: f.strongestGenre,
       name: f.name
     };
+  }
+
+  // ---- 候補列挙: この周で条件を満たした全カードを優先度順に返す（改善プラン#3・2026-07-16） ----
+  // 先頭が最上位（=従来のpickCardと同一）。末尾に現在ランク×タイプのマトリクス（全員の受け皿）。
+  // 退学は例外で「未完の大器」単独（GAME OVERの周から他の物語は選ばせない）。
+  function pickCandidates(state) {
+    const f = features(state);
+    if (f.expelled) {
+      const sp = SPECIALS[0]; // sp_expelled
+      return [materialize(sp.id, sp.title, 'special', f)];
+    }
+    const list = [];
+    SPECIALS.forEach(c => { if (c.when(f)) list.push(materialize(c.id, c.title, 'special', f)); });
+    CRAFTSMEN.forEach(c => { if (c.when(f)) list.push(materialize(c.id, c.title, 'craft', f)); });
+    const rank = f.rank in MATRIX ? f.rank : 'E';
+    list.push(materialize('mx_' + rank + '_' + f.type, MATRIX[rank][f.type], 'matrix', f));
+    return list;
+  }
+
+  // ---- 排出判定: 特別 → 職人 → マトリクス の順で最初に該当した1枚 ----
+  function pickCard(state) {
+    return pickCandidates(state)[0];
   }
 
   // カード下部に刻むメダル（最大3個・強い実績順）
@@ -171,5 +181,5 @@
     return m.slice(0, 3);
   }
 
-  DT.cards = { features, pickCard, catalog, TYPE_LABEL, TYPE_COMPOSITION_FACTOR };
+  DT.cards = { features, pickCard, pickCandidates, catalog, TYPE_LABEL, TYPE_COMPOSITION_FACTOR };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -82,4 +82,40 @@ test('features: Type判定は構成を係数補正して比較（バランス型
   assert.strictEqual(f.type, 'allround');
 });
 
+// ---- pickCandidates（改善プラン#3・2026-07-16）----
+
+test('pickCandidates: 複数条件達成を優先度順に列挙し、先頭=pickCard・末尾=マトリクス受け皿', () => {
+  const s = base();
+  // 世界優勝＋AJDC総合優勝（伝説と日本の頂点を同時達成）
+  s.results = [
+    res({ type: 'worlds', rank: 1, points: 150, turn: 44 }),
+    res({ type: 'ajdc', rank: 1, points: 100, turn: 48 })
+  ];
+  const cands = DT.cards.pickCandidates(s);
+  assert.strictEqual(cands[0].id, DT.cards.pickCard(s).id); // 先頭=従来の排出
+  assert.strictEqual(cands[0].id, 'sp_worlds');
+  assert.ok(cands.some(c => c.id === 'sp_ajdc'), '日本の頂点も候補に載る');
+  const last = cands[cands.length - 1];
+  assert.strictEqual(last.layer, 'matrix'); // 受け皿は必ず末尾
+  assert.strictEqual(new Set(cands.map(c => c.id)).size, cands.length); // 重複なし
+  // 各候補はこの周の選手データを共有する（rank/cp/statsが同一）
+  cands.forEach(c => { assert.strictEqual(c.cp, cands[0].cp); assert.strictEqual(c.rank, cands[0].rank); });
+});
+
+test('pickCandidates: 退学は「未完の大器」単独（他の物語は選ばせない）', () => {
+  const s = base({ status: 'expelled' });
+  s.results = [res({ type: 'worlds', rank: 1, points: 150, turn: 44 })];
+  const cands = DT.cards.pickCandidates(s);
+  assert.strictEqual(cands.length, 1);
+  assert.strictEqual(cands[0].id, 'sp_expelled');
+});
+
+test('pickCandidates: 該当なしはマトリクス1枚のみ', () => {
+  const s = base();
+  s.results = [];
+  const cands = DT.cards.pickCandidates(s);
+  assert.strictEqual(cands.length, 1);
+  assert.strictEqual(cands[0].layer, 'matrix');
+});
+
 summary();

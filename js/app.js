@@ -1445,7 +1445,47 @@
 
   function renderEnding() {
     const e = DT.ending.evaluate(state);
-    const card = DT.cards.pickCard(state); // カード排出（stateクリア前に判定）
+    const candidates = DT.cards.pickCandidates(state); // 条件達成カードを優先度順に列挙（stateクリア前に判定）
+    const top = candidates[0];
+    // 改善プラン#3: 最上位カードを所持済みで、この周に条件達成した未所持カードがある時だけ
+    // 「どの物語をカードとして残すか」を選ばせる（達成した偉業が所持済みカードに吸われるのを防ぐ）。
+    // 記録済みの周（デモ?auto=1含む）は選択なしで最上位を表示。選択確定までは何も永続化しない
+    // ＝選択中にリロードしても「つづきから」で再びこの画面に戻るだけで二重登録は起きない。
+    if (!state.recorded) {
+      const col = DT.state.loadCollection();
+      const unownedOthers = candidates.slice(1).filter(c => !col[c.id]);
+      if (col[top.id] && unownedOthers.length > 0) {
+        renderCardChoice(e, top, unownedOthers);
+        return;
+      }
+    }
+    showEndingWithCard(e, top);
+  }
+
+  // カード選択画面（#screen-ending流用・改善プラン#3）。選ぶと永続化→パック開封へ
+  function renderCardChoice(e, top, others) {
+    $('#ending-title').textContent = state.status === 'expelled' ? 'GAME OVER' : state.name + '、卒業！';
+    const LAYER_LABEL = { special: '⭐特別', craft: '🔧職人', matrix: '🃏ランク×タイプ' };
+    const wrap = el('div', 'card-choice');
+    wrap.appendChild(el('p', 'center choice-lead', 'この4年間で複数の称号の条件を満たした！\nこの選手のどの物語をカードとして残しますか？'));
+    const makeBtn = (card, note, primary) => {
+      const b = el('button', 'choice-btn' + (primary ? ' primary' : ''));
+      const head = el('span', 'choice-head');
+      head.appendChild(el('b', 'choice-title', '「' + card.title + '」'));
+      head.appendChild(el('span', 'choice-layer', LAYER_LABEL[card.layer] || ''));
+      b.appendChild(head);
+      b.appendChild(el('span', 'choice-note', note));
+      b.onclick = () => showEndingWithCard(e, card);
+      return b;
+    };
+    wrap.appendChild(makeBtn(top, '所持済み・もう一度この物語で残す（自己ベスト更新あり）', true));
+    others.forEach(c => wrap.appendChild(makeBtn(c, '✨ 未所持！図鑑に新しく加わる', false)));
+    $('#ending-detail').replaceChildren(wrap);
+    show('#screen-ending');
+  }
+
+  // エンディング本体: 選ばれたカードで永続化（一度だけ）→パック開封演出
+  function showEndingWithCard(e, card) {
     // 個人記録を保存（この周回で一度だけ）。終了したセーブは消して「つづきから」不可＆二重記録防止
     let bestNote = null;
     let colResult = null; // 図鑑登録の結果（初解禁 or 重複時の枚数/自己ベスト更新）
