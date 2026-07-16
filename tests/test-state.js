@@ -166,21 +166,40 @@ test('newCharacter: 経歴で初期能力レンジが変わる（大学は技術
   assert.strictEqual(def.composition, 10);
 });
 
-test('collection: 追加→ロード→重複はスキップ（初回スナップショット保持）', () => {
+test('collection: 追加→ロード→重複は枚数/自己ベスト更新（初回スナップショット保持）', () => {
   const store = {
     data: {},
     setItem(k, v) { this.data[k] = v; },
     getItem(k) { return (k in this.data) ? this.data[k] : null; },
     removeItem(k) { delete this.data[k]; }
   };
-  const card = { id: 'mx_C_showman', title: 'ムードメーカー', rank: 'C', cp: 500 };
-  assert.strictEqual(DT.state.addToCollection(card, 1, store), true);  // 新規解禁
+  const card = { id: 'mx_C_showman', title: 'ムードメーカー', rank: 'C', cp: 500, totalPoints: 300 };
+  const first = DT.state.addToCollection(card, 1, store); // 新規解禁
+  assert.strictEqual(first.isNew, true);
+  assert.strictEqual(first.count, 1);
   const col = DT.state.loadCollection(store);
   assert.strictEqual(col.mx_C_showman.cardNo, 1);
   assert.strictEqual(col.mx_C_showman.snap.title, 'ムードメーカー');
-  // 同じカードを再取得 → falseで初回スナップを保持
-  assert.strictEqual(DT.state.addToCollection({ id: 'mx_C_showman', cp: 999 }, 2, store), false);
-  assert.strictEqual(DT.state.loadCollection(store).mx_C_showman.snap.cp, 500);
+  assert.strictEqual(col.mx_C_showman.bestCp, 500);
+  // 同じカードを再取得（CPが上） → isNew=false・2枚目・自己最高CP更新、初回スナップは保持
+  const dup = DT.state.addToCollection({ id: 'mx_C_showman', cp: 999, totalPoints: 250 }, 2, store);
+  assert.strictEqual(dup.isNew, false);
+  assert.strictEqual(dup.count, 2);
+  assert.strictEqual(dup.cpImproved, true);
+  assert.strictEqual(dup.ptImproved, false); // 250 < 300
+  const col2 = DT.state.loadCollection(store);
+  assert.strictEqual(col2.mx_C_showman.snap.cp, 500);   // 初回スナップ保持
+  assert.strictEqual(col2.mx_C_showman.bestCp, 999);
+  assert.strictEqual(col2.mx_C_showman.bestPt, 300);
+  assert.strictEqual(col2.mx_C_showman.cardNo, 1);      // 初回No.保持
+  // 旧形式(count/best無し)からの移行: 初回分を1枚と数え、スナップ値を自己ベスト初期値に
+  store.setItem(DT.state.COLLECTION_KEY, JSON.stringify({ sp_ajdc: { date: 1, cardNo: 3, snap: { id: 'sp_ajdc', cp: 700, totalPoints: 800 } } }));
+  const mig = DT.state.addToCollection({ id: 'sp_ajdc', cp: 650, totalPoints: 900 }, 4, store);
+  assert.strictEqual(mig.count, 2);
+  assert.strictEqual(mig.cpImproved, false); // 650 < 700(スナップ由来)
+  assert.strictEqual(mig.ptImproved, true);  // 900 > 800
+  assert.strictEqual(DT.state.loadCollection(store).sp_ajdc.bestCp, 700);
+  assert.strictEqual(DT.state.loadCollection(store).sp_ajdc.bestPt, 900);
   // 壊れたデータは空オブジェクトにフォールバック
   store.setItem(DT.state.COLLECTION_KEY, '{broken');
   assert.deepStrictEqual(DT.state.loadCollection(store), {});

@@ -1448,10 +1448,10 @@
     const card = DT.cards.pickCard(state); // カード排出（stateクリア前に判定）
     // 個人記録を保存（この周回で一度だけ）。終了したセーブは消して「つづきから」不可＆二重記録防止
     let bestNote = null;
-    let newCardNote = false;
+    let colResult = null; // 図鑑登録の結果（初解禁 or 重複時の枚数/自己ベスト更新）
     let cardNo = DT.state.loadRecords().length + 1; // 何人目の卒業生か（カードNo.）
     if (!state.recorded) {
-      newCardNote = DT.state.addToCollection(card, cardNo); // 図鑑へ登録（初解禁ならNEW表示）
+      colResult = DT.state.addToCollection(card, cardNo); // 図鑑へ登録（初解禁ならNEW表示）
       const prev = DT.state.loadRecords();
       const prevBest = prev.length ? Math.max.apply(null, prev.map(r => r.totalPoints || 0)) : -1;
       DT.state.addRecord({
@@ -1475,7 +1475,16 @@
     const cardEl = buildPlayerCard(card, cardNo);
     cardEl.classList.add('hidden');
     const rest = el('div', 'ending-rest hidden');
-    if (newCardNote) rest.appendChild(el('p', 'center best-note', '✨ NEWカード！図鑑に「' + card.title + '」を登録した'));
+    if (colResult && colResult.isNew) {
+      rest.appendChild(el('p', 'center best-note', '✨ NEWカード！図鑑に「' + card.title + '」を登録した'));
+    } else if (colResult) {
+      // 重複取得: 枚数と自己ベスト更新を演出（改善プラン#5）
+      const ups = [];
+      if (colResult.cpImproved) ups.push('自己最高CP更新 ' + colResult.bestCp);
+      if (colResult.ptImproved) ups.push('自己最高pt更新 ' + colResult.bestPt);
+      rest.appendChild(el('p', 'center best-note dup-note',
+        '🃏「' + card.title + '」' + colResult.count + '枚目' + (ups.length ? '／🎉 ' + ups.join('・') : '')));
+    }
     rest.appendChild(buildCardActions(card, cardNo));
     if (bestNote) rest.appendChild(el('p', 'center best-note', bestNote));
     if (e.comment) rest.appendChild(el('p', 'center', e.comment));
@@ -1842,7 +1851,12 @@
     const d = new Date(got.date);
     const dateStr = isNaN(d) ? '' : (d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate());
     const cardEl = buildPlayerCard(got.snap, got.cardNo);
-    const info = el('p', 'center zukan-date', '初解禁 ' + dateStr);
+    // 取得枚数・自己ベスト（改善プラン#5）。旧形式(count無し)は初回分の1枚・スナップ値で表示
+    const count = got.count || 1;
+    const bestCp = (got.bestCp !== undefined) ? got.bestCp : ((got.snap && got.snap.cp) || 0);
+    const bestPt = (got.bestPt !== undefined) ? got.bestPt : ((got.snap && got.snap.totalPoints) || 0);
+    const info = el('p', 'center zukan-date',
+      '初解禁 ' + dateStr + '・取得' + count + '枚／最高CP ' + bestCp + '・最高pt ' + bestPt);
     $('#zukan-detail-body').replaceChildren(cardEl, info, buildCardActions(got.snap, got.cardNo));
     $('#zukan-detail').classList.remove('hidden');
   }

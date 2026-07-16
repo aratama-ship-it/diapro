@@ -118,14 +118,28 @@
     }
   }
 
-  // 新規解禁ならtrueを返す（演出用）。既に解禁済みのカードは初回スナップショットを保持したまま何もしない。
+  // 取得を記録し、演出用の結果 {isNew, count, cpImproved, ptImproved} を返す。
+  // 初解禁: スナップショット付きで新規登録。重複: 初回スナップショットは保持したまま、
+  // 取得枚数(count)と自己ベスト(bestCp/bestPt)だけを更新する（改善プラン#5・2026-07-16）。
   function addToCollection(card, cardNo, storage) {
     const s = storage || global.localStorage;
     const col = loadCollection(s);
-    if (col[card.id]) return false;
-    col[card.id] = { date: Date.now(), cardNo: cardNo, snap: card };
+    const prev = col[card.id];
+    if (!prev) {
+      col[card.id] = { date: Date.now(), cardNo: cardNo, snap: card, count: 1, bestCp: card.cp || 0, bestPt: card.totalPoints || 0 };
+      s.setItem(COLLECTION_KEY, JSON.stringify(col));
+      return { isNew: true, count: 1, cpImproved: false, ptImproved: false };
+    }
+    // 旧形式(count/best無しで保存済み)は初回分を1枚・初回スナップを自己ベストとして移行
+    const oldCp = (prev.bestCp !== undefined) ? prev.bestCp : ((prev.snap && prev.snap.cp) || 0);
+    const oldPt = (prev.bestPt !== undefined) ? prev.bestPt : ((prev.snap && prev.snap.totalPoints) || 0);
+    prev.count = (prev.count || 1) + 1;
+    const cpImproved = (card.cp || 0) > oldCp;
+    const ptImproved = (card.totalPoints || 0) > oldPt;
+    prev.bestCp = Math.max(oldCp, card.cp || 0);
+    prev.bestPt = Math.max(oldPt, card.totalPoints || 0);
     s.setItem(COLLECTION_KEY, JSON.stringify(col));
-    return true;
+    return { isNew: false, count: prev.count, cpImproved: cpImproved, ptImproved: ptImproved, bestCp: prev.bestCp, bestPt: prev.bestPt };
   }
 
   DT.state = { newCharacter, save, load, clear, SAVE_KEY, loadRecords, addRecord, RECORDS_KEY, loadCollection, addToCollection, COLLECTION_KEY };
