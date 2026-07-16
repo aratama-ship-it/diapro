@@ -1680,18 +1680,18 @@
       <path d="M15 151 L8 144 M185 151 L192 144" stroke="currentColor" stroke-width="3"/>
     </g>`
   };
-  // 属性Type→イラスト画像パス（リポ同梱=same-origin。canvas書き出しが汚染されない）。
-  // 未登録の型は署名SVGアートにフォールバック。画像が届いたらここに1行足すだけで差し替わる。
+  // カードID→イラスト画像パス（リポ同梱=same-origin。canvas書き出しが汚染されない）。
+  // 未登録のカードは属性TypeのSVGアートにフォールバック。画像が届いたらここに1行足すだけで差し替わる。
   const CARD_IMAGE = {
-    // 画像が届いたら assets/cards/ に置いて1行足すだけで差し替わる（未登録の型はSVG）:
-    // allround: 'assets/cards/allround.png',
+    // 画像は assets/cards/<カードID>.png に置いて1行足す（未登録カードはSVG）:
+    // sp_worlds: 'assets/cards/sp_worlds.png',
   };
   const IMG_VER = 'v=20260716';
   function cardImageSrc(type) { const s = CARD_IMAGE[type]; return s ? (s + (s.indexOf('?') < 0 ? '?' + IMG_VER : '')) : null; }
 
   // アートパネルの中身を埋める: 画像があれば<img>(読み込み失敗時はSVGへフォールバック)、無ければ署名SVG。
   function fillCardArt(artEl, card) {
-    const src = cardImageSrc(card.type);
+    const src = cardImageSrc(card.id);
     const svg = () => { artEl.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 200 180">' + (CARD_ART[card.type] || CARD_ART.allround) + '</svg>'); };
     if (src) {
       const im = el('img', 'pcard-artimg'); im.alt = '';
@@ -1918,7 +1918,7 @@
       done(cv);
     };
     // アート: 画像(CARD_IMAGE・same-origin)があればPNGをパネルにcover描画、無ければ署名SVG。画像失敗時はSVGへ。
-    const artSrc = cardImageSrc(card.type);
+    const artSrc = cardImageSrc(card.id);
     const drawSvgArt = () => {
       const artColor = rankKey === 'S' ? '#8fe6ff' : (rankKey === 'A' ? '#ffdf8f' : (rankKey === 'X' ? '#8a919c' : '#8fc4e8'));
       const svgMarkup = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="340" height="306" style="color:' + artColor + '">' + (CARD_ART[card.type] || CARD_ART.allround) + '</svg>';
