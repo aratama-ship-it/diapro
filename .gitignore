@@ -2,3 +2,5 @@
 /assets/cards/*.png
 /assets/cards/concepts/
 /tmp/
+/node_modules/
+/www/

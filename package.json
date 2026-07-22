@@ -1,0 +1,20 @@
+{
+  "name": "diabolo-trainer",
+  "version": "0.9.0",
+  "private": true,
+  "description": "ディアボロ選手育成ゲームのWeb版とiOS版",
+  "scripts": {
+    "build:web": "node scripts/build-web.mjs",
+    "test": "node scripts/run-tests.mjs",
+    "ios:add": "npm run build:web && cap add ios",
+    "ios:sync": "npm run build:web && cap sync ios",
+    "ios:open": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/ios": "^8.4.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.4.2"
+  }
+}
