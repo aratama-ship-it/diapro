@@ -1,0 +1,511 @@
+{
+  "generatedAt": "2026-07-22T17:09:10.561Z",
+  "definition": {
+    "snapshotNote": "ショート版イージー調整前（初期能力15〜40）の基準結果。調整後は2026-07-23-easy-balance-sweep.jsonを参照",
+    "selectionCriterion": "選定用シードで上位5方針を抽出し、別の検証シードで平均ポイントが最大の方針を採用",
+    "candidateCount": 128,
+    "selectionN": 80,
+    "validationN": 400,
+    "evaluationN": 5000,
+    "evaluationSeedsAreHeldOut": true,
+    "modes": {
+      "short": "24行動・練習と勉強の上昇値2倍",
+      "standard": "48行動の通常版"
+    },
+    "caveat": "候補として定義したヒューリスティックの中での最良であり、全行動列を総当たりした数学的な真の最適解ではない"
+  },
+  "cohorts": [
+    {
+      "mode": "short",
+      "background": "college",
+      "difficulty": "ハード",
+      "n": 5000,
+      "selectedPolicy": {
+        "id": "adaptive__rest55__lean__safe",
+        "training": "大会・練習会適応",
+        "restLine": 55,
+        "academics": "学業最小限",
+        "contestPolicy": "safe"
+      },
+      "rankCounts": {
+        "S": 105,
+        "A": 89,
+        "B": 269,
+        "C": 707,
+        "D": 1671,
+        "E": 2159,
+        "退学": 0
+      },
+      "rankRates": {
+        "S": 0.021,
+        "A": 0.0178,
+        "B": 0.0538,
+        "C": 0.1414,
+        "D": 0.3342,
+        "E": 0.4318,
+        "退学": 0
+      },
+      "graduationRate": 1,
+      "meanPoints": 221.6188,
+      "meanAbility": 56.84650769230758,
+      "meanWins": 1.3262,
+      "meanPodiums": 2.379,
+      "ajdcOverallWinRate": 0.0154,
+      "worldsQualifiedRate": 0.1032,
+      "worldsWinRate": 0.0016,
+      "meanActions": 24,
+      "meanTraining": 18.2242,
+      "meanStudy": 4.8186,
+      "meanRest": 0.9572,
+      "meanTreatment": 0,
+      "meanInjuries": 0.9902,
+      "validationTop5": [
+        {
+          "id": "adaptive__rest55__lean__safe",
+          "meanPoints": 234.855,
+          "graduationRate": 1,
+          "sRate": 0.045,
+          "saRate": 0.0625
+        },
+        {
+          "id": "adaptive__rest55__lean__adaptive",
+          "meanPoints": 231.9525,
+          "graduationRate": 1,
+          "sRate": 0.02,
+          "saRate": 0.0425
+        },
+        {
+          "id": "adaptive__rest70__lean__adaptive",
+          "meanPoints": 226.325,
+          "graduationRate": 1,
+          "sRate": 0.02,
+          "saRate": 0.0375
+        },
+        {
+          "id": "adaptive__rest55__lean__normal",
+          "meanPoints": 196.785,
+          "graduationRate": 1,
+          "sRate": 0.0125,
+          "saRate": 0.0325
+        },
+        {
+          "id": "adaptive__rest70__lean__normal",
+          "meanPoints": 186.06,
+          "graduationRate": 1,
+          "sRate": 0.025,
+          "saRate": 0.0325
+        }
+      ]
+    },
+    {
+      "mode": "short",
+      "background": "highschool",
+      "difficulty": "ノーマル",
+      "n": 5000,
+      "selectedPolicy": {
+        "id": "adaptive__rest55__lean__adaptive",
+        "training": "大会・練習会適応",
+        "restLine": 55,
+        "academics": "学業最小限",
+        "contestPolicy": "adaptive"
+      },
+      "rankCounts": {
+        "S": 1989,
+        "A": 1243,
+        "B": 1216,
+        "C": 498,
+        "D": 54,
+        "E": 0,
+        "退学": 0
+      },
+      "rankRates": {
+        "S": 0.3978,
+        "A": 0.2486,
+        "B": 0.2432,
+        "C": 0.0996,
+        "D": 0.0108,
+        "E": 0,
+        "退学": 0
+      },
+      "graduationRate": 1,
+      "meanPoints": 889.8202,
+      "meanAbility": 78.59258461538471,
+      "meanWins": 5.4554,
+      "meanPodiums": 11.314,
+      "ajdcOverallWinRate": 0.1866,
+      "worldsQualifiedRate": 0.7318,
+      "worldsWinRate": 0.0174,
+      "meanActions": 24,
+      "meanTraining": 18.1624,
+      "meanStudy": 4.6964,
+      "meanRest": 1.1412,
+      "meanTreatment": 0,
+      "meanInjuries": 1.002,
+      "validationTop5": [
+        {
+          "id": "adaptive__rest55__lean__adaptive",
+          "meanPoints": 892.0575,
+          "graduationRate": 1,
+          "sRate": 0.385,
+          "saRate": 0.6625
+        },
+        {
+          "id": "adaptive__rest55__lean__attack",
+          "meanPoints": 887.1625,
+          "graduationRate": 1,
+          "sRate": 0.395,
+          "saRate": 0.64
+        },
+        {
+          "id": "adaptive__rest55__safe__adaptive",
+          "meanPoints": 885.6025,
+          "graduationRate": 1,
+          "sRate": 0.3725,
+          "saRate": 0.6325
+        },
+        {
+          "id": "adaptive__rest70__safe__adaptive",
+          "meanPoints": 866.3025,
+          "graduationRate": 1,
+          "sRate": 0.335,
+          "saRate": 0.6
+        },
+        {
+          "id": "adaptive__rest70__lean__adaptive",
+          "meanPoints": 860.5875,
+          "graduationRate": 1,
+          "sRate": 0.3475,
+          "saRate": 0.585
+        }
+      ]
+    },
+    {
+      "mode": "short",
+      "background": "juniorhigh",
+      "difficulty": "イージー",
+      "n": 5000,
+      "selectedPolicy": {
+        "id": "adaptive__rest55__lean__adaptive",
+        "training": "大会・練習会適応",
+        "restLine": 55,
+        "academics": "学業最小限",
+        "contestPolicy": "adaptive"
+      },
+      "rankCounts": {
+        "S": 3335,
+        "A": 949,
+        "B": 559,
+        "C": 149,
+        "D": 8,
+        "E": 0,
+        "退学": 0
+      },
+      "rankRates": {
+        "S": 0.667,
+        "A": 0.1898,
+        "B": 0.1118,
+        "C": 0.0298,
+        "D": 0.0016,
+        "E": 0,
+        "退学": 0
+      },
+      "graduationRate": 1,
+      "meanPoints": 1070.9266,
+      "meanAbility": 82.64698461538474,
+      "meanWins": 8.2196,
+      "meanPodiums": 15.6924,
+      "ajdcOverallWinRate": 0.3198,
+      "worldsQualifiedRate": 0.8778,
+      "worldsWinRate": 0.0398,
+      "meanActions": 24,
+      "meanTraining": 18.1414,
+      "meanStudy": 4.6472,
+      "meanRest": 1.2114,
+      "meanTreatment": 0,
+      "meanInjuries": 1.0512,
+      "validationTop5": [
+        {
+          "id": "adaptive__rest55__lean__adaptive",
+          "meanPoints": 1087.2075,
+          "graduationRate": 1,
+          "sRate": 0.71,
+          "saRate": 0.88
+        },
+        {
+          "id": "adaptive__rest55__safe__adaptive",
+          "meanPoints": 1075.0575,
+          "graduationRate": 1,
+          "sRate": 0.7025,
+          "saRate": 0.8625
+        },
+        {
+          "id": "adaptive__rest55__safe__attack",
+          "meanPoints": 1045.33,
+          "graduationRate": 1,
+          "sRate": 0.6425,
+          "saRate": 0.8325
+        },
+        {
+          "id": "adaptive__rest70__safe__adaptive",
+          "meanPoints": 1037.665,
+          "graduationRate": 1,
+          "sRate": 0.625,
+          "saRate": 0.83
+        },
+        {
+          "id": "adaptive__rest55__lean__normal",
+          "meanPoints": 1034.165,
+          "graduationRate": 1,
+          "sRate": 0.6425,
+          "saRate": 0.82
+        }
+      ]
+    },
+    {
+      "mode": "standard",
+      "background": "college",
+      "difficulty": "ハード",
+      "n": 5000,
+      "selectedPolicy": {
+        "id": "adaptive__rest55__lean__adaptive",
+        "training": "大会・練習会適応",
+        "restLine": 55,
+        "academics": "学業最小限",
+        "contestPolicy": "adaptive"
+      },
+      "rankCounts": {
+        "S": 1342,
+        "A": 249,
+        "B": 579,
+        "C": 940,
+        "D": 1079,
+        "E": 807,
+        "退学": 4
+      },
+      "rankRates": {
+        "S": 0.2684,
+        "A": 0.0498,
+        "B": 0.1158,
+        "C": 0.188,
+        "D": 0.2158,
+        "E": 0.1614,
+        "退学": 0.0008
+      },
+      "graduationRate": 0.9992,
+      "meanPoints": 535.2116,
+      "meanAbility": 71.80903076923069,
+      "meanWins": 4.938,
+      "meanPodiums": 7.8642,
+      "ajdcOverallWinRate": 0.2348,
+      "worldsQualifiedRate": 0.4088,
+      "worldsWinRate": 0.067,
+      "meanActions": 47.9198,
+      "meanTraining": 33.2156,
+      "meanStudy": 8.771,
+      "meanRest": 3.7424,
+      "meanTreatment": 2.1908,
+      "meanInjuries": 2.2686,
+      "validationTop5": [
+        {
+          "id": "adaptive__rest55__lean__adaptive",
+          "meanPoints": 531.45,
+          "graduationRate": 1,
+          "sRate": 0.2825,
+          "saRate": 0.305
+        },
+        {
+          "id": "adaptive__rest55__lean__normal",
+          "meanPoints": 517.4875,
+          "graduationRate": 1,
+          "sRate": 0.2675,
+          "saRate": 0.2975
+        },
+        {
+          "id": "adaptive__rest55__lean__attack",
+          "meanPoints": 515.9775,
+          "graduationRate": 1,
+          "sRate": 0.2675,
+          "saRate": 0.3075
+        },
+        {
+          "id": "adaptive__rest55__lean__safe",
+          "meanPoints": 508.4925,
+          "graduationRate": 1,
+          "sRate": 0.235,
+          "saRate": 0.285
+        },
+        {
+          "id": "adaptive__rest55__safe__attack",
+          "meanPoints": 487.2875,
+          "graduationRate": 1,
+          "sRate": 0.2525,
+          "saRate": 0.285
+        }
+      ]
+    },
+    {
+      "mode": "standard",
+      "background": "highschool",
+      "difficulty": "ノーマル",
+      "n": 5000,
+      "selectedPolicy": {
+        "id": "adaptive__rest55__lean__attack",
+        "training": "大会・練習会適応",
+        "restLine": 55,
+        "academics": "学業最小限",
+        "contestPolicy": "attack"
+      },
+      "rankCounts": {
+        "S": 2860,
+        "A": 1022,
+        "B": 857,
+        "C": 248,
+        "D": 12,
+        "E": 0,
+        "退学": 1
+      },
+      "rankRates": {
+        "S": 0.572,
+        "A": 0.2044,
+        "B": 0.1714,
+        "C": 0.0496,
+        "D": 0.0024,
+        "E": 0,
+        "退学": 0.0002
+      },
+      "graduationRate": 0.9998,
+      "meanPoints": 980.7374,
+      "meanAbility": 81.62235384615404,
+      "meanWins": 5.6952,
+      "meanPodiums": 12.4316,
+      "ajdcOverallWinRate": 0.3684,
+      "worldsQualifiedRate": 0.8258,
+      "worldsWinRate": 0.0526,
+      "meanActions": 47.9362,
+      "meanTraining": 33.3446,
+      "meanStudy": 8.5836,
+      "meanRest": 3.741,
+      "meanTreatment": 2.267,
+      "meanInjuries": 2.3432,
+      "validationTop5": [
+        {
+          "id": "adaptive__rest55__lean__attack",
+          "meanPoints": 997.9675,
+          "graduationRate": 1,
+          "sRate": 0.6025,
+          "saRate": 0.7825
+        },
+        {
+          "id": "adaptive__rest55__lean__adaptive",
+          "meanPoints": 992.4025,
+          "graduationRate": 1,
+          "sRate": 0.5875,
+          "saRate": 0.765
+        },
+        {
+          "id": "adaptive__rest55__safe__adaptive",
+          "meanPoints": 980.3625,
+          "graduationRate": 1,
+          "sRate": 0.565,
+          "saRate": 0.785
+        },
+        {
+          "id": "adaptive__rest55__safe__attack",
+          "meanPoints": 976.6375,
+          "graduationRate": 1,
+          "sRate": 0.5775,
+          "saRate": 0.7775
+        },
+        {
+          "id": "adaptive__rest55__lean__safe",
+          "meanPoints": 946.2275,
+          "graduationRate": 1,
+          "sRate": 0.4925,
+          "saRate": 0.72
+        }
+      ]
+    },
+    {
+      "mode": "standard",
+      "background": "juniorhigh",
+      "difficulty": "イージー",
+      "n": 5000,
+      "selectedPolicy": {
+        "id": "adaptive__rest55__lean__adaptive",
+        "training": "大会・練習会適応",
+        "restLine": 55,
+        "academics": "学業最小限",
+        "contestPolicy": "adaptive"
+      },
+      "rankCounts": {
+        "S": 4028,
+        "A": 610,
+        "B": 310,
+        "C": 49,
+        "D": 1,
+        "E": 0,
+        "退学": 2
+      },
+      "rankRates": {
+        "S": 0.8056,
+        "A": 0.122,
+        "B": 0.062,
+        "C": 0.0098,
+        "D": 0.0002,
+        "E": 0,
+        "退学": 0.0004
+      },
+      "graduationRate": 0.9996,
+      "meanPoints": 1162.1912,
+      "meanAbility": 85.51987692307688,
+      "meanWins": 10.0252,
+      "meanPodiums": 18.1418,
+      "ajdcOverallWinRate": 0.522,
+      "worldsQualifiedRate": 0.9244,
+      "worldsWinRate": 0.0972,
+      "meanActions": 47.922,
+      "meanTraining": 33.2596,
+      "meanStudy": 8.5328,
+      "meanRest": 3.849,
+      "meanTreatment": 2.2806,
+      "meanInjuries": 2.3552,
+      "validationTop5": [
+        {
+          "id": "adaptive__rest55__lean__adaptive",
+          "meanPoints": 1165.2475,
+          "graduationRate": 1,
+          "sRate": 0.8125,
+          "saRate": 0.935
+        },
+        {
+          "id": "adaptive__rest55__lean__attack",
+          "meanPoints": 1151.435,
+          "graduationRate": 1,
+          "sRate": 0.81,
+          "saRate": 0.9375
+        },
+        {
+          "id": "adaptive__rest55__safe__attack",
+          "meanPoints": 1147.775,
+          "graduationRate": 1,
+          "sRate": 0.8125,
+          "saRate": 0.9175
+        },
+        {
+          "id": "adaptive__rest55__safe__adaptive",
+          "meanPoints": 1141.57,
+          "graduationRate": 1,
+          "sRate": 0.7775,
+          "saRate": 0.94
+        },
+        {
+          "id": "adaptive__rest55__lean__normal",
+          "meanPoints": 1132.065,
+          "graduationRate": 1,
+          "sRate": 0.79,
+          "saRate": 0.9125
+        }
+      ]
+    }
+  ]
+}
