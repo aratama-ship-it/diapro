@@ -951,10 +951,30 @@ table.dev-grid tr.locked td { color: #545d85; }
   flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 10px; padding: 8px 12px 20px;
 }
+.gallery-section-title {
+  grid-column: 1 / -1; margin: 8px 0 -2px; padding: 9px 12px;
+  border: 2px solid var(--ink); border-radius: 12px; background: var(--sun);
+  color: var(--ink); box-shadow: 0 3px 0 var(--ink); font-size: .82rem; text-align: left;
+}
 .gallery-cell { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .gallery-cell .pcard-epithet { white-space: normal; }
 .gallery-cell .pcard { width: 100%; margin: 0; }
 .gallery-cell-cap { font-size: .58rem; font-weight: 800; color: var(--ink-soft); text-align: center; }
+.gallery-cell-cap.is-provisional { color: var(--coral-deep); }
+@media (min-width: 900px) {
+  body.gallery-mode { padding: 16px 20px; }
+  body.gallery-mode #app {
+    width: min(1680px, 100%); max-width: none; height: calc(100vh - 32px);
+    border-radius: 24px;
+  }
+  body.gallery-mode .gallery-head { padding: 16px 22px 8px; }
+  body.gallery-mode .gallery-title { font-size: 1.25rem; }
+  body.gallery-mode .gallery-note { padding: 0 22px 8px; font-size: .72rem; }
+  body.gallery-mode .card-gallery {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 22px 16px; padding: 10px 22px 30px;
+  }
+}
 /* 図鑑内の見本リンク */
 .zukan-gallery-link {
   font-size: .62rem; font-weight: 800; color: var(--coral-deep);

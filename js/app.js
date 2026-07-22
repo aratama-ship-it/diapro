@@ -1813,15 +1813,63 @@
   // カードID→イラスト画像パス（リポ同梱=same-origin。canvas書き出しが汚染されない）。
   // 未登録のカードは属性TypeのSVGアートにフォールバック。画像が届いたらここに1行足すだけで差し替わる。
   const CARD_IMAGE = {
-    // 画像は assets/cards/<カードID>.png に置いて1行足す（未登録カードはSVG）:
-    // sp_worlds: 'assets/cards/sp_worlds.png',
+    // 配布用JPEGは assets/cards/web/<カードID>.jpg に置いて1行足す（未登録カードはSVG）:
+    sp_worlds: 'assets/cards/web/sp_worlds.jpg',
+    mx_E_showman: 'assets/cards/web/mx_E_showman.jpg',
+    mx_E_allround: 'assets/cards/web/mx_E_allround.jpg',
+    sp_unhurt: 'assets/cards/web/sp_unhurt.jpg',
+    sp_daikyo: 'assets/cards/web/sp_daikyo.jpg',
+    sp_weed: 'assets/cards/web/sp_weed.jpg',
+    sp_upset: 'assets/cards/web/sp_upset.jpg',
+    sp_awakener: 'assets/cards/web/sp_awakener.jpg',
+    sp_scholar: 'assets/cards/web/sp_scholar.jpg',
+    sp_grandslam: 'assets/cards/web/sp_grandslam.jpg',
+    sp_expelled: 'assets/cards/web/sp_expelled.jpg',
+    sp_jjf: 'assets/cards/web/sp_jjf.jpg',
+    sp_ajdc: 'assets/cards/web/sp_ajdc.jpg',
+    sp_dynasty: 'assets/cards/web/sp_dynasty.jpg',
+    sp_podium: 'assets/cards/web/sp_podium.jpg',
+    sp_elite: 'assets/cards/web/sp_elite.jpg',
+    sp_tokai: 'assets/cards/web/sp_tokai.jpg',
+    cr_h1d: 'assets/cards/web/cr_h1d.jpg',
+    cr_v1d: 'assets/cards/web/cr_v1d.jpg',
+    cr_d2: 'assets/cards/web/cr_d2.jpg',
+    cr_d3: 'assets/cards/web/cr_d3.jpg',
+    cr_worlds: 'assets/cards/web/cr_worlds.jpg',
+    mx_S_power: 'assets/cards/web/mx_S_power.jpg',
+    mx_S_innovator: 'assets/cards/web/mx_S_innovator.jpg',
+    mx_S_technician: 'assets/cards/web/mx_S_technician.jpg',
+    mx_S_showman: 'assets/cards/web/mx_S_showman.jpg',
+    mx_S_allround: 'assets/cards/web/mx_S_allround.jpg',
+    mx_A_power: 'assets/cards/web/mx_A_power.jpg',
+    mx_A_innovator: 'assets/cards/web/mx_A_innovator.jpg',
+    mx_A_technician: 'assets/cards/web/mx_A_technician.jpg',
+    mx_A_showman: 'assets/cards/web/mx_A_showman.jpg',
+    mx_A_allround: 'assets/cards/web/mx_A_allround.jpg',
+    mx_B_power: 'assets/cards/web/mx_B_power.jpg',
+    mx_B_technician: 'assets/cards/web/mx_B_technician.jpg',
+    mx_B_showman: 'assets/cards/web/mx_B_showman.jpg',
+    mx_B_allround: 'assets/cards/web/mx_B_allround.jpg',
+    mx_C_power: 'assets/cards/web/mx_C_power.jpg',
+    mx_C_innovator: 'assets/cards/web/mx_C_innovator.jpg',
+    mx_C_technician: 'assets/cards/web/mx_C_technician.jpg',
+    mx_C_showman: 'assets/cards/web/mx_C_showman.jpg',
+    mx_C_allround: 'assets/cards/web/mx_C_allround.jpg',
+    mx_D_power: 'assets/cards/web/mx_D_power.jpg',
+    mx_D_innovator: 'assets/cards/web/mx_D_innovator.jpg',
+    mx_D_technician: 'assets/cards/web/mx_D_technician.jpg',
+    mx_D_showman: 'assets/cards/web/mx_D_showman.jpg',
+    mx_D_allround: 'assets/cards/web/mx_D_allround.jpg',
+    mx_E_power: 'assets/cards/web/mx_E_power.jpg',
+    mx_E_innovator: 'assets/cards/web/mx_E_innovator.jpg',
+    mx_E_technician: 'assets/cards/web/mx_E_technician.jpg',
   };
-  const IMG_VER = 'v=20260716';
+  const IMG_VER = 'v=20260722a';
   function cardImageSrc(type) { const s = CARD_IMAGE[type]; return s ? (s + (s.indexOf('?') < 0 ? '?' + IMG_VER : '')) : null; }
 
   // アートパネルの中身を埋める: 画像があれば<img>(読み込み失敗時はSVGへフォールバック)、無ければ署名SVG。
   function fillCardArt(artEl, card) {
-    const src = cardImageSrc(card.id);
+    const src = card.artSrcOverride || cardImageSrc(card.id);
     const svg = () => { artEl.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 200 180">' + (CARD_ART[card.type] || CARD_ART.allround) + '</svg>'); };
     if (src) {
       const im = el('img', 'pcard-artimg'); im.alt = '';
@@ -1844,7 +1892,9 @@
     inner.appendChild(head);
     // 名前＋カードタイトル（称号）
     inner.appendChild(el('div', 'pcard-name', card.name));
-    inner.appendChild(el('div', 'pcard-epithet', '「' + card.title + '」・' + card.typeLabel));
+    inner.appendChild(el('div', 'pcard-epithet', card.isGallerySample
+      ? card.typeLabel + '・カードアーカイブ'
+      : '「' + card.title + '」・' + card.typeLabel));
     // 中央アート（属性別ディアボロ）
     const art = el('div', 'pcard-art');
     fillCardArt(art, card);
@@ -1885,6 +1935,11 @@
     cr_h1d: ['A', 'technician'], cr_v1d: ['A', 'innovator'], cr_d2: ['A', 'power'],
     cr_d3: ['A', 'showman'], cr_worlds: ['B', 'allround']
   };
+  // 本番採用が保留中のカードは、見本ギャラリーだけで候補アートを表示する。
+  // 通常プレイではCARD_IMAGE未登録のままなので、既存の属性SVGへフォールバックする。
+  const GALLERY_ART_OVERRIDE = {
+    mx_B_innovator: 'assets/cards/web/mx_B_innovator_provisional.jpg'
+  };
   const RANK_BASE = { S: 90, A: 78, B: 66, C: 54, D: 42, E: 30 };
   const RANK_PT = { S: 1080, A: 860, B: 620, C: 400, D: 190, E: 80 };
   function sampleCardFor(entry) {
@@ -1901,7 +1956,8 @@
       cp: RANK_BASE[rank] ? Math.round(RANK_BASE[rank] * 10) : 550,
       totalPoints: expelled ? 60 : (RANK_PT[rank] || 400), stats: stats, expelled: expelled,
       medals: [entry.layer === 'special' ? '⭐特別' : (entry.layer === 'craft' ? '🔧職人' : '🃏' + rank)],
-      background: 'highschool', strongestGenre: '1DH', name: '見本'
+      background: 'highschool', strongestGenre: '1DH', name: entry.title, isGallerySample: true,
+      artSrcOverride: GALLERY_ART_OVERRIDE[entry.id] || ''
     };
   }
   function renderCardGallery() {
@@ -1909,19 +1965,37 @@
     const app = document.getElementById('app');
     let ov = document.getElementById('gallery-overlay');
     if (ov) ov.remove();
+    document.body.classList.add('gallery-mode');
     ov = el('div', 'gallery-overlay'); ov.id = 'gallery-overlay';
     const head = el('div', 'gallery-head');
-    head.appendChild(el('span', 'gallery-title', '🎴 全カード見本（' + cats.length + '種）'));
+    head.appendChild(el('span', 'gallery-title', '🎴 全カードアーカイブ（' + cats.length + '種）'));
     const close = el('button', 'gallery-close', '×');
-    close.onclick = () => { ov.remove(); if (state && state.status === 'playing') show('#screen-home'); else initTitle(); };
+    close.onclick = () => {
+      ov.remove(); document.body.classList.remove('gallery-mode');
+      if (state && state.status === 'playing') show('#screen-home'); else initTitle();
+    };
     head.appendChild(close);
-    const note = el('p', 'gallery-note', '※特別/職人カードのランク・属性・数値は見本用の代表値です（実際はプレイ内容で変わります）');
+    const note = el('p', 'gallery-note', '50枚を同じカード枠で表示しています。※特別/職人カードの数値は代表値／「奇手の使い手」のみ仮案です。');
     const grid = el('div', 'card-gallery');
-    cats.forEach(entry => {
-      const cell = el('div', 'gallery-cell');
-      cell.appendChild(buildPlayerCard(sampleCardFor(entry), 0));
-      cell.appendChild(el('div', 'gallery-cell-cap', entry.title));
-      grid.appendChild(cell);
+    const groups = [
+      { label: '⭐ 特別カード', entries: cats.filter(c => c.layer === 'special') },
+      { label: '🔧 職人カード', entries: cats.filter(c => c.layer === 'craft') },
+      ...['S', 'A', 'B', 'C', 'D', 'E'].map(rank => ({
+        label: '🃏 ランク ' + rank,
+        entries: cats.filter(c => c.layer === 'matrix' && c.rank === rank)
+      }))
+    ];
+    groups.forEach(group => {
+      grid.appendChild(el('h2', 'gallery-section-title', group.label));
+      group.entries.forEach(entry => {
+        const no = cats.indexOf(entry) + 1;
+        const provisional = !!GALLERY_ART_OVERRIDE[entry.id];
+        const cell = el('div', 'gallery-cell');
+        cell.appendChild(buildPlayerCard(sampleCardFor(entry), no));
+        cell.appendChild(el('div', 'gallery-cell-cap' + (provisional ? ' is-provisional' : ''),
+          '#' + String(no).padStart(2, '0') + ' ' + entry.title + (provisional ? '（仮案）' : '')));
+        grid.appendChild(cell);
+      });
     });
     ov.appendChild(head); ov.appendChild(note); ov.appendChild(grid);
     app.appendChild(ov);

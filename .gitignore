@@ -1,1 +1,4 @@
 .DS_Store
+/assets/cards/*.png
+/assets/cards/concepts/
+/tmp/
