@@ -9,20 +9,27 @@
     rng = rng || Math.random;
     const bg = DT.DATA.BACKGROUNDS.find(b => b.id === backgroundId) ||
                DT.DATA.BACKGROUNDS.find(b => b.id === 'highschool');
+    const shortMode = gameMode === 'short';
+    const statMin = shortMode && bg.shortStatMin !== undefined ? bg.shortStatMin : bg.statMin;
+    const statSpread = shortMode && bg.shortStatSpread !== undefined ? bg.shortStatSpread : bg.statSpread;
     // rng消費順: GENRES配列順×METHODS配列順（h1d.difficulty→h1d.novelty→h1d.control→v1d.difficulty→…）
     // の12マス → composition → study の順に固定（テストでピン留め）
     const skills = {};
     DT.DATA.GENRES.forEach(g => {
       skills[g.id] = {};
-      DT.DATA.METHODS.forEach(m => { skills[g.id][m.id] = bg.statMin + Math.floor(rng() * bg.statSpread); });
+      DT.DATA.METHODS.forEach(m => { skills[g.id][m.id] = statMin + Math.floor(rng() * statSpread); });
     });
     // 演技構成は技術と別レンジを持てる（大学は技術0でも演技構成を少し残すため）。未指定なら技術と同レンジ。
-    const compMin = (bg.compMin !== undefined) ? bg.compMin : bg.statMin;
-    const compSpread = (bg.compSpread !== undefined) ? bg.compSpread : bg.statSpread;
+    const compMin = shortMode && bg.shortCompMin !== undefined
+      ? bg.shortCompMin
+      : ((bg.compMin !== undefined) ? bg.compMin : statMin);
+    const compSpread = shortMode && bg.shortCompSpread !== undefined
+      ? bg.shortCompSpread
+      : ((bg.compSpread !== undefined) ? bg.compSpread : statSpread);
     const composition = compMin + Math.floor(rng() * compSpread);
     return {
       turn: 1,
-      gameMode: gameMode === 'short' ? 'short' : 'standard',
+      gameMode: shortMode ? 'short' : 'standard',
       skills: skills,
       composition: composition,
       study: 40 + Math.floor(rng() * 21),

@@ -157,7 +157,13 @@ test('newCharacter: 経歴で初期能力レンジが変わる（大学は技術
 
   const easyMax = DT.state.newCharacter(() => 0.999, 'juniorhigh');
   DT.DATA.GENRES.forEach(g => DT.DATA.METHODS.forEach(m => assert.strictEqual(easyMax.skills[g.id][m.id], 40)));
-  assert.strictEqual(easyMax.composition, 40); // 他経歴はcompMin未指定→従来通りstatと同レンジ
+  assert.strictEqual(easyMax.composition, 40); // 通常版は従来レンジを維持
+  const shortEasyMin = DT.state.newCharacter(() => 0, 'juniorhigh', 'short');
+  DT.DATA.GENRES.forEach(g => DT.DATA.METHODS.forEach(m => assert.strictEqual(shortEasyMin.skills[g.id][m.id], 12)));
+  assert.strictEqual(shortEasyMin.composition, 12);
+  const shortEasyMax = DT.state.newCharacter(() => 0.999, 'juniorhigh', 'short');
+  DT.DATA.GENRES.forEach(g => DT.DATA.METHODS.forEach(m => assert.strictEqual(shortEasyMax.skills[g.id][m.id], 37)));
+  assert.strictEqual(shortEasyMax.composition, 37);
   assert.strictEqual(easyMax.study, 60);
 
   const def = DT.state.newCharacter(() => 0);

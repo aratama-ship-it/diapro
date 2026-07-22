@@ -127,6 +127,10 @@ test('DATA: 大会はOIDC(8月)×4・AJDC(3月)×4・静岡DC(1月)×4', () => {
 test('DATA: 経歴は3種で初期値レンジが昇順（幼少期は2026-07-15廃止）', () => {
   assert.strictEqual(DT.DATA.BACKGROUNDS.length, 3);
   assert.ok(DT.DATA.BACKGROUNDS.some(b => b.id === 'highschool'));
+  const easy = DT.DATA.BACKGROUNDS.find(b => b.id === 'juniorhigh');
+  assert.strictEqual(easy.statMin, 15, '通常版イージーは初期能力15〜40を維持する');
+  assert.strictEqual(easy.shortStatMin, 12, 'ショート版イージーは初期能力12〜37で開始する');
+  assert.strictEqual(easy.statSpread, 26, '通常版・ショート版とも初期能力の振れ幅は維持する');
   for (let i = 1; i < DT.DATA.BACKGROUNDS.length; i++) {
     assert.ok(DT.DATA.BACKGROUNDS[i].statMin > DT.DATA.BACKGROUNDS[i - 1].statMin);
   }

@@ -282,7 +282,7 @@
     BACKGROUNDS: [
       { id: 'college',    label: '大学から始めた', difficulty: 'ハード',         statMin: 0,  statSpread: 0, compMin: 3, compSpread: 8 },
       { id: 'highschool', label: '高校から始めた', difficulty: 'ノーマル',       statMin: 10, statSpread: 26 },
-      { id: 'juniorhigh', label: '中学から始めた', difficulty: 'イージー',       statMin: 15, statSpread: 26 }
+      { id: 'juniorhigh', label: '中学から始めた', difficulty: 'イージー',       statMin: 15, statSpread: 26, shortStatMin: 12 }
       // childhood(幼少期から/ベリーイージー)は2026-07-15に廃止（イージーと差が薄く不要のため）
     ],
     // v2: 登場キャラクター（名前はdata.jsで一元管理 — 変更はここだけでよい）
