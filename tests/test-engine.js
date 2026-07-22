@@ -460,23 +460,23 @@ test('endTurn: 勉強した月は学力が減衰しない', () => {
   assert.strictEqual(s.study, 40);
 });
 
-test('endTurn: 高疲労で練習すると怪我リスク加算', () => {
+test('rollInjury: 高疲労で練習すると怪我リスク加算', () => {
   const s = base();
   s.didTrain = true;
   s.fatigue = 70;
-  DT.engine.endTurn(s, () => 0.99); // 乱数0.99は怪我しない
+  DT.engine.rollInjury(s, () => 0.99); // 乱数0.99は怪我しない
   assert.strictEqual(s.injuryRisk, 15); // 10 + 5
 });
 
-test('endTurn: 怪我発生で来月療養・リスクリセット', () => {
+test('rollInjury: 怪我発生で来月療養・リスクリセット', () => {
   const s = base();
   s.didTrain = true;
   s.injuryRisk = 100; // 怪我確率 100/500 = 20%
-  const r = DT.engine.endTurn(s, () => 0.0);
+  const r = DT.engine.rollInjury(s, () => 0.0);
   assert.strictEqual(s.injuredTurns, 1);
   assert.strictEqual(s.injuryRisk, 25);
-  assert.strictEqual(s.motivation, 42); // 平均回帰は50で±0、その後怪我で50-8
-  assert.ok(r.events.some(e => e.includes('怪我')));
+  assert.strictEqual(s.motivation, 42); // 怪我で50-8
+  assert.ok(r.injured && r.message.includes('怪我'));
 });
 
 // やる気の平均回帰: endTurn冒頭でround((50-motivation)*reversion)だけ50へ引き戻される

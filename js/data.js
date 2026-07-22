@@ -244,7 +244,7 @@
         choices: [
           { label: '参加する', effects: { stats: [{ id: 'difficulty', amount: 4 }, { id: 'control', amount: 4 }], motivation: 5, fatigue: 28, study: -6 },
             result: '回して回して回しまくった。技術は大きく伸びたが、心身ともにヘトヘトだ……' },
-          { label: '見送る', effects: { fatigue: -12, study: 6, motivation: -2 },
+          { label: '見送る', effects: { fatigue: -12, study: 6, motivation: -8 },
             result: '合宿は見送り、自分のペースで練習と学業を進めた。' } ] }
     ],
     SCHEDULED_WELCOME_GAIN: 10,
@@ -295,7 +295,10 @@
       { id: 'irie',   name: 'イリエ',     role: '同期のディアボロ仲間' },
       { id: 'ujiji',  name: 'うじじ',     role: '大陸からの刺客' },
       { id: 'kazuki', name: 'Dr. Kazuki', role: '（役割・イベントは後日設定）' },
-      { id: 'george', name: '大道芸人ジョージ', role: '流しの大道芸人。魅せる技術の達人' }
+      { id: 'george', name: '大道芸人ジョージ', role: '流しの大道芸人。魅せる技術の達人' },
+      { id: 'saito', name: 'SAITO会長', role: '協会事務所と台湾合宿をつなぐ人物' },
+      { id: 'youtube', name: 'YouTube', role: '解説動画を介した状況イベント' },
+      { id: 'malaysia', name: 'マレーシア遠征', role: '海外遠征の状況イベント' }
     ],
     EVENTS: {
       probs: { char: 0.125, happening: 0.05 },
@@ -371,7 +374,7 @@
           choices: [
             { label: '遠征する', effects: { stats: [{ id: 'composition', amount: 5 }, { id: 'novelty', amount: 3 }], motivation: 15, fatigue: 22, study: -10 },
               result: '灼熱の会場、多国籍のパフォーマーたち。刺激的な舞台で度胸と構成力を持ち帰った！（疲労と、休んだ授業のツケも残った……）' },
-            { label: '国内に専念する', effects: { study: 6, motivation: -2 },
+            { label: '国内に専念する', effects: { study: 6, motivation: -8 },
               result: '「また次の機会に」丁重に断り、今回は国内の練習と学業に専念した。' } ] }
       ],
       // 現状オフ（無効化）のキャラ別イベント。ゲームからは未参照。復活時は charEvents へ戻す。（2026-07方針: 美琴先輩・志音・魁人は保留）

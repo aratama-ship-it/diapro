@@ -132,8 +132,12 @@ test('DATA: 経歴は3種で初期値レンジが昇順（幼少期は2026-07-15
   }
 });
 
-test('DATA: キャラ5人とライバル2人が定義されている', () => {
-  assert.strictEqual(DT.DATA.CHARACTERS.length, 5);
+test('DATA: イベント登場主体12件とライバル2人が定義されている', () => {
+  const actorIds = DT.DATA.CHARACTERS.map(c => c.id);
+  assert.strictEqual(actorIds.length, 12);
+  assert.strictEqual(new Set(actorIds).size, actorIds.length, '登場主体idは重複しない');
+  ['coach', 'yota', 'mikoto', 'shion', 'kaito', 'irie', 'ujiji', 'kazuki', 'george', 'saito', 'youtube', 'malaysia']
+    .forEach(id => assert.ok(actorIds.includes(id), id + ' が未登録'));
   assert.strictEqual(DT.DATA.RIVALS.length, 2);
   assert.deepStrictEqual(DT.DATA.RIVALS.map(r => r.id), ['shion', 'kaito']);
   assert.deepStrictEqual(DT.DATA.RIVALS[0].contests, ['oidc', 'ajdc']);
@@ -148,7 +152,7 @@ test('DATA: イベント定義の整合性（stat参照はMETHODS∪{composition
   const validStatIds = DT.DATA.METHODS.map(s => s.id).concat(DT.DATA.COMPOSITION.id);
   ev.charEvents.forEach(e => {
     assert.ok(charIds.includes(e.char), e.id + ' のcharが未定義');
-    assert.strictEqual(e.choices.length, 2, e.id);
+    assert.ok(e.choices.length >= 2 && e.choices.length <= 3, e.id + ' の選択肢数が2〜3件ではない');
     e.choices.forEach(c => {
       assert.ok(c.label && c.result, e.id);
       if (c.effects.stat) {

@@ -51,7 +51,7 @@ test('applyChoice: 効果が適用されメッセージが返る', () => {
 
 test('applyChoice: statとstudyの効果・クランプ', () => {
   const s = base();
-  const ev = DT.DATA.EVENTS.charEvents.find(e => e.id === 'mikoto1');
+  const ev = DT.DATA.EVENTS.charEvents.find(e => e.id === 'irie1');
   DT.events.applyChoice(s, ev, 1); // study+8
   assert.strictEqual(s.study, 48);
   const ev2 = DT.DATA.EVENTS.charEvents.find(e => e.id === 'coach1');
