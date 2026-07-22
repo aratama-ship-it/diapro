@@ -91,6 +91,13 @@ h2 { font-size: 1.2rem; text-align: center; color: var(--ink); letter-spacing: .
 /* タイトル画面: ボタンを下部に寄せてタップしやすく（見出しは上、ボタンは最下部） */
 #screen-title > button:first-of-type { margin-top: auto; }
 .app-version { text-align: center; font-size: .6rem; font-weight: 700; color: var(--ink-soft); padding: 4px 0 2px; letter-spacing: .05em; }
+.mode-badge {
+  align-self: center; padding: 3px 12px; border: 2px solid var(--ink); border-radius: 999px;
+  background: var(--sun); color: var(--ink); box-shadow: 0 2px 0 var(--ink);
+  font-family: "Baloo 2", "M PLUS Rounded 1c", sans-serif; font-size: .72rem; font-weight: 800; letter-spacing: .08em;
+}
+html.short-mode #app { background: repeating-linear-gradient(135deg, rgba(255,209,102,.09) 0 14px, transparent 14px 28px), var(--cream); }
+html.short-mode #btn-mode-switch { background: #eef1fb; color: var(--ink-soft); }
 .center { text-align: center; }
 .num { font-family: "Baloo 2", "M PLUS Rounded 1c", sans-serif; font-weight: 800; }
 

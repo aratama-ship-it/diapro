@@ -2,12 +2,16 @@
   'use strict';
   const DT = window.DT;
   const $ = (sel) => document.querySelector(sel);
+  const QUERY_PARAMS = new URLSearchParams(window.location.search);
+  const GAME_MODE = QUERY_PARAMS.get('mode') === DT.shortMode.ID ? DT.shortMode.ID : 'standard';
+  const SHORT = GAME_MODE === DT.shortMode.ID;
 
   // 開発用表示（DEV PARAMSパネル・大会の不振理由）は URLに ?dev を付けたときだけ表示。
   // テスターには見えないようにするための切り替え。バージョンはタイトル画面に表示。
-  const APP_VERSION = 'v0.9 test1';
-  const DEV = new URLSearchParams(window.location.search).has('dev');
+  const APP_VERSION = 'v0.9 short-test1';
+  const DEV = QUERY_PARAMS.has('dev');
   if (DEV) document.documentElement.classList.add('dev');
+  if (SHORT) document.documentElement.classList.add('short-mode');
 
   let state = null;
   let candidate = null;
@@ -265,13 +269,32 @@
 
   // --- タイトル ---
   function initTitle() {
-    $('#btn-continue').disabled = !DT.state.load();
-    $('#app-version').textContent = APP_VERSION + (DEV ? '（DEV表示ON）' : '');
+    $('#btn-continue').disabled = !DT.state.load(undefined, GAME_MODE);
+    $('#mode-badge').classList.toggle('hidden', !SHORT);
+    $('#mode-badge').textContent = 'SHORT MODE · 24 TURNS';
+    $('#title-main').textContent = SHORT ? 'ディアボロ選手育成 SHORT' : 'ディアボロ選手育成';
+    $('#title-subtitle').textContent = SHORT ? '〜2ヶ月ずつ、大学4年間を駆け抜けろ〜' : '〜大学4年間、ディアボロに懸けろ〜';
+    $('#title-manual').textContent = SHORT
+      ? 'ショート版は1ターンで2ヶ月進み、全24ターン。偶数月に練習・勉強・休養を選び、奇数月はイベントが進みます。練習による能力の伸びは通常版の2倍。大会・試験は本来の月に行われます。通常版とはセーブも別です。'
+      : '大学4年間でディアボロ選手を育てるゲームです。毎月、練習・勉強・休養を選びます。練習はジャンルと内容を組み合わせて3枠決めます。疲労がたまると失敗や怪我のリスクが上がるので注意。大会の成績と通算ポイントで、卒業時の評価が決まります。';
+    $('#btn-mode-switch').textContent = SHORT ? '通常版（48ターン）へ戻る' : '⚡ ショート版（24ターン）';
+    $('#app-version').textContent = APP_VERSION + (SHORT ? '（ショート版）' : '') + (DEV ? '（DEV表示ON）' : '');
     show('#screen-title');
   }
 
-  $('#btn-new').onclick = () => renderCreate(DT.state.newCharacter(undefined, selectedBackground));
-  $('#btn-continue').onclick = () => { state = DT.state.load(); afterTurn([]); };
+  function newCandidate() {
+    return DT.state.newCharacter(undefined, selectedBackground, GAME_MODE);
+  }
+
+  $('#btn-new').onclick = () => renderCreate(newCandidate());
+  $('#btn-continue').onclick = () => { state = DT.state.load(undefined, GAME_MODE); afterTurn([]); };
+  $('#btn-mode-switch').onclick = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('gallery');
+    url.searchParams.delete('auto');
+    if (SHORT) url.searchParams.delete('mode'); else url.searchParams.set('mode', DT.shortMode.ID);
+    window.location.href = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '');
+  };
 
   // --- キャラ作成 ---
   function renderBackgroundButtons() {
@@ -285,7 +308,7 @@
     // 経歴を変えると難易度が変わるので選手を引き直す（旧ボタンUIと同じ挙動）
     sel.onchange = () => {
       selectedBackground = sel.value;
-      renderCreate(DT.state.newCharacter(undefined, selectedBackground));
+      renderCreate(newCandidate());
     };
   }
 
@@ -302,7 +325,7 @@
     show('#screen-create');
   }
 
-  $('#btn-reroll').onclick = () => renderCreate(DT.state.newCharacter(undefined, selectedBackground));
+  $('#btn-reroll').onclick = () => renderCreate(newCandidate());
   $('#btn-start').onclick = () => {
     state = candidate;
     state.name = ($('#create-name').value || '').trim() || '主人公';
@@ -320,6 +343,7 @@
 
     renderHomeContest();
     renderPlayerBoard();
+    $('#home-prompt').textContent = SHORT ? 'この2ヶ月はどうする？' : '今月はどうする？';
 
     // 毎月スロットは空にリセット（前月構成の引き継ぎはしない）。怪我中はルーチン構成のみ1枠
     slotsUI = state.injuredTurns > 0 ? [null] : new Array(DT.DATA.SLOTS.perMonth).fill(null);
@@ -333,7 +357,7 @@
       logs.forEach(l => body.push(el('div', '', l)));
     } else {
       log.classList.remove('multi');
-      body.push(el('div', '', '💬 今月はどうする？'));
+      body.push(el('div', '', SHORT ? '💬 偶数月の行動を決めよう。次の奇数月はイベント！' : '💬 今月はどうする？'));
     }
     // ログ帯タップで記録ログを開ける（後から見返せる）
     body.push(el('div', 'log-more', '📖 これまでの記録ログ ▸'));
@@ -456,7 +480,7 @@
 
   // 個人記録（自己ベスト）モーダル。通算ポイント降順の一覧を表示
   function openRecords() {
-    const list = DT.state.loadRecords();
+    const list = DT.state.loadRecords(undefined, GAME_MODE);
     const rows = [];
     if (!list.length) {
       rows.push(el('div', 'dev-note', 'まだ記録がありません。1周プレイ（卒業/退学）すると記録されます。'));
@@ -505,7 +529,7 @@
   function renderSettingsConfirm() {
     const warn = el('p', 'settings-note cond-warn', '本当にリタイアしますか？ 現在のセーブは消え、タイトルに戻ります。');
     const yes = el('button', 'retire', 'はい、リタイアする');
-    yes.onclick = () => { closeSettings(); DT.state.clear(); state = null; initTitle(); };
+    yes.onclick = () => { closeSettings(); DT.state.clear(undefined, GAME_MODE); state = null; initTitle(); };
     const no = el('button', '', 'やめる');
     no.onclick = renderSettingsMain;
     $('#settings-body').replaceChildren(warn, yes, no);
@@ -518,8 +542,12 @@
     // ヘッダー帯（学年月・名前・TURN・ポイント）
     const head = el('div', 'pb-head');
     const hl = el('div', 'pb-head-l');
-    hl.appendChild(el('div', 'pb-turn', 'TURN ' + state.turn + ' / ' + DT.DATA.TOTAL_TURNS));
-    hl.appendChild(el('div', 'pb-name', DT.engine.turnLabel(state.turn) + '・' + state.name));
+    hl.appendChild(el('div', 'pb-turn', SHORT
+      ? 'SHORT TURN ' + DT.shortMode.playerTurn(state.turn) + ' / ' + DT.shortMode.PLAYER_TURNS
+      : 'TURN ' + state.turn + ' / ' + DT.DATA.TOTAL_TURNS));
+    hl.appendChild(el('div', 'pb-name', (SHORT
+      ? DT.shortMode.periodLabel(state.turn, DT.engine.turnLabel)
+      : DT.engine.turnLabel(state.turn)) + '・' + state.name));
     head.appendChild(hl);
     const pt = el('span', 'pt num', totalPoints() + 'pt');
     pt.setAttribute('role', 'button');
@@ -618,7 +646,7 @@
       return;
     }
     box.replaceChildren(
-      bigAction('train', '🥢', '練 習', '3枠のメニューを組んで技術アップ', openTrainMenu),
+      bigAction('train', '🥢', '練 習', SHORT ? '3枠を組む・能力の伸び2倍' : '3枠のメニューを組んで技術アップ', openTrainMenu),
       actionRow(study, bigAction('rest', '🛌', '休 養', '疲労・怪我を回復', () => onAction('rest'), true))
     );
   }
@@ -667,7 +695,7 @@
 
   function renderTrainMenu() {
     const mood = DT.engine.motivationLabel(state.motivation);
-    $('#trainmenu-mood').textContent = (MOOD_EMOJI[mood] || '🙂') + ' ' + mood;
+    $('#trainmenu-mood').textContent = (MOOD_EMOJI[mood] || '🙂') + ' ' + mood + (SHORT ? '・伸び×2' : '');
 
     // 画面上部に現在の能力値を表示（何を伸ばすか判断しやすく）
     $('#trainmenu-skills').replaceChildren(
@@ -864,7 +892,7 @@
     pendingActionId = actionId;
     pendingSlots = slots || null;
     pendingSkipAction = false;
-    if (actionId === 'injured') { runActionPhase(); return; } // 療養ターンは前スロット無し
+    if (SHORT || actionId === 'injured') { runActionPhase(); return; } // ショート版の偶数月と療養ターンは前スロット無し
     runPreSlot();
   }
 
@@ -907,6 +935,11 @@
   }
 
   function afterPreSlot() {
+    // ショート版の奇数月はイベント専用。行動を挟まず大会・固定イベントへ進む。
+    if (SHORT && DT.shortMode.isEventMonth(state.turn)) {
+      runPostSlot();
+      return;
+    }
     if (pendingSkipAction) {
       // 過労で倒れた→当ターンの行動をスキップ（前ターンのdidTrain/didStudyが残らないようリセット）
       state.didTrain = false;
@@ -1148,6 +1181,16 @@
 
   function afterTurn(logs) {
     if (state.status !== 'playing') { renderEnding(); return; }
+    // 偶数月の行動後は、そのまま次の奇数月をイベント専用月として自動処理する。
+    // セーブから奇数月を再開した場合も、行動画面を出さず同じ経路へ戻す。
+    if (SHORT && DT.shortMode.isEventMonth(state.turn)) {
+      pendingMessages = [];
+      pendingActionId = null;
+      pendingSlots = null;
+      pendingSkipAction = false;
+      runPreSlot();
+      return;
+    }
     // 改善プラン#4: 2年AJDC(24ターン)を終えた25ターン目(3年生4月)の頭に一度だけ、早期引退の選択を出す
     if (state.turn === 25 && !state.retireOfferSeen) { renderRetireOffer(logs); return; }
     renderHomeWithPopups(logs);
@@ -1533,7 +1576,7 @@
     // 記録済みの周（デモ?auto=1含む）は選択なしで最上位を表示。選択確定までは何も永続化しない
     // ＝選択中にリロードしても「つづきから」で再びこの画面に戻るだけで二重登録は起きない。
     if (!state.recorded) {
-      const col = DT.state.loadCollection();
+      const col = DT.state.loadCollection(undefined, GAME_MODE);
       const unownedOthers = candidates.slice(1).filter(c => !col[c.id]);
       if (col[top.id] && unownedOthers.length > 0) {
         renderCardChoice(e, top, unownedOthers);
@@ -1570,10 +1613,10 @@
     // 個人記録を保存（この周回で一度だけ）。終了したセーブは消して「つづきから」不可＆二重記録防止
     let bestNote = null;
     let colResult = null; // 図鑑登録の結果（初解禁 or 重複時の枚数/自己ベスト更新）
-    let cardNo = DT.state.loadRecords().length + 1; // 何人目の卒業生か（カードNo.）
+    let cardNo = DT.state.loadRecords(undefined, GAME_MODE).length + 1; // 何人目の卒業生か（カードNo.）
     if (!state.recorded) {
-      colResult = DT.state.addToCollection(card, cardNo); // 図鑑へ登録（初解禁ならNEW表示）
-      const prev = DT.state.loadRecords();
+      colResult = DT.state.addToCollection(card, cardNo, undefined, GAME_MODE); // 図鑑へ登録（初解禁ならNEW表示）
+      const prev = DT.state.loadRecords(undefined, GAME_MODE);
       const prevBest = prev.length ? Math.max.apply(null, prev.map(r => r.totalPoints || 0)) : -1;
       DT.state.addRecord({
         date: Date.now(),
@@ -1585,11 +1628,12 @@
         totalPoints: e.totalPoints,
         abilityAvg: e.abilityAvg,
         // カード情報（図鑑/一覧のミニカード表示用・Phase3で使用）
-        cardId: card.id, cardTitle: card.title, cardType: card.type, cardCp: card.cp, cardNo: cardNo
-      });
+        cardId: card.id, cardTitle: card.title, cardType: card.type, cardCp: card.cp, cardNo: cardNo,
+        gameMode: GAME_MODE
+      }, undefined, GAME_MODE);
       if (state.status !== 'expelled' && e.totalPoints > prevBest) bestNote = '🎉 自己ベスト更新！';
       state.recorded = true;
-      DT.state.clear();
+      DT.state.clear(undefined, GAME_MODE);
     }
     $('#ending-title').textContent = state.status === 'expelled' ? 'GAME OVER' : (state.status === 'retired' ? state.name + '、新たな道へ' : state.name + '、卒業！');
     // パック開封演出（Phase2）: パック(裏面)→タップ開封→バースト→カード出現→数値カウントアップ→成績表フェードイン
@@ -2005,7 +2049,7 @@
   const rankKeyOf = snap => (snap.expelled ? 'X' : snap.rank);
 
   function openZukan() {
-    const col = DT.state.loadCollection();
+    const col = DT.state.loadCollection(undefined, GAME_MODE);
     const catalog = DT.cards.catalog();
     const owned = catalog.filter(c => col[c.id]).length;
     $('#zukan-sub').textContent = 'コンプ率 ' + owned + ' / ' + catalog.length;
@@ -2227,7 +2271,7 @@
     window.open(intent, '_blank', 'noopener');
   }
 
-  $('#btn-restart').onclick = () => { DT.state.clear(); state = null; initTitle(); };
+  $('#btn-restart').onclick = () => { DT.state.clear(undefined, GAME_MODE); state = null; initTitle(); };
 
   // --- ボトムナビ・戻る ---
   $('#nav-home').onclick = () => { if (state) show('#screen-home'); };
@@ -2412,9 +2456,8 @@
     renderEnding();
   }
 
-  const params = new URLSearchParams(location.search);
-  const autoParam = params.get('auto');
-  if (params.get('gallery')) {
+  const autoParam = QUERY_PARAMS.get('auto');
+  if (QUERY_PARAMS.get('gallery')) {
     initTitle();
     renderCardGallery();
   } else if (autoParam) {

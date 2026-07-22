@@ -160,6 +160,9 @@
       const aw = state.background === 'college' ? DT.DATA.AWAKEN.hard : DT.DATA.AWAKEN;
       gain = Math.ceil(gain * aw.mult);
     }
+    // ショート版は行動機会が24回になるため、練習で確定した能力上昇だけを正確に2倍にする。
+    // 疲労・怪我リスク・イベント効果は倍化しない。
+    if (state.gameMode === 'short') gain *= 2;
     return { gain, timingNote, extraFatigue };
   }
 

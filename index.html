@@ -14,11 +14,13 @@
   <div class="screens">
     <!-- ======== タイトル ======== -->
     <section id="screen-title" class="screen">
-      <h1>ディアボロ選手育成</h1>
-      <p class="subtitle">〜大学4年間、ディアボロに懸けろ〜</p>
-      <p class="title-manual">大学4年間でディアボロ選手を育てるゲームです。毎月、練習・勉強・休養を選びます。練習はジャンルと内容を組み合わせて3枠決めます。疲労がたまると失敗や怪我のリスクが上がるので注意。大会の成績と通算ポイントで、卒業時の評価が決まります。</p>
+      <div id="mode-badge" class="mode-badge hidden"></div>
+      <h1 id="title-main">ディアボロ選手育成</h1>
+      <p class="subtitle" id="title-subtitle">〜大学4年間、ディアボロに懸けろ〜</p>
+      <p class="title-manual" id="title-manual">大学4年間でディアボロ選手を育てるゲームです。毎月、練習・勉強・休養を選びます。練習はジャンルと内容を組み合わせて3枠決めます。疲労がたまると失敗や怪我のリスクが上がるので注意。大会の成績と通算ポイントで、卒業時の評価が決まります。</p>
       <button id="btn-new" class="primary">はじめから</button>
       <button id="btn-continue">つづきから</button>
+      <button id="btn-mode-switch">⚡ ショート版（24ターン）</button>
       <button id="btn-records">🏅 これまでの記録</button>
       <button id="btn-zukan">📖 カード図鑑</button>
       <div class="app-version" id="app-version"></div>
@@ -47,7 +49,7 @@
     <section id="screen-home" class="screen hidden">
       <div id="home-contest"></div>
       <div class="card pboard" id="home-board"></div>
-      <div class="prompt-line">今月はどうする？</div>
+      <div class="prompt-line" id="home-prompt">今月はどうする？</div>
       <div class="action-stack" id="home-actions"></div>
       <div class="log-strip" id="home-log">💬 どうする？</div>
     </section>
@@ -280,13 +282,14 @@
 </aside>
 
 <script src="js/data.js?v=20260716d"></script>
-<script src="js/state.js?v=20260716d"></script>
-<script src="js/engine.js?v=20260716d"></script>
+<script src="js/short-mode.js?v=20260723a"></script>
+<script src="js/state.js?v=20260723a"></script>
+<script src="js/engine.js?v=20260723a"></script>
 <script src="js/contest.js?v=20260716d"></script>
 <script src="js/events.js?v=20260716d"></script>
 <script src="js/ending.js?v=20260716d"></script>
 <script src="js/cards.js?v=20260716d"></script>
 <script src="js/radar.js?v=20260716d"></script>
-<script src="js/app.js?v=20260722a"></script>
+<script src="js/app.js?v=20260723a"></script>
 </body>
 </html>

@@ -2,9 +2,10 @@
   'use strict';
   const DT = global.DT = global.DT || {};
   const SAVE_KEY = 'diabolo-trainer-save-v9';
+  const SHORT_SAVE_KEY = 'diabolo-trainer-short-save-v1';
   const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3', 'diabolo-trainer-save-v4', 'diabolo-trainer-save-v5', 'diabolo-trainer-save-v6', 'diabolo-trainer-save-v7', 'diabolo-trainer-save-v8'];
 
-  function newCharacter(rng, backgroundId) {
+  function newCharacter(rng, backgroundId, gameMode) {
     rng = rng || Math.random;
     const bg = DT.DATA.BACKGROUNDS.find(b => b.id === backgroundId) ||
                DT.DATA.BACKGROUNDS.find(b => b.id === 'highschool');
@@ -21,6 +22,7 @@
     const composition = compMin + Math.floor(rng() * compSpread);
     return {
       turn: 1,
+      gameMode: gameMode === 'short' ? 'short' : 'standard',
       skills: skills,
       composition: composition,
       study: 40 + Math.floor(rng() * 21),
@@ -60,33 +62,38 @@
   }
 
   function save(state, storage) {
-    (storage || global.localStorage).setItem(SAVE_KEY, JSON.stringify(state));
+    const key = state && state.gameMode === 'short' ? SHORT_SAVE_KEY : SAVE_KEY;
+    (storage || global.localStorage).setItem(key, JSON.stringify(state));
   }
 
-  function load(storage) {
+  function load(storage, gameMode) {
     const s = storage || global.localStorage;
     OLD_KEYS.forEach(k => s.removeItem(k));
-    const raw = s.getItem(SAVE_KEY);
+    const short = gameMode === 'short';
+    const raw = s.getItem(short ? SHORT_SAVE_KEY : SAVE_KEY);
     if (!raw) return null;
     try {
-      return JSON.parse(raw);
+      const state = JSON.parse(raw);
+      if (!state.gameMode) state.gameMode = short ? 'short' : 'standard';
+      return state;
     } catch (e) {
       return null;
     }
   }
 
-  function clear(storage) {
-    (storage || global.localStorage).removeItem(SAVE_KEY);
+  function clear(storage, gameMode) {
+    (storage || global.localStorage).removeItem(gameMode === 'short' ? SHORT_SAVE_KEY : SAVE_KEY);
   }
 
   // --- 個人記録（ローカル）: クリアした周回の成績を localStorage に蓄積し、通算ポイント降順で保持 ---
   const RECORDS_KEY = 'diabolo-trainer-records-v1';
+  const SHORT_RECORDS_KEY = 'diabolo-trainer-short-records-v1';
   const RECORDS_MAX = 20;
 
-  function loadRecords(storage) {
+  function loadRecords(storage, gameMode) {
     const s = storage || global.localStorage;
     try {
-      const arr = JSON.parse(s.getItem(RECORDS_KEY));
+      const arr = JSON.parse(s.getItem(gameMode === 'short' ? SHORT_RECORDS_KEY : RECORDS_KEY));
       return Array.isArray(arr) ? arr : [];
     } catch (e) {
       return [];
@@ -94,24 +101,27 @@
   }
 
   // 記録を1件追加し、通算ポイント降順にソート＆上位RECORDS_MAX件だけ保持して保存。保存後の一覧を返す。
-  function addRecord(record, storage) {
+  function addRecord(record, storage, gameMode) {
     const s = storage || global.localStorage;
-    const list = loadRecords(s);
+    const short = gameMode === 'short';
+    const key = short ? SHORT_RECORDS_KEY : RECORDS_KEY;
+    const list = loadRecords(s, gameMode);
     list.push(record);
     list.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
     const trimmed = list.slice(0, RECORDS_MAX);
-    s.setItem(RECORDS_KEY, JSON.stringify(trimmed));
+    s.setItem(key, JSON.stringify(trimmed));
     return trimmed;
   }
 
   // --- カード図鑑（コレクション）: 解禁したカードを永続保存。値は初解禁日＋初解禁時のカードスナップショット ---
   // 軽量(1件あたり数百バイト・最大50件)なので上限なし。画像は保存しない(表示時に都度描画)。
   const COLLECTION_KEY = 'diabolo-trainer-collection-v1';
+  const SHORT_COLLECTION_KEY = 'diabolo-trainer-short-collection-v1';
 
-  function loadCollection(storage) {
+  function loadCollection(storage, gameMode) {
     const s = storage || global.localStorage;
     try {
-      const obj = JSON.parse(s.getItem(COLLECTION_KEY));
+      const obj = JSON.parse(s.getItem(gameMode === 'short' ? SHORT_COLLECTION_KEY : COLLECTION_KEY));
       return (obj && typeof obj === 'object') ? obj : {};
     } catch (e) {
       return {};
@@ -121,13 +131,14 @@
   // 取得を記録し、演出用の結果 {isNew, count, cpImproved, ptImproved} を返す。
   // 初解禁: スナップショット付きで新規登録。重複: 初回スナップショットは保持したまま、
   // 取得枚数(count)と自己ベスト(bestCp/bestPt)だけを更新する（改善プラン#5・2026-07-16）。
-  function addToCollection(card, cardNo, storage) {
+  function addToCollection(card, cardNo, storage, gameMode) {
     const s = storage || global.localStorage;
-    const col = loadCollection(s);
+    const key = gameMode === 'short' ? SHORT_COLLECTION_KEY : COLLECTION_KEY;
+    const col = loadCollection(s, gameMode);
     const prev = col[card.id];
     if (!prev) {
       col[card.id] = { date: Date.now(), cardNo: cardNo, snap: card, count: 1, bestCp: card.cp || 0, bestPt: card.totalPoints || 0 };
-      s.setItem(COLLECTION_KEY, JSON.stringify(col));
+      s.setItem(key, JSON.stringify(col));
       return { isNew: true, count: 1, cpImproved: false, ptImproved: false };
     }
     // 旧形式(count/best無しで保存済み)は初回分を1枚・初回スナップを自己ベストとして移行
@@ -138,9 +149,13 @@
     const ptImproved = (card.totalPoints || 0) > oldPt;
     prev.bestCp = Math.max(oldCp, card.cp || 0);
     prev.bestPt = Math.max(oldPt, card.totalPoints || 0);
-    s.setItem(COLLECTION_KEY, JSON.stringify(col));
+    s.setItem(key, JSON.stringify(col));
     return { isNew: false, count: prev.count, cpImproved: cpImproved, ptImproved: ptImproved, bestCp: prev.bestCp, bestPt: prev.bestPt };
   }
 
-  DT.state = { newCharacter, save, load, clear, SAVE_KEY, loadRecords, addRecord, RECORDS_KEY, loadCollection, addToCollection, COLLECTION_KEY };
+  DT.state = {
+    newCharacter, save, load, clear, SAVE_KEY, SHORT_SAVE_KEY,
+    loadRecords, addRecord, RECORDS_KEY, SHORT_RECORDS_KEY,
+    loadCollection, addToCollection, COLLECTION_KEY, SHORT_COLLECTION_KEY
+  };
 })(typeof window !== 'undefined' ? window : globalThis);

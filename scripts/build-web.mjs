@@ -6,7 +6,7 @@ const root = new URL('../', import.meta.url);
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 
-for (const file of ['index.html']) {
+for (const file of ['index.html', 'short.html']) {
   cpSync(new URL(file, root), new URL(file, output));
 }
 
