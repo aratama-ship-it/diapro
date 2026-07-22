@@ -94,7 +94,8 @@
     }
     // actionId === 'study'
     const tier = rollTier(state, rng);
-    const gain = Math.round(DT.DATA.STUDY.gain * TIER_MULT[tier]);
+    const studyMult = state.gameMode === 'short' ? 2 : 1;
+    const gain = Math.round(DT.DATA.STUDY.gain * TIER_MULT[tier]) * studyMult;
     state.study = clamp(state.study + gain, 0, 100);
     state.fatigue = clamp(state.fatigue + DT.DATA.STUDY.fatigue, 0, 100);
     state.didStudy = true;

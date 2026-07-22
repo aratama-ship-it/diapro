@@ -132,6 +132,7 @@ function play(seed, mode) {
     training: metrics.training,
     study: metrics.study,
     rest: metrics.rest,
+    treatment: metrics.injured,
     injuries: metrics.injuries,
     ability: abilityAvg(state),
     points: evaluation.totalPoints,
@@ -147,7 +148,7 @@ function summarize(rows) {
   const ranks = rows.reduce((out, row) => { out[row.rank] = (out[row.rank] || 0) + 1; return out; }, {});
   return {
     graduationRate: rows.filter(r => r.status === 'graduated').length / rows.length,
-    actions: avg('actions'), training: avg('training'), study: avg('study'), rest: avg('rest'),
+    actions: avg('actions'), training: avg('training'), study: avg('study'), rest: avg('rest'), treatment: avg('treatment'),
     ability: avg('ability'), points: avg('points'), wins: avg('wins'), injuries: avg('injuries'),
     seenEvents: avg('seenEvents'), worlds: avg('worlds'), ranks
   };
@@ -162,11 +163,11 @@ modes.forEach(mode => {
   report[mode] = summarize(rows);
 });
 
-console.log('=== 通常版 vs ショート版（高校経験者・各' + N + 'シード） ===');
+console.log('=== 通常版 vs ショート版（練習・勉強2倍、高校経験者・各' + N + 'シード） ===');
 modes.forEach(mode => {
   const r = report[mode];
-  console.log('\n' + (mode === 'standard' ? '通常版' : 'ショート版'));
-  console.log('  卒業率 ' + (r.graduationRate * 100).toFixed(1) + '% / 行動 ' + r.actions.toFixed(1) + '回（練習' + r.training.toFixed(1) + '・勉強' + r.study.toFixed(1) + '・休養' + r.rest.toFixed(1) + '）');
+  console.log('\n' + (mode === 'standard' ? '通常版' : 'ショート版（練習・勉強2倍）'));
+  console.log('  卒業率 ' + (r.graduationRate * 100).toFixed(1) + '% / 行動 ' + r.actions.toFixed(1) + '回（練習' + r.training.toFixed(1) + '・勉強' + r.study.toFixed(1) + '・休養' + r.rest.toFixed(1) + '・療養' + r.treatment.toFixed(1) + '）');
   console.log('  能力平均 ' + r.ability.toFixed(1) + ' / pt ' + r.points.toFixed(1) + ' / 優勝 ' + r.wins.toFixed(2) + ' / 世界大会 ' + r.worlds.toFixed(2));
   console.log('  怪我 ' + r.injuries.toFixed(2) + ' / 既読イベント ' + r.seenEvents.toFixed(2) + ' / ランク ' + JSON.stringify(r.ranks));
 });

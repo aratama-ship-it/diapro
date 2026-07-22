@@ -8,7 +8,7 @@
 
   // 開発用表示（DEV PARAMSパネル・大会の不振理由）は URLに ?dev を付けたときだけ表示。
   // テスターには見えないようにするための切り替え。バージョンはタイトル画面に表示。
-  const APP_VERSION = 'v0.9 short-test1';
+  const APP_VERSION = 'v0.9 short-test2';
   const DEV = QUERY_PARAMS.has('dev');
   if (DEV) document.documentElement.classList.add('dev');
   if (SHORT) document.documentElement.classList.add('short-mode');
@@ -275,7 +275,7 @@
     $('#title-main').textContent = SHORT ? 'ディアボロ選手育成 SHORT' : 'ディアボロ選手育成';
     $('#title-subtitle').textContent = SHORT ? '〜2ヶ月ずつ、大学4年間を駆け抜けろ〜' : '〜大学4年間、ディアボロに懸けろ〜';
     $('#title-manual').textContent = SHORT
-      ? 'ショート版は1ターンで2ヶ月進み、全24ターン。偶数月に練習・勉強・休養を選び、奇数月はイベントが進みます。練習による能力の伸びは通常版の2倍。大会・試験は本来の月に行われます。通常版とはセーブも別です。'
+      ? 'ショート版は1ターンで2ヶ月進み、全24ターン。偶数月に練習・勉強・休養を選び、奇数月はイベントが進みます。練習の能力上昇と勉強の学力上昇は通常版の2倍。大会・試験は本来の月に行われます。通常版とはセーブも別です。'
       : '大学4年間でディアボロ選手を育てるゲームです。毎月、練習・勉強・休養を選びます。練習はジャンルと内容を組み合わせて3枠決めます。疲労がたまると失敗や怪我のリスクが上がるので注意。大会の成績と通算ポイントで、卒業時の評価が決まります。';
     $('#btn-mode-switch').textContent = SHORT ? '通常版（48ターン）へ戻る' : '⚡ ショート版（24ターン）';
     $('#app-version').textContent = APP_VERSION + (SHORT ? '（ショート版）' : '') + (DEV ? '（DEV表示ON）' : '');
@@ -628,7 +628,7 @@
 
   function renderHomeActions() {
     const box = $('#home-actions');
-    const study = bigAction('study', '📖', '勉 強', '学力アップ', () => onAction('study'), true);
+    const study = bigAction('study', '📖', '勉 強', SHORT ? '学力アップ・伸び2倍' : '学力アップ', () => onAction('study'), true);
     if (state.injuredTurns > 0) {
       // 怪我中: 療養のほか、勉強と「ルーチン構成のみ1枠」の練習が可能
       box.replaceChildren(
