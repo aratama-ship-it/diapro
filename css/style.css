@@ -24,12 +24,14 @@
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 button { font-family: inherit; cursor: pointer; }
+html { height: -webkit-fill-available; }
 
 body {
   font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Noto Sans JP", sans-serif;
   font-weight: 700;
   color: var(--ink);
   min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at 15% 20%, rgba(255,255,255,.55) 0 40px, transparent 41px),
     radial-gradient(circle at 82% 12%, rgba(255,255,255,.45) 0 56px, transparent 57px),
@@ -48,6 +50,7 @@ body {
   position: relative;
   width: 400px; max-width: 100%;
   height: min(844px, calc(100vh - 48px));
+  height: min(844px, calc(100dvh - 48px));
   background:
     repeating-linear-gradient(45deg, rgba(255,209,102,.06) 0 14px, transparent 14px 28px),
     var(--cream);
@@ -69,8 +72,23 @@ body {
 
 /* 実機幅ではフルブリード（端末枠を消す） */
 @media (max-width: 480px) {
-  body { padding: 0; gap: 0; }
-  #app { width: 100%; height: 100vh; border: none; border-radius: 0; box-shadow: none; }
+  body {
+    padding: 0; gap: 0;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    min-height: 100dvh;
+  }
+  #app {
+    width: 100%;
+    height: 100vh;
+    height: -webkit-fill-available;
+    height: 100dvh;
+    max-height: 100dvh;
+    border: none; border-radius: 0; box-shadow: none;
+  }
+  .bottom-nav {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
 }
 
 /* ---------- 見出し・共通テキスト ---------- */
