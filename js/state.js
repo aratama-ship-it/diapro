@@ -4,6 +4,174 @@
   const SAVE_KEY = 'diabolo-trainer-save-v9';
   const SHORT_SAVE_KEY = 'diabolo-trainer-short-save-v1';
   const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3', 'diabolo-trainer-save-v4', 'diabolo-trainer-save-v5', 'diabolo-trainer-save-v6', 'diabolo-trainer-save-v7', 'diabolo-trainer-save-v8'];
+  const ALUMNI_KEY = 'diabolo-trainer-alumni-v1';
+  const SHORT_ALUMNI_KEY = 'diabolo-trainer-short-alumni-v1';
+  const ALUMNI_ACTIVE_MIN = 2;
+  const ALUMNI_ACTIVE_MAX = 5;
+  const ALUMNI_POOL_MAX = 50;
+  const TECHNIQUE_BY_TYPE = {
+    power: 'integral',
+    innovator: 'fts',
+    technician: 'high_toss',
+    showman: 'on_beat',
+    allround: 'pirouette'
+  };
+  const TYPE_LABEL = {
+    power: 'パワー型',
+    innovator: 'イノベーター型',
+    technician: 'テクニシャン型',
+    showman: 'ショーマン型',
+    allround: '万能型'
+  };
+
+  function defaultAlumni() {
+    return (DT.DATA.DEFAULT_ALUMNI || []).slice(0, ALUMNI_ACTIVE_MAX).map(a =>
+      Object.assign({ source: 'default' }, a));
+  }
+
+  function alumniKey(gameMode) {
+    return gameMode === 'short' ? SHORT_ALUMNI_KEY : ALUMNI_KEY;
+  }
+
+  function validTechniqueId(id) {
+    return (DT.DATA.TECHNIQUE_CARDS || []).some(card => card.id === id);
+  }
+
+  function normalizeAlumniEntry(entry) {
+    if (!entry || typeof entry !== 'object' || !entry.id || !entry.name || !validTechniqueId(entry.techniqueId)) return null;
+    return {
+      id: String(entry.id),
+      name: String(entry.name).slice(0, 20),
+      type: entry.type ? String(entry.type) : '万能型',
+      techniqueId: entry.techniqueId,
+      source: entry.source === 'graduate' ? 'graduate' : 'default',
+      rank: entry.rank || '',
+      totalPoints: Math.max(0, Number(entry.totalPoints) || 0),
+      abilityAvg: Math.max(0, Number(entry.abilityAvg) || 0),
+      cardTitle: entry.cardTitle || '',
+      graduatedAt: Number(entry.graduatedAt) || 0
+    };
+  }
+
+  function normalizeAlumniProfile(raw) {
+    const defaults = defaultAlumni().map(normalizeAlumniEntry).filter(Boolean);
+    const requested = raw && Array.isArray(raw.selectedIds) ? raw.selectedIds : defaults.map(entry => entry.id);
+    const seen = {};
+    const pool = [];
+    defaults.forEach(entry => {
+      seen[entry.id] = true;
+      pool.push(entry);
+    });
+    const storedPool = raw && Array.isArray(raw.pool) ? raw.pool : [];
+    storedPool.forEach(item => {
+      const entry = normalizeAlumniEntry(item);
+      if (!entry || seen[entry.id]) return;
+      seen[entry.id] = true;
+      pool.push(entry);
+    });
+    if (pool.length > ALUMNI_POOL_MAX) {
+      const keepDefaults = pool.filter(entry => entry.source === 'default');
+      const selectedLookup = {};
+      requested.forEach(id => { selectedLookup[id] = true; });
+      // 50人到達後も、ユーザーが登場メンバーに選んだ卒業生は自動整理の対象にしない。
+      const keepSelected = pool.filter(entry => entry.source === 'graduate' && selectedLookup[entry.id]);
+      const keepRecent = pool.filter(entry => entry.source === 'graduate' && !selectedLookup[entry.id])
+        .sort((a, b) => b.graduatedAt - a.graduatedAt)
+        .slice(0, Math.max(0, ALUMNI_POOL_MAX - keepDefaults.length - keepSelected.length));
+      pool.length = 0;
+      pool.push(...keepDefaults, ...keepSelected, ...keepRecent);
+    }
+    const known = {};
+    pool.forEach(entry => { known[entry.id] = true; });
+    const selectedIds = [];
+    requested.forEach(id => {
+      if (known[id] && selectedIds.indexOf(id) < 0 && selectedIds.length < ALUMNI_ACTIVE_MAX) selectedIds.push(id);
+    });
+    pool.forEach(entry => {
+      if (selectedIds.length < ALUMNI_ACTIVE_MIN && selectedIds.indexOf(entry.id) < 0) selectedIds.push(entry.id);
+    });
+    return { version: 1, pool: pool, selectedIds: selectedIds };
+  }
+
+  function loadAlumniProfile(storage, gameMode) {
+    const s = storage || global.localStorage;
+    try {
+      const raw = JSON.parse(s.getItem(alumniKey(gameMode)));
+      return normalizeAlumniProfile(raw);
+    } catch (e) {
+      return normalizeAlumniProfile(null);
+    }
+  }
+
+  function writeAlumniProfile(profile, storage, gameMode) {
+    const normalized = normalizeAlumniProfile(profile);
+    (storage || global.localStorage).setItem(alumniKey(gameMode), JSON.stringify(normalized));
+    return normalized;
+  }
+
+  function loadActiveAlumni(storage, gameMode) {
+    const profile = loadAlumniProfile(storage, gameMode);
+    return profile.selectedIds.map(id => profile.pool.find(entry => entry.id === id))
+      .filter(Boolean).map(entry => Object.assign({}, entry));
+  }
+
+  function saveAlumniSelection(ids, storage, gameMode) {
+    const profile = loadAlumniProfile(storage, gameMode);
+    const known = {};
+    profile.pool.forEach(entry => { known[entry.id] = true; });
+    const selectedIds = [];
+    (Array.isArray(ids) ? ids : []).forEach(id => {
+      if (known[id] && selectedIds.indexOf(id) < 0) selectedIds.push(id);
+    });
+    if (selectedIds.length < ALUMNI_ACTIVE_MIN || selectedIds.length > ALUMNI_ACTIVE_MAX) {
+      return {
+        ok: false,
+        reason: '卒業生は' + ALUMNI_ACTIVE_MIN + '〜' + ALUMNI_ACTIVE_MAX + '人選んでください。',
+        profile: profile
+      };
+    }
+    profile.selectedIds = selectedIds;
+    return { ok: true, profile: writeAlumniProfile(profile, storage, gameMode) };
+  }
+
+  function addGraduateAlumni(state, card, storage, gameMode, now) {
+    if (!state || state.status !== 'graduated' || gameMode !== 'short') return null;
+    const profile = loadAlumniProfile(storage, gameMode);
+    const graduatedAt = now === undefined ? Date.now() : Number(now);
+    let id = 'graduate_' + graduatedAt;
+    let suffix = 2;
+    while (profile.pool.some(entry => entry.id === id)) id = 'graduate_' + graduatedAt + '_' + suffix++;
+    const typeId = card && card.type ? card.type : 'allround';
+    const alumni = normalizeAlumniEntry({
+      id: id,
+      name: state.name || '主人公',
+      type: TYPE_LABEL[typeId] || '万能型',
+      techniqueId: validTechniqueId(state.techniqueCard) ? state.techniqueCard : (TECHNIQUE_BY_TYPE[typeId] || 'pirouette'),
+      source: 'graduate',
+      rank: card && card.rank ? card.rank : '',
+      totalPoints: card && card.totalPoints !== undefined ? card.totalPoints : 0,
+      abilityAvg: card && card.cp !== undefined ? Math.round(card.cp / 10) : 0,
+      cardTitle: card && card.title ? card.title : '',
+      graduatedAt: graduatedAt
+    });
+    profile.pool.push(alumni);
+    const activated = profile.selectedIds.length < ALUMNI_ACTIVE_MAX;
+    if (activated) profile.selectedIds.push(alumni.id);
+    const saved = writeAlumniProfile(profile, storage, gameMode);
+    return { alumni: alumni, activated: activated, profile: saved };
+  }
+
+  // 得意技・卒業生機能の追加前に作られたセーブも、そのまま続行できるよう不足フィールドだけを補う。
+  function normalizeProgression(state) {
+    if (state.techniqueCard === undefined) state.techniqueCard = null;
+    if (state.techniqueCardSelectedAt === undefined) state.techniqueCardSelectedAt = null;
+    if (!Array.isArray(state.activeAlumni) || state.activeAlumni.length === 0) state.activeAlumni = defaultAlumni();
+    state.activeAlumni = state.activeAlumni.slice(0, 5);
+    if (!Array.isArray(state.alumniSchedule)) state.alumniSchedule = [];
+    if (state.alumniScheduleReady === undefined) state.alumniScheduleReady = state.alumniSchedule.length > 0;
+    if (!Array.isArray(state.alumniEventsSeen)) state.alumniEventsSeen = [];
+    return state;
+  }
 
   function newCharacter(rng, backgroundId, gameMode) {
     rng = rng || Math.random;
@@ -27,7 +195,7 @@
       ? bg.shortCompSpread
       : ((bg.compSpread !== undefined) ? bg.compSpread : statSpread);
     const composition = compMin + Math.floor(rng() * compSpread);
-    return {
+    return normalizeProgression({
       turn: 1,
       gameMode: shortMode ? 'short' : 'standard',
       skills: skills,
@@ -65,7 +233,7 @@
       lastSlots: [],
       // 開始時に既に解禁済みのジャンルは告知しない（h1d常時＋経歴により解禁されるもの）
       announcedUnlocks: DT.DATA.GENRES.filter(g => DT.contest.isGenreUnlocked({ skills: skills }, g.id)).map(g => g.id)
-    };
+    });
   }
 
   function save(state, storage) {
@@ -82,7 +250,7 @@
     try {
       const state = JSON.parse(raw);
       if (!state.gameMode) state.gameMode = short ? 'short' : 'standard';
-      return state;
+      return normalizeProgression(state);
     } catch (e) {
       return null;
     }
@@ -162,7 +330,10 @@
 
   DT.state = {
     newCharacter, save, load, clear, SAVE_KEY, SHORT_SAVE_KEY,
+    normalizeProgression,
     loadRecords, addRecord, RECORDS_KEY, SHORT_RECORDS_KEY,
-    loadCollection, addToCollection, COLLECTION_KEY, SHORT_COLLECTION_KEY
+    loadCollection, addToCollection, COLLECTION_KEY, SHORT_COLLECTION_KEY,
+    loadAlumniProfile, loadActiveAlumni, saveAlumniSelection, addGraduateAlumni,
+    ALUMNI_KEY, SHORT_ALUMNI_KEY, ALUMNI_ACTIVE_MIN, ALUMNI_ACTIVE_MAX, ALUMNI_POOL_MAX
   };
 })(typeof window !== 'undefined' ? window : globalThis);

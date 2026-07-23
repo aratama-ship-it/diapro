@@ -17,6 +17,44 @@
       { id: 'd2',  label: '2D' },
       { id: 'd3',  label: '3D+' }
     ],
+    // 得意技カード。trainingRulesのamountはショート版の2倍処理後に加算する最終値。
+    // 1回の練習につきプラス効果・マイナス効果はそれぞれ最大1枠にだけ適用する。
+    TECHNIQUE_CARDS: [
+      { id: 'integral', label: 'インテグラル',
+        trainingRules: [{ genres: ['h1d'], method: 'difficulty', amount: 8 }] },
+      { id: 'high_toss', label: 'ハイトス',
+        trainingRules: [
+          { genres: ['d2', 'd3'], method: 'control', amount: 6 },
+          { genres: ['d2', 'd3'], method: 'novelty', amount: -1 }
+        ] },
+      { id: 'fts', label: 'FTS',
+        trainingRules: [{ genres: ['d3'], method: 'difficulty', amount: 10 }] },
+      { id: 'picture', label: 'ピクチャー',
+        trainingRules: [{ genres: ['h1d', 'v1d'], method: 'novelty', amount: 3 }] },
+      { id: 'pirouette', label: 'ピルエット',
+        activationRules: [{ genres: ['h1d', 'v1d', 'd2', 'd3'], method: 'difficulty', amount: 1 }] },
+      { id: 'sadistic', label: 'サディスティック',
+        trainingRules: [{ genres: ['h1d'], method: 'novelty', amount: 5 }] },
+      { id: 'on_beat', label: '音はめ',
+        activationRules: [{ composition: true, amount: 2 }] },
+      { id: 'body', label: 'ボディ系',
+        activationRules: [{ genres: ['h1d', 'v1d', 'd2', 'd3'], method: 'novelty', amount: 2 }] },
+      { id: 'happening', label: 'ハプニング', judgeRange: 8 }
+    ],
+    // 初期卒業生。将来は1周を終えた主人公を同じ形で追加し、activeAlumniを最大5名まで選べる。
+    DEFAULT_ALUMNI: [
+      { id: 'kudo_masashi', name: '工藤まさし', type: 'テクニシャン型', techniqueId: 'high_toss' },
+      { id: 'watanuki_shusuke', name: '綿貫しゅうすけ', type: 'イノベーター型', techniqueId: 'fts' },
+      { id: 'fukada_akira', name: '深田あきら', type: 'ショーマン型', techniqueId: 'on_beat' }
+    ],
+    ALUMNI_EVENT: {
+      thirdYearTurns: [28, 30, 32, 34, 36],
+      fourthYearTurns: [38, 40, 42, 44, 46, 48],
+      teachChance: 0.8,
+      methodChance: 0.9,
+      teachFailMotivation: -8,
+      methodFailMotivation: -5
+    },
     // 毎月のスロット制練習定義。枠= {genre, method}(method∈difficulty/novelty/control) または 'routine'
     // v4: スキルグリッド化でmethodGain/genreGainを統合しgridGain（マス1つへの単一ゲイン）に一本化
     // 2026-07-07(実プレイ反映): 毎月の枠数を4→3に削減（1ヶ月の判断の重みを増やす）。
@@ -439,6 +477,20 @@
         { id: 'hap_gainen', text: 'コースケの概念モノマネを見ていたら、ふと新しい技を思いついた！', effects: { genreStat: { genre: 'v1d', id: 'novelty', amount: 3 } } },
         // 大谷はちみつ園（地元スポンサー）: 差し入れで体力回復＋やる気アップ
         { id: 'hap_honey', text: '地元の大谷はちみつ園がスポンサーについてくれた！ 差し入れのはちみつで、疲れが吹き飛んだ。', effects: { motivation: 10, fatigue: -8 } }
+      ],
+      // ショート版の奇数月を必ず1イベントにするための日常枠。数値効果は持たず、
+      // 強イベントの従来確率（キャラ12.5%・ハプニング5%）を維持して難易度の膨張を防ぐ。
+      quietEvents: [
+        { id: 'quiet_string', text: 'ストリングを張り替えながら、今月の練習を静かに振り返った。', effects: {} },
+        { id: 'quiet_clean', text: '部室の大掃除。棚の奥から、先輩たちの古い大会パンフレットが出てきた。', effects: {} },
+        { id: 'quiet_video', text: '練習動画を見返した。大きな発見はなかったが、今の自分の形が少し見えた。', effects: {} },
+        { id: 'quiet_music', text: '部員同士で演技に使いたい曲を聴かせ合った。好みの違いで少し盛り上がった。', effects: {} },
+        { id: 'quiet_floor', text: '体育館の床に落下位置の跡が残っていた。今日もいつもの場所で回し続けた。', effects: {} },
+        { id: 'quiet_rain', text: '窓の外は雨。ディアボロの回転音だけが体育館に響いていた。', effects: {} },
+        { id: 'quiet_note', text: '練習ノートに、できたことと次に試したいことを一行ずつ書いた。', effects: {} },
+        { id: 'quiet_tools', text: 'ハンドスティックの傷を眺める。使い込んだ道具が、少しだけ誇らしかった。', effects: {} },
+        { id: 'quiet_watch', text: '隣の部員の練習をぼんやり眺めた。同じ技でも、癖は人それぞれだ。', effects: {} },
+        { id: 'quiet_pack', text: '練習後、ディアボロをケースへ戻した。今月も無事に終わった。', effects: {} }
       ]
     },
     // v2: ライバル（総合部門に実在する対戦相手）

@@ -134,7 +134,10 @@
     const scale = DT.DATA.SCORING.scale;
     let total = scale.base + rawTotal * scale.mult;
     // 調子＋審査員ぶれ（内訳表示できるよう0.1点精度で保持）
-    const judgeMod = Math.round(((state.motivation - 50) * DT.DATA.MOTIVATION.judgeCoef + (rng() * 6 - 3)) * 10) / 10;
+    const technique = (DT.DATA.TECHNIQUE_CARDS || []).find(card => card.id === state.techniqueCard);
+    const judgeHalfRange = technique && technique.judgeRange ? technique.judgeRange : 3;
+    const judgeMod = Math.round(((state.motivation - 50) * DT.DATA.MOTIVATION.judgeCoef
+      + (rng() * judgeHalfRange * 2 - judgeHalfRange)) * 10) / 10;
     total += judgeMod;
 
     const rolls = missRollCount(state, divisionId);

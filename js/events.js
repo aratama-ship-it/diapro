@@ -34,6 +34,26 @@
     return null;
   }
 
+  // ショート版の奇数月用。強イベントの従来確率は維持し、「何も起きない」帯を日常イベントへ置き換える。
+  function rollGuaranteed(state, rng) {
+    rng = rng || Math.random;
+    const seen = new Set(seenCharEvents(state));
+    const charEvents = DT.DATA.EVENTS.charEvents.filter(event =>
+      !seen.has(event.id) && (!event.requires || state[event.requires])
+    );
+    const happenings = DT.DATA.EVENTS.happenings;
+    const quietEvents = DT.DATA.EVENTS.quietEvents;
+    const probs = DT.DATA.EVENTS.probs;
+    const roll = rng();
+    if (charEvents.length && roll < probs.char) {
+      return { kind: 'char', event: charEvents[pickIndex(charEvents.length, rng)] };
+    }
+    if (roll >= probs.char && roll < probs.char + probs.happening) {
+      return { kind: 'happening', event: happenings[pickIndex(happenings.length, rng)] };
+    }
+    return { kind: 'quiet', event: quietEvents[pickIndex(quietEvents.length, rng)] };
+  }
+
   // 覚醒の調整値: ハード(経歴=大学から)は強化版（DATA.AWAKEN.hard）、それ以外は標準（DATA.AWAKEN）
   function awakenConf(state) {
     return state.background === 'college' ? DT.DATA.AWAKEN.hard : DT.DATA.AWAKEN;
@@ -60,6 +80,163 @@
   }
 
   const signed = n => (n >= 0 ? '+' : '') + n;
+
+  function techniqueCard(id) {
+    return (DT.DATA.TECHNIQUE_CARDS || []).find(card => card.id === id) || null;
+  }
+
+  function techniqueLabel(id) {
+    const card = techniqueCard(id);
+    return card ? card.label : 'なし';
+  }
+
+  // 得意技を書き換え、選択時に一度だけ発動する効果を適用する。同じ技を教わり直した場合は再発動しない。
+  function activateTechnique(state, techniqueId) {
+    const card = techniqueCard(techniqueId);
+    if (!card) return { changed: false, messages: [] };
+    const changed = state.techniqueCard !== techniqueId;
+    state.techniqueCard = techniqueId;
+    state.techniqueCardSelectedAt = state.turn;
+    const messages = ['得意技が「' + card.label + '」になった！'];
+    if (!changed) return { changed: false, messages: messages };
+    (card.activationRules || []).forEach(rule => {
+      if (rule.composition) {
+        const before = state.composition;
+        state.composition = clamp(state.composition + rule.amount, 0, 100);
+        const actual = state.composition - before;
+        if (actual) messages.push('演技構成 ' + signed(actual));
+        return;
+      }
+      (rule.genres || []).forEach(genre => {
+        const before = state.skills[genre][rule.method];
+        state.skills[genre][rule.method] = clamp(before + rule.amount, 0, 100);
+      });
+      messages.push('全ジャンル×' + DT.DATA.METHODS.find(m => m.id === rule.method).label + ' ' + signed(rule.amount));
+    });
+    return { changed: true, messages: messages };
+  }
+
+  function trainingRuleForSlot(card, slot) {
+    if (!card || slot === 'routine') return null;
+    return (card.trainingRules || []).find(rule =>
+      rule.method === slot.method && rule.genres.indexOf(slot.genre) >= 0
+    ) || null;
+  }
+
+  // 通常の練習計算後に得意技ボーナスを加える。成功して伸びた該当枠だけが対象。
+  function applyTechniqueTrainingBonus(state, trainingResult) {
+    const card = techniqueCard(state.techniqueCard);
+    if (!card || !trainingResult || !Array.isArray(trainingResult.results)) return [];
+    let positiveApplied = false;
+    let negativeApplied = false;
+    const messages = [];
+    trainingResult.results.forEach(entry => {
+      if (entry.gain <= 0) return;
+      const rule = trainingRuleForSlot(card, entry.slot);
+      if (!rule) return;
+      if (rule.amount > 0 && positiveApplied) return;
+      if (rule.amount < 0 && negativeApplied) return;
+      if (rule.amount > 0) positiveApplied = true;
+      if (rule.amount < 0) negativeApplied = true;
+      const cell = state.skills[entry.slot.genre];
+      const before = cell[entry.slot.method];
+      // マイナスは「伸びを抑える」効果。通常練習で得た量を超えて能力そのものは下げない。
+      const amount = rule.amount < 0 ? Math.max(-entry.gain, rule.amount) : rule.amount;
+      cell[entry.slot.method] = clamp(before + amount, 0, 100);
+      const actual = cell[entry.slot.method] - before;
+      if (actual) {
+        messages.push('得意技「' + card.label + '」: '
+          + (DT.DATA.GENRES.find(g => g.id === entry.slot.genre) || { label: entry.slot.genre }).label
+          + '×' + DT.DATA.METHODS.find(m => m.id === entry.slot.method).label + ' ' + signed(actual));
+      }
+    });
+    return messages;
+  }
+
+  function pickIndex(length, rng) {
+    return Math.min(length - 1, Math.floor((rng || Math.random)() * length));
+  }
+
+  // 3年次・4年次に各1回の発生月と、同一周回で重複しない先輩2名を最初の対象月に確定する。
+  function ensureAlumniState(state, rng) {
+    if (!Array.isArray(state.activeAlumni) || state.activeAlumni.length === 0) {
+      state.activeAlumni = (DT.DATA.DEFAULT_ALUMNI || []).map(a => Object.assign({}, a));
+    }
+    state.activeAlumni = state.activeAlumni.slice(0, 5);
+    if (!Array.isArray(state.alumniEventsSeen)) state.alumniEventsSeen = [];
+    if (state.alumniScheduleReady && Array.isArray(state.alumniSchedule)) return state.alumniSchedule;
+    rng = rng || Math.random;
+    const conf = DT.DATA.ALUMNI_EVENT;
+    const thirdTurns = conf.thirdYearTurns.filter(turn => turn >= state.turn);
+    const fourthTurns = conf.fourthYearTurns.filter(turn => turn >= state.turn);
+    const roster = state.activeAlumni;
+    const first = roster[pickIndex(roster.length, rng)];
+    const remaining = roster.filter(a => a.id !== first.id);
+    const second = remaining.length ? remaining[pickIndex(remaining.length, rng)] : first;
+    const schedule = [];
+    if (thirdTurns.length) schedule.push({ turn: thirdTurns[pickIndex(thirdTurns.length, rng)], alumniId: first.id });
+    if (fourthTurns.length) schedule.push({ turn: fourthTurns[pickIndex(fourthTurns.length, rng)], alumniId: second.id });
+    state.alumniSchedule = schedule;
+    state.alumniScheduleReady = true;
+    return schedule;
+  }
+
+  function alumniEventFor(state, rng) {
+    if (state.gameMode !== 'short' || state.turn < 28 || state.turn > 48) return null;
+    const schedule = ensureAlumniState(state, rng);
+    const item = schedule.find(row => row.turn === state.turn);
+    if (!item || state.alumniEventsSeen.indexOf(state.turn) >= 0) return null;
+    const alumni = state.activeAlumni.find(a => a.id === item.alumniId);
+    if (!alumni) return null;
+    return {
+      id: 'alumni_' + state.turn,
+      kind: 'alumni',
+      alumni: alumni,
+      speaker: alumni.name + '先輩',
+      text: '卒業した' + alumni.name + '先輩が、久しぶりに部の練習へ顔を出してくれた。何を教わろう？',
+      choices: [
+        { type: 'teach', label: '得意技「' + techniqueLabel(alumni.techniqueId) + '」を教わる（成功率80%）' },
+        { type: 'sayings', label: '大会語録を聞く（必ず成功）' },
+        { type: 'method', label: '練習の仕方を教わる（成功率90%）' }
+      ]
+    };
+  }
+
+  function markAlumniEventSeen(state) {
+    if (!Array.isArray(state.alumniEventsSeen)) state.alumniEventsSeen = [];
+    if (state.alumniEventsSeen.indexOf(state.turn) < 0) state.alumniEventsSeen.push(state.turn);
+  }
+
+  function applyAlumniChoice(state, event, choiceIndex, rng) {
+    rng = rng || Math.random;
+    const choice = event.choices[choiceIndex];
+    const alumni = event.alumni;
+    const messages = [];
+    if (choice.type === 'teach') {
+      if (rng() < DT.DATA.ALUMNI_EVENT.teachChance) {
+        messages.push(alumni.name + '先輩の手本をつかみ、得意技を受け継いだ！');
+        messages.push(...activateTechnique(state, alumni.techniqueId).messages);
+        messages.push(applyStatChange(state, 'difficulty', 1));
+      } else {
+        state.motivation = clamp(state.motivation + DT.DATA.ALUMNI_EVENT.teachFailMotivation, 0, 100);
+        messages.push('動きの核心をつかめなかった……。今回は身につかなかった。');
+        messages.push('やる気 ' + signed(DT.DATA.ALUMNI_EVENT.teachFailMotivation));
+      }
+    } else if (choice.type === 'sayings') {
+      messages.push('「大会では、成功させる技より崩れても戻れる技を持て」先輩の言葉が残った。');
+      messages.push(applyStatChange(state, 'control', 1));
+    } else if (rng() < DT.DATA.ALUMNI_EVENT.methodChance) {
+      messages.push('練習の組み立て方が腑に落ち、新しい発想を演技へつなげられた！');
+      messages.push(applyStatChange(state, 'novelty', 1));
+      messages.push(applyStatChange(state, 'composition', 1));
+    } else {
+      state.motivation = clamp(state.motivation + DT.DATA.ALUMNI_EVENT.methodFailMotivation, 0, 100);
+      messages.push('教わった通りに試したが、今の自分にはうまく噛み合わなかった。');
+      messages.push('やる気 ' + signed(DT.DATA.ALUMNI_EVENT.methodFailMotivation));
+    }
+    markAlumniEventSeen(state);
+    return { messages: messages };
+  }
 
   // 特定ジャンルの技術だけを変化させる（例: 1DVの新奇性+3）。表示は「1DV×新奇性 +3」形式。
   function applyGenreStat(state, genre, id, amount) {
@@ -226,5 +403,10 @@
     return { messages };
   }
 
-  DT.events = { roll, applyChoice, applyHappening, scheduledEventFor, applyScheduled, conditionalEventFor, applyConditional, startAwakening, awakenSlotUsed, awakenConf, isOmikujiTurn, drawOmikuji };
+  DT.events = {
+    roll, rollGuaranteed, applyChoice, applyHappening, scheduledEventFor, applyScheduled,
+    conditionalEventFor, applyConditional, startAwakening, awakenSlotUsed, awakenConf,
+    isOmikujiTurn, drawOmikuji, techniqueCard, techniqueLabel, activateTechnique,
+    applyTechniqueTrainingBonus, ensureAlumniState, alumniEventFor, applyAlumniChoice
+  };
 })(typeof window !== 'undefined' ? window : globalThis);

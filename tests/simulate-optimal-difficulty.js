@@ -195,7 +195,23 @@ function processChoiceEvent(state, event, rng) {
   }
 }
 
-function processPreEvent(state, rng) {
+function alumniChoiceIndex(state, candidate) {
+  if (candidate.alumniChoice === 'teachAlways') return 0;
+  if (candidate.alumniChoice === 'sayingsAlways') return 1;
+  if (candidate.alumniChoice === 'methodAlways') return 2;
+  // 最初の先輩からは得意技を受け継ぎ、2回目は既存の得意技を保持して練習法を選ぶ。
+  return state.techniqueCard ? 2 : 0;
+}
+
+function processPreEvent(state, rng, candidate) {
+  // 卒業生イベントは奇数月の通常イベント1件を置き換える。大会はこの後のpost枠で別に処理する。
+  if (state.gameMode === 'short' && DT.shortMode.isEventMonth(state.turn)) {
+    const alumni = DT.events.alumniEventFor(state, rng);
+    if (alumni) {
+      DT.events.applyAlumniChoice(state, alumni, alumniChoiceIndex(state, candidate), rng);
+      return false;
+    }
+  }
   if (DT.events.isOmikujiTurn(state.turn)) {
     DT.events.drawOmikuji(state, rng);
     return false;
@@ -214,7 +230,9 @@ function processPreEvent(state, rng) {
     }
     return false;
   }
-  const event = DT.events.roll(state, rng);
+  const event = state.gameMode === 'short'
+    ? DT.events.rollGuaranteed(state, rng)
+    : DT.events.roll(state, rng);
   if (event && event.kind === 'char') processChoiceEvent(state, event.event, rng);
   else if (event) DT.events.applyHappening(state, event.event);
   return false;
@@ -355,7 +373,7 @@ function play(seed, mode, background, candidate) {
     // 通常版の療養はUI上、練習前イベントを通らない。ショート版の練習月にも前イベントはない。
     let skipAction = false;
     const shouldRunPreEvent = short ? !practiceMonth : action !== 'injured';
-    if (shouldRunPreEvent) skipAction = processPreEvent(state, rng);
+    if (shouldRunPreEvent) skipAction = processPreEvent(state, rng, candidate);
 
     if (practiceMonth && !skipAction) {
       metrics.actions += 1;
@@ -398,7 +416,9 @@ function play(seed, mode, background, candidate) {
     study: metrics.study,
     rest: metrics.rest,
     treatment: metrics.treatment,
-    injuries: metrics.injuries
+    injuries: metrics.injuries,
+    alumniEvents: (state.alumniEventsSeen || []).length,
+    techniqueCard: state.techniqueCard || 'none'
   };
 }
 
@@ -408,10 +428,12 @@ function candidates() {
     for (const restLine of [55, 70]) {
       for (const academic of Object.keys(ACADEMICS)) {
         for (const contestPolicy of ['safe', 'normal', 'attack', 'adaptive']) {
-          out.push({
-            id: [trainPlan, 'rest' + restLine, academic, contestPolicy].join('__'),
-            trainPlan, restLine, academic, contestPolicy
-          });
+          for (const alumniChoice of ['teachAlways', 'firstTeachThenMethod', 'sayingsAlways', 'methodAlways']) {
+            out.push({
+              id: [trainPlan, 'rest' + restLine, academic, contestPolicy, alumniChoice].join('__'),
+              trainPlan, restLine, academic, contestPolicy, alumniChoice
+            });
+          }
         }
       }
     }
@@ -464,7 +486,8 @@ function finalSummary(rows, cohort, candidate, selectionTop) {
       training: TRAIN_PLANS[candidate.trainPlan].label,
       restLine: candidate.restLine,
       academics: ACADEMICS[candidate.academic].label,
-      contestPolicy: candidate.contestPolicy
+      contestPolicy: candidate.contestPolicy,
+      alumniChoice: candidate.alumniChoice
     },
     rankCounts,
     rankRates: Object.fromEntries(RANKS.map(rank => [rank, rankCounts[rank] / rows.length])),
@@ -482,6 +505,11 @@ function finalSummary(rows, cohort, candidate, selectionTop) {
     meanRest: mean(rows, row => row.rest),
     meanTreatment: mean(rows, row => row.treatment),
     meanInjuries: mean(rows, row => row.injuries),
+    meanAlumniEvents: mean(rows, row => row.alumniEvents),
+    techniqueRates: Object.fromEntries(
+      ['none'].concat(DT.DATA.TECHNIQUE_CARDS.map(card => card.id))
+        .map(id => [id, mean(rows, row => row.techniqueCard === id ? 1 : 0)])
+    ),
     validationTop5: selectionTop
   };
 }

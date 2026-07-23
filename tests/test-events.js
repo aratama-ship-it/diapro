@@ -39,6 +39,18 @@ test('roll: キャライベントを全て見た後はキャラ帯でもnull', (
   assert.strictEqual(DT.events.roll(s, () => 0.10), null);
 });
 
+test('rollGuaranteed: ショート版の通常イベント枠は必ず1件返す', () => {
+  const s = base();
+  const char = DT.events.rollGuaranteed(s, (() => { const seq = [0, 0]; let i = 0; return () => seq[i++]; })());
+  assert.strictEqual(char.kind, 'char');
+  const happening = DT.events.rollGuaranteed(s, (() => { const seq = [0.15, 0]; let i = 0; return () => seq[i++]; })());
+  assert.strictEqual(happening.kind, 'happening');
+  s.seenCharEvents = DT.DATA.EVENTS.charEvents.map(e => e.id);
+  const quiet = DT.events.rollGuaranteed(s, () => 0);
+  assert.strictEqual(quiet.kind, 'quiet');
+  assert.ok(quiet.event);
+});
+
 test('applyChoice: 効果が適用されメッセージが返る', () => {
   const s = base();
   const ev = DT.DATA.EVENTS.charEvents.find(e => e.id === 'yota1');

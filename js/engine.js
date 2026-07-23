@@ -242,6 +242,9 @@
 
     state.didTrain = true;
     state.lastSlots = slots.map(slot => (slot === 'routine' ? 'routine' : { genre: slot.genre, method: slot.method }));
+    if (DT.events && DT.events.applyTechniqueTrainingBonus) {
+      messages.push(...DT.events.applyTechniqueTrainingBonus(state, { results: results }));
+    }
     return { results, messages, outdoor: outdoor, noveltyGreat: noveltyGreat };
   }
 

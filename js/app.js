@@ -8,7 +8,7 @@
 
   // 開発用表示（DEV PARAMSパネル・大会の不振理由）は URLに ?dev を付けたときだけ表示。
   // テスターには見えないようにするための切り替え。バージョンはタイトル画面に表示。
-  const APP_VERSION = 'v0.9 short-test2';
+  const APP_VERSION = 'v0.9 short-test5';
   const DEV = QUERY_PARAMS.has('dev');
   if (DEV) document.documentElement.classList.add('dev');
   if (SHORT) document.documentElement.classList.add('short-mode');
@@ -25,6 +25,9 @@
   let pendingSkipAction = false;    // 過労で倒れる等で当ターンの行動をキャンセルするか
   let pendingScheduledPopup = null;
   let pendingPopularity = null;
+  let alumniDraftProfile = null;
+  let alumniDraftIds = [];
+  let alumniSearchQuery = '';
 
   // --- 練習スロット選択（UI状態。null=空き、'routine'、または{genre,method}） ---
   let slotsUI = new Array(DT.DATA.SLOTS.perMonth).fill(null);
@@ -278,12 +281,15 @@
       ? 'ショート版は1ターンで2ヶ月進み、全24ターン。偶数月に練習・勉強・休養を選び、奇数月はイベントが進みます。練習の能力上昇と勉強の学力上昇は通常版の2倍。大会・試験は本来の月に行われます。通常版とはセーブも別です。'
       : '大学4年間でディアボロ選手を育てるゲームです。毎月、練習・勉強・休養を選びます。練習はジャンルと内容を組み合わせて3枠決めます。疲労がたまると失敗や怪我のリスクが上がるので注意。大会の成績と通算ポイントで、卒業時の評価が決まります。';
     $('#btn-mode-switch').textContent = SHORT ? '通常版（48ターン）へ戻る' : '⚡ ショート版（24ターン）';
+    $('#btn-alumni').classList.toggle('hidden', !SHORT);
     $('#app-version').textContent = APP_VERSION + (SHORT ? '（ショート版）' : '') + (DEV ? '（DEV表示ON）' : '');
     show('#screen-title');
   }
 
   function newCandidate() {
-    return DT.state.newCharacter(undefined, selectedBackground, GAME_MODE);
+    const next = DT.state.newCharacter(undefined, selectedBackground, GAME_MODE);
+    if (SHORT) next.activeAlumni = DT.state.loadActiveAlumni(undefined, GAME_MODE);
+    return next;
   }
 
   $('#btn-new').onclick = () => renderCreate(newCandidate());
@@ -506,6 +512,107 @@
   }
   function closeRecords() { $('#records-modal').classList.add('hidden'); }
 
+  // 卒業生名簿（ショート版）: 保存済みの卒業生から、次周回に登場する2〜5人を選ぶ。
+  function openAlumniRoster() {
+    if (!SHORT) return;
+    alumniDraftProfile = DT.state.loadAlumniProfile(undefined, GAME_MODE);
+    alumniDraftIds = alumniDraftProfile.selectedIds.slice();
+    alumniSearchQuery = '';
+    $('#alumni-search').value = '';
+    renderAlumniRoster();
+    $('#alumni-modal').classList.remove('hidden');
+  }
+  function closeAlumniRoster() {
+    $('#alumni-modal').classList.add('hidden');
+    alumniDraftProfile = null;
+    alumniDraftIds = [];
+  }
+  function alumniTechniqueLabel(id) {
+    return DT.events && DT.events.techniqueLabel ? DT.events.techniqueLabel(id) : id;
+  }
+  function alumniRosterOrder(profile) {
+    const picked = alumniDraftIds.map(id => profile.pool.find(entry => entry.id === id)).filter(Boolean);
+    const pickedLookup = {};
+    picked.forEach(entry => { pickedLookup[entry.id] = true; });
+    const defaults = profile.pool.filter(entry => entry.source === 'default' && !pickedLookup[entry.id]);
+    const graduates = profile.pool.filter(entry => entry.source === 'graduate' && !pickedLookup[entry.id])
+      .sort((a, b) => (b.graduatedAt || 0) - (a.graduatedAt || 0));
+    return picked.concat(defaults, graduates);
+  }
+  function renderAlumniRoster(message) {
+    if (!alumniDraftProfile) return;
+    const min = DT.state.ALUMNI_ACTIVE_MIN;
+    const max = DT.state.ALUMNI_ACTIVE_MAX;
+    const count = alumniDraftIds.length;
+    const poolMax = DT.state.ALUMNI_POOL_MAX;
+    $('#alumni-sub').textContent = message || (
+      '登場メンバー ' + count + ' / ' + max + '人　・　保存 ' + alumniDraftProfile.pool.length + ' / ' + poolMax + '人'
+    );
+    $('#alumni-sub').classList.toggle('cond-warn', !!message);
+    const query = alumniSearchQuery.trim().toLowerCase();
+    const visibleEntries = alumniRosterOrder(alumniDraftProfile).filter(entry => {
+      if (!query) return true;
+      return [
+        entry.name,
+        entry.type,
+        alumniTechniqueLabel(entry.techniqueId),
+        entry.cardTitle
+      ].join(' ').toLowerCase().includes(query);
+    });
+    const rows = visibleEntries.map(entry => {
+      const pickedAt = alumniDraftIds.indexOf(entry.id);
+      const selected = pickedAt >= 0;
+      const row = el('button', 'alumni-roster-row' + (selected ? ' selected' : ''));
+      row.type = 'button';
+      row.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      row.appendChild(el('span', 'alumni-pick', selected ? String(pickedAt + 1) : '＋'));
+      const meta = el('span', 'alumni-roster-meta');
+      const name = el('span', 'alumni-roster-name', entry.name);
+      name.appendChild(el('span', 'alumni-origin ' + entry.source,
+        entry.source === 'graduate' ? '育成' : '初期'));
+      meta.appendChild(name);
+      const detail = entry.type + '／得意技「' + alumniTechniqueLabel(entry.techniqueId) + '」';
+      meta.appendChild(el('span', 'alumni-roster-detail', detail));
+      if (entry.source === 'graduate') {
+        const achievement = [];
+        if (entry.rank) achievement.push('ランク' + entry.rank);
+        if (entry.cardTitle) achievement.push('「' + entry.cardTitle + '」');
+        if (entry.totalPoints) achievement.push(entry.totalPoints + 'pt');
+        if (achievement.length) meta.appendChild(el('span', 'alumni-roster-achievement', achievement.join('・')));
+      }
+      row.appendChild(meta);
+      row.onclick = () => {
+        const at = alumniDraftIds.indexOf(entry.id);
+        if (at >= 0) {
+          if (alumniDraftIds.length <= min) {
+            renderAlumniRoster('3年・4年で別の先輩を出すため、最低' + min + '人必要です。');
+            return;
+          }
+          alumniDraftIds.splice(at, 1);
+        } else {
+          if (alumniDraftIds.length >= max) {
+            renderAlumniRoster('選べるのは最大' + max + '人です。先に誰かを外してください。');
+            return;
+          }
+          alumniDraftIds.push(entry.id);
+        }
+        renderAlumniRoster();
+      };
+      return row;
+    });
+    if (!rows.length) rows.push(el('div', 'dev-note', '条件に合う卒業生はいません。'));
+    $('#alumni-list').replaceChildren(...rows);
+    $('#btn-alumni-save').disabled = count < min || count > max;
+  }
+  function saveAlumniRoster() {
+    const result = DT.state.saveAlumniSelection(alumniDraftIds, undefined, GAME_MODE);
+    if (!result.ok) {
+      renderAlumniRoster(result.reason);
+      return;
+    }
+    closeAlumniRoster();
+  }
+
   // 設定モーダル（ホーム右下）。リタイア＝セーブ消去してタイトルへ
   function openSettings() {
     renderSettingsMain();
@@ -517,14 +624,18 @@
     records.onclick = () => { closeSettings(); openRecords(); };
     const zukan = el('button', '', '📖 カード図鑑');
     zukan.onclick = () => { closeSettings(); openZukan(); };
+    const alumni = el('button', '', '🌸 卒業生名簿');
+    alumni.onclick = () => { closeSettings(); openAlumniRoster(); };
     const retire = el('button', 'retire', 'リタイア（最初から）');
     retire.onclick = renderSettingsConfirm;
-    $('#settings-body').replaceChildren(
+    const items = [
       el('p', 'settings-note', 'ゲームの設定'),
       records,
-      zukan,
-      retire
-    );
+      zukan
+    ];
+    if (SHORT) items.push(alumni);
+    items.push(retire);
+    $('#settings-body').replaceChildren(...items);
   }
   function renderSettingsConfirm() {
     const warn = el('p', 'settings-note cond-warn', '本当にリタイアしますか？ 現在のセーブは消え、タイトルに戻ります。');
@@ -590,6 +701,9 @@
     // 構成（演技構成）メーターをレーダーチャートの下に配置
     const compBox = el('div', 'pb-comp');
     compBox.appendChild(meterRow('構成', state.composition));
+    if (state.techniqueCard) {
+      compBox.appendChild(el('div', 'notice-effect', '得意技「' + DT.events.techniqueLabel(state.techniqueCard) + '」'));
+    }
 
     board.replaceChildren(head, cond, ...warns, techHead, skillRadarGrid(state.skills), compBox);
   }
@@ -870,6 +984,7 @@
     $('#detail-skills').replaceChildren(skillTable(state.skills));
     $('#detail-radar').replaceChildren(skillRadarGrid(state.skills));
     $('#detail-cond').replaceChildren(
+      textRow('得意技', state.techniqueCard ? DT.events.techniqueLabel(state.techniqueCard) : 'まだ決まっていない'),
       meterRow('構成', state.composition),
       meterRow('学力', state.study),
       meterRow('体力', 100 - state.fatigue, { warn: state.fatigue >= 60 })
@@ -898,6 +1013,11 @@
 
   // ① 練習前スロット: 1月=初詣おみくじ（固定・全モード）＞状態イベント（過労/覚醒/励まし）＞ランダム。最大1件。
   function runPreSlot() {
+    // ショート版の卒業生イベントは通常イベント1件を置き換える。同月の大会はafterPreSlot→runPostSlotで別に処理する。
+    if (SHORT && DT.shortMode.isEventMonth(state.turn)) {
+      const alumniEvent = DT.events.alumniEventFor(state);
+      if (alumniEvent) { renderAlumniEvent(alumniEvent, afterPreSlot); return; }
+    }
     if (DT.events.isOmikujiTurn(state.turn)) { renderOmikuji(); return; }
     const cond = DT.events.conditionalEventFor(state);
     if (cond) {
@@ -909,7 +1029,7 @@
       showEventNotice(cond.speaker || '💫 できごと', cond.text, cr.messages.slice(1), afterPreSlot);
       return;
     }
-    const ev = DT.events.roll(state);
+    const ev = SHORT ? DT.events.rollGuaranteed(state) : DT.events.roll(state);
     if (ev && ev.kind === 'char') { renderEvent(ev.event, afterPreSlot); return; }
     if (ev) { // ハプニング
       const h = DT.events.applyHappening(state, ev.event);
@@ -1046,6 +1166,28 @@
         // 選択の結果（結果文＋効果）を専用ページで表示してから続行（ログだけにしない）
         const header = event.speaker || (chara ? chara.name : '結果');
         showEventNotice(header, r.messages[0], r.messages.slice(1), () => { pushMsgs(r.messages); onDone(); });
+      };
+      return b;
+    });
+    $('#event-choices').replaceChildren(...buttons);
+    show('#screen-event');
+  }
+
+  function renderAlumniEvent(event, onDone) {
+    $('#event-char').textContent = event.speaker;
+    const technique = DT.events.techniqueLabel(event.alumni.techniqueId);
+    $('#event-text').replaceChildren(
+      el('p', '', event.text),
+      el('div', 'notice-effect', event.alumni.type + '／得意技「' + technique + '」')
+    );
+    const buttons = event.choices.map((choice, i) => {
+      const b = el('button', i === 0 ? 'primary' : '', choice.label);
+      b.onclick = () => {
+        const result = DT.events.applyAlumniChoice(state, event, i);
+        showEventNotice(event.speaker, result.messages[0], result.messages.slice(1), () => {
+          pushMsgs(result.messages);
+          onDone();
+        });
       };
       return b;
     });
@@ -1613,6 +1755,7 @@
     // 個人記録を保存（この周回で一度だけ）。終了したセーブは消して「つづきから」不可＆二重記録防止
     let bestNote = null;
     let colResult = null; // 図鑑登録の結果（初解禁 or 重複時の枚数/自己ベスト更新）
+    let alumniResult = null; // ショート版を卒業した選手の、部の卒業生名簿への登録結果
     let cardNo = DT.state.loadRecords(undefined, GAME_MODE).length + 1; // 何人目の卒業生か（カードNo.）
     if (!state.recorded) {
       colResult = DT.state.addToCollection(card, cardNo, undefined, GAME_MODE); // 図鑑へ登録（初解禁ならNEW表示）
@@ -1631,6 +1774,7 @@
         cardId: card.id, cardTitle: card.title, cardType: card.type, cardCp: card.cp, cardNo: cardNo,
         gameMode: GAME_MODE
       }, undefined, GAME_MODE);
+      alumniResult = DT.state.addGraduateAlumni(state, card, undefined, GAME_MODE);
       if (state.status !== 'expelled' && e.totalPoints > prevBest) bestNote = '🎉 自己ベスト更新！';
       state.recorded = true;
       DT.state.clear(undefined, GAME_MODE);
@@ -1649,6 +1793,15 @@
       if (colResult.ptImproved) ups.push('自己最高pt更新 ' + colResult.bestPt);
       rest.appendChild(el('p', 'center best-note dup-note',
         '🃏「' + card.title + '」' + colResult.count + '枚目' + (ups.length ? '／🎉 ' + ups.join('・') : '')));
+    }
+    if (alumniResult) {
+      const alumniNote = alumniResult.activated
+        ? '🌸 ' + alumniResult.alumni.name + 'を卒業生名簿へ登録。次の周回から先輩候補に加わります。'
+        : '🌸 ' + alumniResult.alumni.name + 'を卒業生名簿へ登録。登場枠は5人なので、名簿で入れ替えると次周回に現れます。';
+      rest.appendChild(el('p', 'center best-note alumni-note', alumniNote));
+      const rosterButton = el('button', 'alumni-ending-btn', '🌸 次の周回の卒業生名簿を選ぶ');
+      rosterButton.onclick = openAlumniRoster;
+      rest.appendChild(rosterButton);
     }
     rest.appendChild(buildCardActions(card, cardNo));
     if (bestNote) rest.appendChild(el('p', 'center best-note', bestNote));
@@ -2282,9 +2435,16 @@
   document.querySelectorAll('[data-close-points]').forEach(b => { b.onclick = closePoints; });
   document.querySelectorAll('[data-close-settings]').forEach(b => { b.onclick = closeSettings; });
   document.querySelectorAll('[data-close-records]').forEach(b => { b.onclick = closeRecords; });
+  document.querySelectorAll('[data-close-alumni]').forEach(b => { b.onclick = closeAlumniRoster; });
   document.querySelectorAll('[data-close-radar]').forEach(b => { b.onclick = closeRadar; });
   document.querySelectorAll('[data-close-log]').forEach(b => { b.onclick = closeLog; });
   $('#btn-records').onclick = openRecords;
+  $('#btn-alumni').onclick = openAlumniRoster;
+  $('#btn-alumni-save').onclick = saveAlumniRoster;
+  $('#alumni-search').oninput = () => {
+    alumniSearchQuery = $('#alumni-search').value || '';
+    renderAlumniRoster();
+  };
   $('#btn-zukan').onclick = openZukan;
   document.querySelectorAll('[data-close-zukan]').forEach(b => { b.onclick = closeZukan; });
   document.querySelectorAll('[data-close-zukan-detail]').forEach(b => { b.onclick = closeZukanDetail; });
@@ -2456,10 +2616,24 @@
     renderEnding();
   }
 
+  // DEV専用の卒業生イベント確認画面。実プレイのセーブや記録には触れない。
+  function previewAlumniEvent() {
+    state = DT.state.newCharacter(() => 0.5, 'highschool', GAME_MODE);
+    state.turn = 28;
+    state.alumniSchedule = [{ turn: 28, alumniId: 'kudo_masashi' }];
+    state.alumniScheduleReady = true;
+    renderAlumniEvent(DT.events.alumniEventFor(state), () => renderHome([]));
+  }
+
   const autoParam = QUERY_PARAMS.get('auto');
   if (QUERY_PARAMS.get('gallery')) {
     initTitle();
     renderCardGallery();
+  } else if (DEV && SHORT && QUERY_PARAMS.get('preview') === 'alumni') {
+    previewAlumniEvent();
+  } else if (DEV && SHORT && QUERY_PARAMS.get('preview') === 'alumni-roster') {
+    initTitle();
+    openAlumniRoster();
   } else if (autoParam) {
     const bg = DT.DATA.BACKGROUNDS.some(b => b.id === autoParam) ? autoParam : 'highschool';
     autoPlayDemo(bg);

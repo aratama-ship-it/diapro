@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20260723b">
+<link rel="stylesheet" href="css/style.css?v=20260723e">
 </head>
 <body>
 <div id="app">
@@ -22,6 +22,7 @@
       <button id="btn-continue">つづきから</button>
       <button id="btn-mode-switch">⚡ ショート版（24ターン）</button>
       <button id="btn-records">🏅 これまでの記録</button>
+      <button id="btn-alumni" class="hidden">🌸 卒業生名簿</button>
       <button id="btn-zukan">📖 カード図鑑</button>
       <div class="app-version" id="app-version"></div>
     </section>
@@ -194,6 +195,27 @@
     </div>
   </div>
 
+  <!-- ======== 卒業生名簿（ショート版。次周回に登場する2〜5名を選ぶ） ======== -->
+  <div id="alumni-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close-alumni></div>
+    <div class="modal-card alumni-modal-card">
+      <div class="modal-head">
+        <span class="modal-title">🌸 卒業生名簿</span>
+        <button class="modal-close" data-close-alumni aria-label="閉じる">×</button>
+      </div>
+      <div class="modal-sub" id="alumni-sub"></div>
+      <p class="alumni-help">卒業生は最大50人保存できます。その中から次の周回で現れる先輩を2〜5人選び、毎周2人が登場します。</p>
+      <label class="alumni-search">
+        <span>名簿を探す</span>
+        <input id="alumni-search" type="search" maxlength="30" placeholder="名前・型・得意技">
+      </label>
+      <div class="modal-list" id="alumni-list"></div>
+      <div class="alumni-savebar">
+        <button id="btn-alumni-save" class="primary">この名簿を使う</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ======== カード図鑑モーダル（タイトルから開く。全50種・未解禁はシルエット） ======== -->
   <div id="zukan-modal" class="modal hidden">
     <div class="modal-backdrop" data-close-zukan></div>
@@ -281,15 +303,15 @@
   </div>
 </aside>
 
-<script src="js/data.js?v=20260716d"></script>
+<script src="js/data.js?v=20260723c"></script>
 <script src="js/short-mode.js?v=20260723a"></script>
-<script src="js/state.js?v=20260723a"></script>
-<script src="js/engine.js?v=20260723b"></script>
-<script src="js/contest.js?v=20260716d"></script>
-<script src="js/events.js?v=20260716d"></script>
+<script src="js/state.js?v=20260723e"></script>
+<script src="js/engine.js?v=20260723c"></script>
+<script src="js/contest.js?v=20260723c"></script>
+<script src="js/events.js?v=20260723c"></script>
 <script src="js/ending.js?v=20260716d"></script>
 <script src="js/cards.js?v=20260716d"></script>
 <script src="js/radar.js?v=20260716d"></script>
-<script src="js/app.js?v=20260723b"></script>
+<script src="js/app.js?v=20260723e"></script>
 </body>
 </html>

@@ -339,6 +339,76 @@ select:focus { outline: none; box-shadow: var(--pop-shadow-sm); }
   padding: 1px 10px;
 }
 
+/* ---------- 卒業生名簿（ショート版） ---------- */
+.alumni-modal-card { max-height: 88%; }
+.alumni-help {
+  margin: 0 16px 8px; padding: 8px 10px;
+  border: 2px dashed #9fafd8; border-radius: 12px;
+  background: #f3f5ff; color: var(--ink-soft);
+  font-size: .68rem; font-weight: 700; line-height: 1.55;
+}
+.alumni-search {
+  flex-shrink: 0; margin: 0 14px 8px;
+  display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px;
+  color: var(--ink-soft); font-size: .62rem; font-weight: 800;
+}
+.alumni-search input {
+  width: 100%; min-width: 0; padding: 7px 10px;
+  border: 2px solid #9fafd8; border-radius: 10px;
+  background: #fff; color: var(--ink);
+  font-family: inherit; font-size: 16px; font-weight: 700; line-height: 1.2;
+  box-shadow: inset 0 1px 0 rgba(43,58,103,.08);
+}
+.alumni-search input:focus { outline: 3px solid rgba(60,199,178,.28); border-color: var(--teal); }
+.alumni-roster-row {
+  width: 100%; min-height: 68px; padding: 8px 10px;
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  border: 2px solid #aeb8d2; border-radius: 14px;
+  background:
+    linear-gradient(90deg, rgba(159,175,216,.12) 0 28px, transparent 28px),
+    var(--paper);
+  color: var(--ink); box-shadow: 0 3px 0 #aeb8d2;
+}
+.alumni-roster-row:active { transform: translateY(2px); box-shadow: 0 1px 0 #aeb8d2; }
+.alumni-roster-row.selected {
+  border-color: var(--teal); box-shadow: 0 3px 0 #238d83;
+  background:
+    linear-gradient(90deg, rgba(60,199,178,.2) 0 34px, transparent 34px),
+    #eefcf8;
+}
+.alumni-pick {
+  width: 30px; height: 30px; flex-shrink: 0;
+  display: grid; place-items: center;
+  border: 2px solid var(--ink); border-radius: 50%;
+  background: #e6eaf4; color: var(--ink-soft); font-size: .82rem; font-weight: 800;
+}
+.alumni-roster-row.selected .alumni-pick { background: var(--teal); color: #fff; }
+.alumni-roster-meta { min-width: 0; display: flex; flex: 1; flex-direction: column; gap: 2px; }
+.alumni-roster-name { display: flex; align-items: center; gap: 6px; font-size: .9rem; font-weight: 800; }
+.alumni-origin {
+  padding: 1px 6px; border-radius: 999px; font-size: .5rem; letter-spacing: .05em;
+  border: 1.5px solid var(--ink); background: #fff3c4; color: #795a12;
+}
+.alumni-origin.graduate { background: #ffe0eb; color: #a33a62; }
+.alumni-roster-detail { font-size: .64rem; font-weight: 800; color: var(--teal); }
+.alumni-roster-achievement {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: .56rem; font-weight: 700; color: var(--ink-soft);
+}
+.alumni-savebar {
+  flex-shrink: 0; padding: 10px 14px max(14px, env(safe-area-inset-bottom));
+  border-top: 2px dashed #bdc6dd; background: var(--cream);
+}
+.alumni-savebar button { width: 100%; }
+.alumni-ending-btn {
+  align-self: center; padding: 9px 16px; margin: 2px 0 4px;
+  border: 2px solid var(--ink); border-radius: 999px;
+  background: #eefcf8; color: var(--teal); font-size: .76rem; font-weight: 800;
+  box-shadow: 0 2px 0 var(--ink);
+}
+.alumni-ending-btn:active { transform: translateY(2px); box-shadow: none; }
+.alumni-note { border-color: var(--teal); background: #eefcf8; }
+
 /* ---------- 選手ボード（名前・やる気・ステータス・技術を1枠に集約） ---------- */
 .pboard { display: flex; flex-direction: column; gap: 8px; padding: 8px; }
 /* ヘッダー帯：紺地に学年月・名前・pt */
