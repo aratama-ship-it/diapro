@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-23T06:54:06.552Z",
+  "generatedAt": "2026-07-23T08:36:37.520Z",
   "definition": {
     "mode": "short",
     "selectionN": 100,
@@ -29,37 +29,37 @@
         "id": "adaptive__rest55__lean__safe__teachAlways"
       },
       "rankCounts": {
-        "S": 24,
-        "A": 19,
-        "B": 56,
-        "C": 128,
-        "D": 342,
-        "E": 431,
+        "S": 26,
+        "A": 20,
+        "B": 61,
+        "C": 132,
+        "D": 355,
+        "E": 406,
         "退学": 0
       },
       "rankRates": {
-        "S": 0.024,
-        "A": 0.019,
-        "B": 0.056,
-        "C": 0.128,
-        "D": 0.342,
-        "E": 0.431,
+        "S": 0.026,
+        "A": 0.02,
+        "B": 0.061,
+        "C": 0.132,
+        "D": 0.355,
+        "E": 0.406,
         "退学": 0
       },
       "graduationRate": 1,
-      "meanPoints": 221.852,
-      "meanAbility": 57.157230769230765,
-      "meanWins": 1.34,
-      "meanPodiums": 2.397,
-      "ajdcOverallWinRate": 0.018,
-      "worldsQualifiedRate": 0.115,
+      "meanPoints": 230.314,
+      "meanAbility": 57.85692307692312,
+      "meanWins": 1.415,
+      "meanPodiums": 2.499,
+      "ajdcOverallWinRate": 0.019,
+      "worldsQualifiedRate": 0.118,
       "worldsWinRate": 0.001,
       "meanAlumniEvents": 2,
       "techniqueRates": {
-        "none": 0.034,
-        "high_toss": 0.329,
-        "fts": 0.306,
-        "on_beat": 0.331
+        "none": 0.012,
+        "high_toss": 0.344,
+        "fts": 0.311,
+        "on_beat": 0.333
       },
       "selectionTop5": [
         {
@@ -71,7 +71,7 @@
             "alumniChoice": "teachAlways",
             "id": "adaptive__rest55__lean__safe__teachAlways"
           },
-          "meanPoints": 258.37
+          "meanPoints": 264.58
         },
         {
           "candidate": {
@@ -82,7 +82,7 @@
             "alumniChoice": "firstTeachThenMethod",
             "id": "adaptive__rest55__lean__adaptive__firstTeachThenMethod"
           },
-          "meanPoints": 241.69
+          "meanPoints": 248.34
         },
         {
           "candidate": {
@@ -93,18 +93,7 @@
             "alumniChoice": "methodAlways",
             "id": "adaptive__rest55__lean__safe__methodAlways"
           },
-          "meanPoints": 237.34
-        },
-        {
-          "candidate": {
-            "trainPlan": "adaptive",
-            "restLine": 55,
-            "academic": "lean",
-            "contestPolicy": "safe",
-            "alumniChoice": "sayingsAlways",
-            "id": "adaptive__rest55__lean__safe__sayingsAlways"
-          },
-          "meanPoints": 231.71
+          "meanPoints": 244.8
         },
         {
           "candidate": {
@@ -115,7 +104,18 @@
             "alumniChoice": "methodAlways",
             "id": "adaptive__rest55__lean__adaptive__methodAlways"
           },
-          "meanPoints": 231.64
+          "meanPoints": 241.45
+        },
+        {
+          "candidate": {
+            "trainPlan": "adaptive",
+            "restLine": 55,
+            "academic": "lean",
+            "contestPolicy": "safe",
+            "alumniChoice": "sayingsAlways",
+            "id": "adaptive__rest55__lean__safe__sayingsAlways"
+          },
+          "meanPoints": 239.66
         }
       ]
     },
@@ -132,37 +132,37 @@
         "id": "adaptive__rest55__lean__adaptive__teachAlways"
       },
       "rankCounts": {
-        "S": 430,
-        "A": 221,
-        "B": 255,
-        "C": 85,
-        "D": 8,
+        "S": 447,
+        "A": 234,
+        "B": 238,
+        "C": 74,
+        "D": 6,
         "E": 1,
         "退学": 0
       },
       "rankRates": {
-        "S": 0.43,
-        "A": 0.221,
-        "B": 0.255,
-        "C": 0.085,
-        "D": 0.008,
+        "S": 0.447,
+        "A": 0.234,
+        "B": 0.238,
+        "C": 0.074,
+        "D": 0.006,
         "E": 0.001,
         "退学": 0
       },
       "graduationRate": 1,
-      "meanPoints": 903.306,
-      "meanAbility": 79.43361538461552,
-      "meanWins": 5.799,
-      "meanPodiums": 11.647,
-      "ajdcOverallWinRate": 0.212,
-      "worldsQualifiedRate": 0.772,
-      "worldsWinRate": 0.019,
+      "meanPoints": 914.447,
+      "meanAbility": 79.74915384615396,
+      "meanWins": 6.033,
+      "meanPodiums": 11.916,
+      "ajdcOverallWinRate": 0.23,
+      "worldsQualifiedRate": 0.785,
+      "worldsWinRate": 0.022,
       "meanAlumniEvents": 2,
       "techniqueRates": {
-        "none": 0.041,
-        "high_toss": 0.302,
-        "fts": 0.328,
-        "on_beat": 0.329
+        "none": 0.023,
+        "high_toss": 0.316,
+        "fts": 0.34,
+        "on_beat": 0.321
       },
       "selectionTop5": [
         {
@@ -174,7 +174,7 @@
             "alumniChoice": "teachAlways",
             "id": "adaptive__rest55__lean__adaptive__teachAlways"
           },
-          "meanPoints": 944.97
+          "meanPoints": 954.96
         },
         {
           "candidate": {
@@ -185,7 +185,7 @@
             "alumniChoice": "firstTeachThenMethod",
             "id": "adaptive__rest55__lean__adaptive__firstTeachThenMethod"
           },
-          "meanPoints": 920.24
+          "meanPoints": 927.04
         },
         {
           "candidate": {
@@ -196,7 +196,7 @@
             "alumniChoice": "sayingsAlways",
             "id": "adaptive__rest55__lean__adaptive__sayingsAlways"
           },
-          "meanPoints": 899.84
+          "meanPoints": 905.53
         },
         {
           "candidate": {
@@ -207,18 +207,18 @@
             "alumniChoice": "methodAlways",
             "id": "adaptive__rest55__lean__attack__methodAlways"
           },
-          "meanPoints": 896.7
+          "meanPoints": 899.63
         },
         {
           "candidate": {
             "trainPlan": "adaptive",
             "restLine": 55,
             "academic": "lean",
-            "contestPolicy": "adaptive",
-            "alumniChoice": "methodAlways",
-            "id": "adaptive__rest55__lean__adaptive__methodAlways"
+            "contestPolicy": "safe",
+            "alumniChoice": "teachAlways",
+            "id": "adaptive__rest55__lean__safe__teachAlways"
           },
-          "meanPoints": 888.91
+          "meanPoints": 899.03
         }
       ]
     },
@@ -235,31 +235,31 @@
         "id": "adaptive__rest55__lean__adaptive__methodAlways"
       },
       "rankCounts": {
-        "S": 525,
-        "A": 229,
-        "B": 184,
+        "S": 544,
+        "A": 236,
+        "B": 160,
         "C": 52,
-        "D": 10,
+        "D": 8,
         "E": 0,
         "退学": 0
       },
       "rankRates": {
-        "S": 0.525,
-        "A": 0.229,
-        "B": 0.184,
+        "S": 0.544,
+        "A": 0.236,
+        "B": 0.16,
         "C": 0.052,
-        "D": 0.01,
+        "D": 0.008,
         "E": 0,
         "退学": 0
       },
       "graduationRate": 1,
-      "meanPoints": 971.507,
-      "meanAbility": 80.64369230769226,
-      "meanWins": 6.654,
-      "meanPodiums": 13.264,
-      "ajdcOverallWinRate": 0.253,
-      "worldsQualifiedRate": 0.799,
-      "worldsWinRate": 0.026,
+      "meanPoints": 980.527,
+      "meanAbility": 80.93515384615372,
+      "meanWins": 6.895,
+      "meanPodiums": 13.516,
+      "ajdcOverallWinRate": 0.271,
+      "worldsQualifiedRate": 0.813,
+      "worldsWinRate": 0.034,
       "meanAlumniEvents": 2,
       "techniqueRates": {
         "none": 1,
@@ -277,7 +277,7 @@
             "alumniChoice": "methodAlways",
             "id": "adaptive__rest55__lean__adaptive__methodAlways"
           },
-          "meanPoints": 991.04
+          "meanPoints": 1006.76
         },
         {
           "candidate": {
@@ -288,7 +288,7 @@
             "alumniChoice": "sayingsAlways",
             "id": "adaptive__rest55__lean__adaptive__sayingsAlways"
           },
-          "meanPoints": 988.98
+          "meanPoints": 996.22
         },
         {
           "candidate": {
@@ -299,18 +299,7 @@
             "alumniChoice": "methodAlways",
             "id": "adaptive__rest55__lean__attack__methodAlways"
           },
-          "meanPoints": 987.13
-        },
-        {
-          "candidate": {
-            "trainPlan": "adaptive",
-            "restLine": 55,
-            "academic": "lean",
-            "contestPolicy": "adaptive",
-            "alumniChoice": "teachAlways",
-            "id": "adaptive__rest55__lean__adaptive__teachAlways"
-          },
-          "meanPoints": 980.68
+          "meanPoints": 995.8
         },
         {
           "candidate": {
@@ -321,7 +310,18 @@
             "alumniChoice": "firstTeachThenMethod",
             "id": "adaptive__rest55__lean__attack__firstTeachThenMethod"
           },
-          "meanPoints": 980.62
+          "meanPoints": 990.76
+        },
+        {
+          "candidate": {
+            "trainPlan": "adaptive",
+            "restLine": 55,
+            "academic": "lean",
+            "contestPolicy": "adaptive",
+            "alumniChoice": "firstTeachThenMethod",
+            "id": "adaptive__rest55__lean__adaptive__firstTeachThenMethod"
+          },
+          "meanPoints": 988.35
         }
       ]
     }

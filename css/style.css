@@ -408,6 +408,7 @@ select:focus { outline: none; box-shadow: var(--pop-shadow-sm); }
 }
 .alumni-ending-btn:active { transform: translateY(2px); box-shadow: none; }
 .alumni-note { border-color: var(--teal); background: #eefcf8; }
+.alumni-rank-effect { border-color: #d39b2c; background: #fff7dc; color: #8a6116; }
 
 /* ---------- 選手ボード（名前・やる気・ステータス・技術を1枠に集約） ---------- */
 .pboard { display: flex; flex-direction: column; gap: 8px; padding: 8px; }
@@ -985,16 +986,36 @@ table.dev-grid tr.locked td { color: #545d85; }
 .zukan-layer { font-size: .7rem; font-weight: 800; color: var(--ink-soft); letter-spacing: .08em; margin: 8px 2px 4px; }
 .zukan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
 .zukan-tile {
-  border: 2px solid var(--ink); border-radius: 12px; padding: 8px 6px;
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  min-height: 58px; justify-content: center; font-family: inherit;
+  border: 2px solid var(--ink); border-radius: 12px; padding: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  min-height: 96px; justify-content: flex-start; overflow: hidden; font-family: inherit;
   background: #0e1830; color: #eaf2ff; box-shadow: 0 2px 0 var(--ink);
 }
 .zukan-tile:active { transform: translateY(2px); box-shadow: none; }
+.zukan-tile .zt-art {
+  position: relative; display: grid; place-items: center; flex-shrink: 0;
+  width: 100%; aspect-ratio: 592 / 300; overflow: hidden;
+  border-bottom: 1px solid #3b4f86;
+  background: radial-gradient(120% 90% at 50% 20%, #233a6e 0, #141f3d 60%);
+}
+.zukan-tile .zt-art .pcard-artimg { width: 100%; height: 100%; object-fit: cover; }
+.zukan-tile .zt-art svg {
+  width: 92%; height: 92%; color: #8fc4e8;
+  filter: drop-shadow(0 0 5px rgba(120, 190, 255, .42));
+}
+.zukan-tile .zt-copy {
+  flex: 1; min-height: 37px; width: 100%; padding: 5px 4px 6px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+}
 .zukan-tile .zt-title { font-size: .62rem; font-weight: 800; line-height: 1.25; text-align: center; }
 .zukan-tile .zt-sub { font-size: .5rem; color: #8fa4d6; }
-.zukan-tile .zt-q { font-size: 1.1rem; font-weight: 800; color: #b6bedb; }
 .zukan-tile.locked { background: #e7e9f2; color: #a7afc9; border-color: #b6bedb; box-shadow: none; }
+.zukan-tile.locked .zt-art { border-color: #c7ccdc; background: #d9ddea; }
+.zukan-tile.locked .zt-art svg { color: #7e88a5; opacity: .18; filter: grayscale(1); }
+.zukan-tile .zt-lockmark {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 1.2rem; font-weight: 800; color: #8791ad;
+}
 .zukan-tile.locked .zt-title { color: #a7afc9; }
 /* 解禁済みタイルの縁色＝レア度 */
 .zukan-tile.zrank-S { border-color: #7dd3fc; box-shadow: 0 2px 0 #4338ca, 0 0 10px rgba(129, 140, 248, .5); }

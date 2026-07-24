@@ -204,19 +204,35 @@ function alumniChoiceIndex(state, candidate) {
 }
 
 function processPreEvent(state, rng, candidate) {
-  // 卒業生イベントは奇数月の通常イベント1件を置き換える。大会はこの後のpost枠で別に処理する。
-  if (state.gameMode === 'short' && DT.shortMode.isEventMonth(state.turn)) {
-    const alumni = DT.events.alumniEventFor(state, rng);
-    if (alumni) {
-      DT.events.applyAlumniChoice(state, alumni, alumniChoiceIndex(state, candidate), rng);
+  let slot = null;
+  if (state.gameMode === 'short') {
+    // UIでは3年生5月のイベント枠を早期引退の選択に使う。シミュレーターは「続ける」を固定選択する。
+    if (state.turn === 26 && !state.retireOfferSeen) {
+      state.retireOfferSeen = true;
       return false;
     }
-  }
-  if (DT.events.isOmikujiTurn(state.turn)) {
+    slot = DT.events.shortEventFor(state, rng);
+    if (!slot) return false;
+    if (slot.kind === 'scheduled') {
+      if (slot.event.choices) processChoiceEvent(state, slot.event, rng);
+      else DT.events.applyScheduled(state, slot.event);
+      return false;
+    }
+    if (slot.kind === 'alumni') {
+      DT.events.applyAlumniChoice(state, slot.event, alumniChoiceIndex(state, candidate), rng);
+      return false;
+    }
+    if (slot.kind === 'omikuji') {
+      DT.events.drawOmikuji(state, rng);
+      return false;
+    }
+  } else if (DT.events.isOmikujiTurn(state.turn)) {
     DT.events.drawOmikuji(state, rng);
     return false;
   }
-  const conditional = DT.events.conditionalEventFor(state);
+  const conditional = slot && slot.kind === 'conditional'
+    ? slot.event
+    : (state.gameMode === 'short' ? null : DT.events.conditionalEventFor(state));
   if (conditional) {
     if (conditional.awakenTrigger) {
       // 期待成長が最も高い「波に乗る」を選ぶ。成功率はUIと同じ50%。
@@ -230,9 +246,7 @@ function processPreEvent(state, rng, candidate) {
     }
     return false;
   }
-  const event = state.gameMode === 'short'
-    ? DT.events.rollGuaranteed(state, rng)
-    : DT.events.roll(state, rng);
+  const event = slot || DT.events.roll(state, rng);
   if (event && event.kind === 'char') processChoiceEvent(state, event.event, rng);
   else if (event) DT.events.applyHappening(state, event.event);
   return false;
@@ -349,7 +363,7 @@ function processPostEvent(state, rng, candidate) {
   } else if (final && state.jjfFinalist) {
     state.jjfFinalist = 0;
     contestResults = DT.contest.runJjfFinal(state, final, rng);
-  } else {
+  } else if (state.gameMode !== 'short') {
     const scheduled = DT.events.scheduledEventFor(state);
     if (scheduled) {
       if (scheduled.choices) processChoiceEvent(state, scheduled, rng);

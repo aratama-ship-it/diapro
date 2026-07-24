@@ -39,13 +39,13 @@
         activationRules: [{ composition: true, amount: 2 }] },
       { id: 'body', label: 'ボディ系',
         activationRules: [{ genres: ['h1d', 'v1d', 'd2', 'd3'], method: 'novelty', amount: 2 }] },
-      { id: 'happening', label: 'ハプニング', judgeRange: 8 }
+      { id: 'happening', label: 'ハプニング', judgeRange: 5 }
     ],
     // 初期卒業生。将来は1周を終えた主人公を同じ形で追加し、activeAlumniを最大5名まで選べる。
     DEFAULT_ALUMNI: [
-      { id: 'kudo_masashi', name: '工藤まさし', type: 'テクニシャン型', techniqueId: 'high_toss' },
-      { id: 'watanuki_shusuke', name: '綿貫しゅうすけ', type: 'イノベーター型', techniqueId: 'fts' },
-      { id: 'fukada_akira', name: '深田あきら', type: 'ショーマン型', techniqueId: 'on_beat' }
+      { id: 'kudo_masashi', name: '工藤まさし', type: 'テクニシャン型', techniqueId: 'high_toss', rank: 'B' },
+      { id: 'watanuki_shusuke', name: '綿貫しゅうすけ', type: 'イノベーター型', techniqueId: 'fts', rank: 'B' },
+      { id: 'fukada_akira', name: '深田あきら', type: 'ショーマン型', techniqueId: 'on_beat', rank: 'B' }
     ],
     ALUMNI_EVENT: {
       thirdYearTurns: [28, 30, 32, 34, 36],
@@ -53,7 +53,16 @@
       teachChance: 0.8,
       methodChance: 0.9,
       teachFailMotivation: -8,
-      methodFailMotivation: -5
+      methodFailMotivation: -5,
+      // 卒業ランクは、指導の成功率と成功時の鼓舞へ反映する。能力への直接加算は既存効果のまま。
+      rankBonuses: {
+        S: { chance: 0.10, motivation: 6 },
+        A: { chance: 0.08, motivation: 5 },
+        B: { chance: 0.05, motivation: 4 },
+        C: { chance: 0.03, motivation: 3 },
+        D: { chance: 0.01, motivation: 2 },
+        E: { chance: 0, motivation: 1 }
+      }
     },
     // 毎月のスロット制練習定義。枠= {genre, method}(method∈difficulty/novelty/control) または 'routine'
     // v4: スキルグリッド化でmethodGain/genreGainを統合しgridGain（マス1つへの単一ゲイン）に一本化
@@ -246,12 +255,12 @@
         restNote: '（大会の疲れがよく抜けた）'
       }
     },
-    // 定期イベント（固定・非ランダム）: 指定ターンの行動後に必ず1回発生する。
+    // 定期イベント（固定・非ランダム）: 通常版はturn、ショート版は奇数月側のshortTurnで必ず1回発生する。
     // welcome=新入生歓迎会: 現在解禁済みジャンルの全技術(難易度/新奇性/操作安定度)が gain ずつ上がる。
     SCHEDULED_EVENTS: [
-      { turn: 1, id: 'welcome', name: '新入生歓迎会', text: '新入生歓迎会！先輩たちが基礎のコツを教えてくれた。' },
+      { turn: 1, shortTurn: 2, id: 'welcome', name: '新入生歓迎会', text: '新入生歓迎会！先輩たちが基礎のコツを教えてくれた。' },
       // 協会事務所（1年6月・必ず発生）。行く→SAITO会長に会う(metSaitoフラグ)＝以降 台湾合宿の誘いが発生し得る
-      { turn: 3, id: 'saito_office', name: 'ディアボロ協会事務所', speaker: '🏢 ディアボロ協会',
+      { turn: 3, shortTurn: 6, id: 'saito_office', name: 'ディアボロ協会事務所', speaker: '🏢 ディアボロ協会',
         text: 'ディアボロ協会の事務所に顔を出さないか、と声をかけられた。行ってみる？',
         choices: [
           { label: '行く', effects: { motivation: 10, flag: 'metSaito' },
@@ -259,25 +268,25 @@
           { label: '行かない', effects: {},
             result: '今回は事務所には行かなかった。（SAITO会長には会えなかった）' } ] },
       // 大会前の緊張（1年7月・初の公式大会OIDCの前月）
-      { turn: 4, id: 'nerves', name: '大会前の緊張', speaker: '💭 大会前',
+      { turn: 4, shortTurn: 4, id: 'nerves', name: '大会前の緊張', speaker: '💭 大会前',
         text: '初めての公式大会が近づいてきた。緊張で、少し眠れない夜が続く……',
         choices: [
           { label: '深呼吸して落ち着く', effects: { motivation: 8 }, result: '「大丈夫、練習してきた」肩の力がふっと抜けた。' },
           { label: '本番を想定して詰める', effects: { stat: { id: 'control', amount: 2 }, fatigue: 8 }, result: '通し練習を重ね、不安を自信に変えた。' } ] },
       // 後輩が入部（2年4月）
-      { turn: 13, id: 'junior', name: '後輩が入部', speaker: '🎋 新学期',
+      { turn: 13, shortTurn: 14, id: 'junior', name: '後輩が入部', speaker: '🎋 新学期',
         text: '2年生になり、後輩が入ってきた。慕われて、教える立場になった。',
         choices: [
           { label: '熱心に指導する', effects: { stat: { id: 'control', amount: 2 }, fatigue: 6 }, result: '教えるうちに、自分の基礎も見つめ直せた。' },
           { label: '背中で見せる', effects: { motivation: 10 }, result: '「あんな先輩になりたい」憧れの目が力になった。' } ] },
       // 進路の悩み（4年4月）
-      { turn: 37, id: 'career', name: '進路の悩み', speaker: '🎓 進路',
+      { turn: 37, shortTurn: 38, id: 'career', name: '進路の悩み', speaker: '🎓 進路',
         text: '4年生。周りは就活を始めた。ディアボロと将来、どう向き合う……？',
         choices: [
           { label: '競技に専念する', effects: { motivation: 12, study: -5 }, result: '「悔いの残らないように」腹をくくった。' },
           { label: '将来も見据える', effects: { study: 8, motivation: -3 }, result: '現実と向き合い、二足のわらじを選んだ。' } ] },
       // 夏合宿（2年6月・国内版の強化合宿）。台湾=新奇性に対し、こちらは難易度/操作を追い込む。疲労大・学業のツケ
-      { turn: 15, id: 'summer_camp', name: '夏合宿', speaker: '☀ 夏合宿',
+      { turn: 15, shortTurn: 16, id: 'summer_camp', name: '夏合宿', speaker: '☀ 夏合宿',
         text: '2年の夏。部の強化合宿の季節がやってきた。山ごもりで朝から晩まで技術を追い込むらしい。参加する？',
         choices: [
           { label: '参加する', effects: { stats: [{ id: 'difficulty', amount: 4 }, { id: 'control', amount: 4 }], motivation: 5, fatigue: 28, study: -6 },
@@ -374,7 +383,7 @@
             { label: '試験勉強も教わる', effects: { study: 8 },                                               result: 'ついでに レポートの書き方まで教わった。' } ] },
         // 台湾合宿: 一度きりの大きな決断イベント。行く=技術と刺激だが疲労大・学業のツケ / 行かない=堅実に学業
         // requires: 協会事務所イベントでSAITO会長に会っている(metSaito)場合のみ発生
-        { id: 'taiwan_camp', char: 'saito', speaker: 'SAITO会長', requires: 'metSaito',
+        { id: 'taiwan_camp', char: 'saito', speaker: 'SAITO会長', requires: 'metSaito', minTurn: 13,
           text: 'SAITO会長が「台湾に合宿に行かないか？」と誘ってくれた。海外の強豪と練習できる、めったにない機会だ。',
           choices: [
             { label: '行く', effects: { stats: [{ id: 'novelty', amount: 8 }, { id: 'control', amount: 3 }], motivation: 12, fatigue: 25, study: -12 },
@@ -407,7 +416,7 @@
             { label: '練習を優先する', effects: { stat: { id: 'control', amount: 2 }, motivation: 4 },
               result: '「真面目だねぇ」ジョージは笑って旅立っていった。地道な反復に集中できた。' } ] },
         // マレーシア国際大会（海外遠征の決断イベント）: 台湾合宿(新奇性)と役割を分け、舞台度胸＝演技構成/やる気に振る
-        { id: 'malaysia_trip', char: 'malaysia', speaker: '✈ マレーシア遠征',
+        { id: 'malaysia_trip', char: 'malaysia', speaker: '✈ マレーシア遠征', minTurn: 13,
           text: 'マレーシアの国際大会に招待が届いた。海外の舞台で腕試しできる、またとない機会だ。遠征する？',
           choices: [
             { label: '遠征する', effects: { stats: [{ id: 'composition', amount: 5 }, { id: 'novelty', amount: 3 }], motivation: 15, fatigue: 22, study: -10 },
@@ -472,8 +481,8 @@
         { id: 'hap_teach',  text: '後輩にディアボロの基礎を教えた。教えることで自分の理解も深まった。', effects: { stat: { id: 'control', amount: 2 }, motivation: 6 } },
         { id: 'hap_street', text: '地元のイベントで大道芸を披露！ 拍手喝采を浴びて自信がついた。', effects: { stat: { id: 'composition', amount: 2 }, motivation: 12 } },
         { id: 'hap_slump',  text: '原因不明のスランプ……どうにも調子が上がらない。', effects: { motivation: -10 } },
-        { id: 'hap_overseas', text: '海外トップ選手の新作動画に衝撃を受けた。新しい発想が湧いてきた。', effects: { stat: { id: 'novelty', amount: 3 }, motivation: 8 } },
-        { id: 'hap_malaysia', text: 'マレーシア合宿で、現地の歌を歌わされた。陽気なノリが構成のヒントになった。', effects: { stat: { id: 'composition', amount: 1 } } },
+        { id: 'hap_overseas', minTurn: 13, text: '海外トップ選手の新作動画に衝撃を受けた。新しい発想が湧いてきた。', effects: { stat: { id: 'novelty', amount: 3 }, motivation: 8 } },
+        { id: 'hap_malaysia', minTurn: 13, text: 'マレーシア合宿で、現地の歌を歌わされた。陽気なノリが構成のヒントになった。', effects: { stat: { id: 'composition', amount: 1 } } },
         { id: 'hap_gainen', text: 'コースケの概念モノマネを見ていたら、ふと新しい技を思いついた！', effects: { genreStat: { genre: 'v1d', id: 'novelty', amount: 3 } } },
         // 大谷はちみつ園（地元スポンサー）: 差し入れで体力回復＋やる気アップ
         { id: 'hap_honey', text: '地元の大谷はちみつ園がスポンサーについてくれた！ 差し入れのはちみつで、疲れが吹き飛んだ。', effects: { motivation: 10, fatigue: -8 } }

@@ -6,7 +6,6 @@
   const OLD_KEYS = ['diabolo-trainer-save-v1', 'diabolo-trainer-save-v2', 'diabolo-trainer-save-v3', 'diabolo-trainer-save-v4', 'diabolo-trainer-save-v5', 'diabolo-trainer-save-v6', 'diabolo-trainer-save-v7', 'diabolo-trainer-save-v8'];
   const ALUMNI_KEY = 'diabolo-trainer-alumni-v1';
   const SHORT_ALUMNI_KEY = 'diabolo-trainer-short-alumni-v1';
-  const ALUMNI_ACTIVE_MIN = 2;
   const ALUMNI_ACTIVE_MAX = 5;
   const ALUMNI_POOL_MAX = 50;
   const TECHNIQUE_BY_TYPE = {
@@ -45,7 +44,7 @@
       type: entry.type ? String(entry.type) : '万能型',
       techniqueId: entry.techniqueId,
       source: entry.source === 'graduate' ? 'graduate' : 'default',
-      rank: entry.rank || '',
+      rank: /^[SABCDE]$/.test(entry.rank || '') ? entry.rank : 'B',
       totalPoints: Math.max(0, Number(entry.totalPoints) || 0),
       abilityAvg: Math.max(0, Number(entry.abilityAvg) || 0),
       cardTitle: entry.cardTitle || '',
@@ -87,10 +86,15 @@
     requested.forEach(id => {
       if (known[id] && selectedIds.indexOf(id) < 0 && selectedIds.length < ALUMNI_ACTIVE_MAX) selectedIds.push(id);
     });
+    const required = Math.min(ALUMNI_ACTIVE_MAX, pool.length);
     pool.forEach(entry => {
-      if (selectedIds.length < ALUMNI_ACTIVE_MIN && selectedIds.indexOf(entry.id) < 0) selectedIds.push(entry.id);
+      if (selectedIds.length < required && selectedIds.indexOf(entry.id) < 0) selectedIds.push(entry.id);
     });
     return { version: 1, pool: pool, selectedIds: selectedIds };
+  }
+
+  function requiredAlumniCount(profile) {
+    return Math.min(ALUMNI_ACTIVE_MAX, profile && Array.isArray(profile.pool) ? profile.pool.length : 0);
   }
 
   function loadAlumniProfile(storage, gameMode) {
@@ -123,10 +127,13 @@
     (Array.isArray(ids) ? ids : []).forEach(id => {
       if (known[id] && selectedIds.indexOf(id) < 0) selectedIds.push(id);
     });
-    if (selectedIds.length < ALUMNI_ACTIVE_MIN || selectedIds.length > ALUMNI_ACTIVE_MAX) {
+    const required = requiredAlumniCount(profile);
+    if (selectedIds.length !== required) {
       return {
         ok: false,
-        reason: '卒業生は' + ALUMNI_ACTIVE_MIN + '〜' + ALUMNI_ACTIVE_MAX + '人選んでください。',
+        reason: profile.pool.length < ALUMNI_ACTIVE_MAX
+          ? '現在保存されている卒業生' + required + '人を全員選んでください。'
+          : '次周回に登場する卒業生を5人選んでください。',
         profile: profile
       };
     }
@@ -334,6 +341,7 @@
     loadRecords, addRecord, RECORDS_KEY, SHORT_RECORDS_KEY,
     loadCollection, addToCollection, COLLECTION_KEY, SHORT_COLLECTION_KEY,
     loadAlumniProfile, loadActiveAlumni, saveAlumniSelection, addGraduateAlumni,
-    ALUMNI_KEY, SHORT_ALUMNI_KEY, ALUMNI_ACTIVE_MIN, ALUMNI_ACTIVE_MAX, ALUMNI_POOL_MAX
+    requiredAlumniCount,
+    ALUMNI_KEY, SHORT_ALUMNI_KEY, ALUMNI_ACTIVE_MAX, ALUMNI_POOL_MAX
   };
 })(typeof window !== 'undefined' ? window : globalThis);

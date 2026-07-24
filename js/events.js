@@ -8,12 +8,19 @@
     return state.seenCharEvents;
   }
 
+  function eventEligible(state, event) {
+    if (!event) return false;
+    if (event.minTurn !== undefined && state.turn < event.minTurn) return false;
+    if (event.requires && !state[event.requires]) return false;
+    return true;
+  }
+
   function pickCharEvent(state, rng) {
     const seen = new Set(seenCharEvents(state));
     const list = DT.DATA.EVENTS.charEvents;
     const event = list[Math.floor(rng() * list.length)];
-    // 発生条件フラグ(requires)を満たしていない場合は発生させない（例: taiwan_campはmetSaito必須）
-    if (event.requires && !state[event.requires]) return null;
+    // 発生条件を満たしていない場合は空振り（通常版でイベントごとの絶対発生率を変えない）。
+    if (!eventEligible(state, event)) return null;
     return seen.has(event.id) ? null : event;
   }
 
@@ -28,7 +35,8 @@
       return event ? { kind: 'char', event: event } : null;
     }
     if (r < happeningP) {
-      const list = DT.DATA.EVENTS.happenings;
+      const list = DT.DATA.EVENTS.happenings.filter(event => eventEligible(state, event));
+      if (!list.length) return null;
       return { kind: 'happening', event: list[Math.floor(rng() * list.length)] };
     }
     return null;
@@ -39,16 +47,16 @@
     rng = rng || Math.random;
     const seen = new Set(seenCharEvents(state));
     const charEvents = DT.DATA.EVENTS.charEvents.filter(event =>
-      !seen.has(event.id) && (!event.requires || state[event.requires])
+      !seen.has(event.id) && eventEligible(state, event)
     );
-    const happenings = DT.DATA.EVENTS.happenings;
+    const happenings = DT.DATA.EVENTS.happenings.filter(event => eventEligible(state, event));
     const quietEvents = DT.DATA.EVENTS.quietEvents;
     const probs = DT.DATA.EVENTS.probs;
     const roll = rng();
     if (charEvents.length && roll < probs.char) {
       return { kind: 'char', event: charEvents[pickIndex(charEvents.length, rng)] };
     }
-    if (roll >= probs.char && roll < probs.char + probs.happening) {
+    if (happenings.length && roll >= probs.char && roll < probs.char + probs.happening) {
       return { kind: 'happening', event: happenings[pickIndex(happenings.length, rng)] };
     }
     return { kind: 'quiet', event: quietEvents[pickIndex(quietEvents.length, rng)] };
@@ -157,6 +165,25 @@
     return Math.min(length - 1, Math.floor((rng || Math.random)() * length));
   }
 
+  function alumniRankBonus(alumni) {
+    const conf = DT.DATA.ALUMNI_EVENT;
+    const rank = alumni && /^[SABCDE]$/.test(alumni.rank || '') ? alumni.rank : 'B';
+    const bonus = (conf.rankBonuses && conf.rankBonuses[rank]) || { chance: 0, motivation: 0 };
+    return { rank: rank, chance: bonus.chance || 0, motivation: bonus.motivation || 0 };
+  }
+
+  function alumniSuccessChance(baseChance, alumni) {
+    return Math.min(1, baseChance + alumniRankBonus(alumni).chance);
+  }
+
+  function applyAlumniInspiration(state, alumni, messages) {
+    const bonus = alumniRankBonus(alumni);
+    const before = state.motivation;
+    state.motivation = clamp(state.motivation + bonus.motivation, 0, 100);
+    const actual = state.motivation - before;
+    if (actual > 0) messages.push('卒業ランク' + bonus.rank + 'の言葉に背中を押された。やる気 +' + actual);
+  }
+
   // 3年次・4年次に各1回の発生月と、同一周回で重複しない先輩2名を最初の対象月に確定する。
   function ensureAlumniState(state, rng) {
     if (!Array.isArray(state.activeAlumni) || state.activeAlumni.length === 0) {
@@ -167,8 +194,12 @@
     if (state.alumniScheduleReady && Array.isArray(state.alumniSchedule)) return state.alumniSchedule;
     rng = rng || Math.random;
     const conf = DT.DATA.ALUMNI_EVENT;
-    const thirdTurns = conf.thirdYearTurns.filter(turn => turn >= state.turn);
-    const fourthTurns = conf.fourthYearTurns.filter(turn => turn >= state.turn);
+    const freeEventTurn = turn => {
+      const probe = Object.assign({}, state, { turn: turn, gameMode: 'short' });
+      return !isOmikujiTurn(turn) && !scheduledEventFor(probe);
+    };
+    const thirdTurns = conf.thirdYearTurns.filter(turn => turn >= state.turn && freeEventTurn(turn));
+    const fourthTurns = conf.fourthYearTurns.filter(turn => turn >= state.turn && freeEventTurn(turn));
     const roster = state.activeAlumni;
     const first = roster[pickIndex(roster.length, rng)];
     const remaining = roster.filter(a => a.id !== first.id);
@@ -188,16 +219,22 @@
     if (!item || state.alumniEventsSeen.indexOf(state.turn) >= 0) return null;
     const alumni = state.activeAlumni.find(a => a.id === item.alumniId);
     if (!alumni) return null;
+    const rankBonus = alumniRankBonus(alumni);
+    const teachChance = alumniSuccessChance(DT.DATA.ALUMNI_EVENT.teachChance, alumni);
+    const methodChance = alumniSuccessChance(DT.DATA.ALUMNI_EVENT.methodChance, alumni);
     return {
       id: 'alumni_' + state.turn,
       kind: 'alumni',
       alumni: alumni,
+      rankBonus: rankBonus,
+      teachChance: teachChance,
+      methodChance: methodChance,
       speaker: alumni.name + '先輩',
       text: '卒業した' + alumni.name + '先輩が、久しぶりに部の練習へ顔を出してくれた。何を教わろう？',
       choices: [
-        { type: 'teach', label: '得意技「' + techniqueLabel(alumni.techniqueId) + '」を教わる（成功率80%）' },
+        { type: 'teach', label: '得意技「' + techniqueLabel(alumni.techniqueId) + '」を教わる（成功率' + Math.round(teachChance * 100) + '%）' },
         { type: 'sayings', label: '大会語録を聞く（必ず成功）' },
-        { type: 'method', label: '練習の仕方を教わる（成功率90%）' }
+        { type: 'method', label: '練習の仕方を教わる（成功率' + Math.round(methodChance * 100) + '%）' }
       ]
     };
   }
@@ -212,11 +249,13 @@
     const choice = event.choices[choiceIndex];
     const alumni = event.alumni;
     const messages = [];
+    let succeeded = false;
     if (choice.type === 'teach') {
-      if (rng() < DT.DATA.ALUMNI_EVENT.teachChance) {
+      if (rng() < (event.teachChance === undefined ? alumniSuccessChance(DT.DATA.ALUMNI_EVENT.teachChance, alumni) : event.teachChance)) {
         messages.push(alumni.name + '先輩の手本をつかみ、得意技を受け継いだ！');
         messages.push(...activateTechnique(state, alumni.techniqueId).messages);
         messages.push(applyStatChange(state, 'difficulty', 1));
+        succeeded = true;
       } else {
         state.motivation = clamp(state.motivation + DT.DATA.ALUMNI_EVENT.teachFailMotivation, 0, 100);
         messages.push('動きの核心をつかめなかった……。今回は身につかなかった。');
@@ -225,15 +264,18 @@
     } else if (choice.type === 'sayings') {
       messages.push('「大会では、成功させる技より崩れても戻れる技を持て」先輩の言葉が残った。');
       messages.push(applyStatChange(state, 'control', 1));
-    } else if (rng() < DT.DATA.ALUMNI_EVENT.methodChance) {
+      succeeded = true;
+    } else if (rng() < (event.methodChance === undefined ? alumniSuccessChance(DT.DATA.ALUMNI_EVENT.methodChance, alumni) : event.methodChance)) {
       messages.push('練習の組み立て方が腑に落ち、新しい発想を演技へつなげられた！');
       messages.push(applyStatChange(state, 'novelty', 1));
       messages.push(applyStatChange(state, 'composition', 1));
+      succeeded = true;
     } else {
       state.motivation = clamp(state.motivation + DT.DATA.ALUMNI_EVENT.methodFailMotivation, 0, 100);
       messages.push('教わった通りに試したが、今の自分にはうまく噛み合わなかった。');
       messages.push('やる気 ' + signed(DT.DATA.ALUMNI_EVENT.methodFailMotivation));
     }
+    if (succeeded) applyAlumniInspiration(state, alumni, messages);
     markAlumniEventSeen(state);
     return { messages: messages };
   }
@@ -357,9 +399,10 @@
     return { messages };
   }
 
-  // 定期イベント（固定・非ランダム）: 現在のturnに一致する定義を返す。無ければnull。
+  // 定期イベント（固定・非ランダム）: ショート版では練習月を避けたshortTurnを使う。
   function scheduledEventFor(state) {
-    return DT.DATA.SCHEDULED_EVENTS.find(e => e.turn === state.turn) || null;
+    const key = state && state.gameMode === 'short' ? 'shortTurn' : 'turn';
+    return DT.DATA.SCHEDULED_EVENTS.find(e => e[key] === state.turn) || null;
   }
 
   // 初詣おみくじ（毎年1月・全モード共通）: 今月がおみくじ月か
@@ -381,6 +424,20 @@
     if (fortune.id === 'daikyo') state.daikyoDrawn = true; // カード「大凶返し」判定用
     const messages = ['⛩ おみくじ: ' + fortune.label + '　' + fortune.text].concat(applyEffects(state, fortune.effects));
     return { fortune, messages };
+  }
+
+  // ショート版の奇数月に表示するイベントを1件だけ選ぶ。
+  // 固定イベント＞卒業生＞初詣＞状態イベント＞通常イベントの優先順で、後続イベントは同月に重ねない。
+  function shortEventFor(state, rng) {
+    if (!state || state.gameMode !== 'short' || !DT.shortMode || !DT.shortMode.isEventMonth(state.turn)) return null;
+    const scheduled = scheduledEventFor(state);
+    if (scheduled) return { kind: 'scheduled', event: scheduled };
+    const alumni = alumniEventFor(state, rng);
+    if (alumni) return { kind: 'alumni', event: alumni };
+    if (isOmikujiTurn(state.turn)) return { kind: 'omikuji', event: null };
+    const conditional = conditionalEventFor(state);
+    if (conditional) return { kind: 'conditional', event: conditional };
+    return rollGuaranteed(state, rng);
   }
 
   // 定期イベントの効果を適用しメッセージを返す。
@@ -407,6 +464,7 @@
     roll, rollGuaranteed, applyChoice, applyHappening, scheduledEventFor, applyScheduled,
     conditionalEventFor, applyConditional, startAwakening, awakenSlotUsed, awakenConf,
     isOmikujiTurn, drawOmikuji, techniqueCard, techniqueLabel, activateTechnique,
-    applyTechniqueTrainingBonus, ensureAlumniState, alumniEventFor, applyAlumniChoice
+    applyTechniqueTrainingBonus, ensureAlumniState, alumniEventFor, applyAlumniChoice,
+    alumniRankBonus, alumniSuccessChance, eventEligible, shortEventFor
   };
 })(typeof window !== 'undefined' ? window : globalThis);

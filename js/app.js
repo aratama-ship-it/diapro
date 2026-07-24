@@ -8,7 +8,7 @@
 
   // 開発用表示（DEV PARAMSパネル・大会の不振理由）は URLに ?dev を付けたときだけ表示。
   // テスターには見えないようにするための切り替え。バージョンはタイトル画面に表示。
-  const APP_VERSION = 'v0.9 short-test5';
+  const APP_VERSION = 'v0.9 short-test9';
   const DEV = QUERY_PARAMS.has('dev');
   if (DEV) document.documentElement.classList.add('dev');
   if (SHORT) document.documentElement.classList.add('short-mode');
@@ -281,7 +281,6 @@
       ? 'ショート版は1ターンで2ヶ月進み、全24ターン。偶数月に練習・勉強・休養を選び、奇数月はイベントが進みます。練習の能力上昇と勉強の学力上昇は通常版の2倍。大会・試験は本来の月に行われます。通常版とはセーブも別です。'
       : '大学4年間でディアボロ選手を育てるゲームです。毎月、練習・勉強・休養を選びます。練習はジャンルと内容を組み合わせて3枠決めます。疲労がたまると失敗や怪我のリスクが上がるので注意。大会の成績と通算ポイントで、卒業時の評価が決まります。';
     $('#btn-mode-switch').textContent = SHORT ? '通常版（48ターン）へ戻る' : '⚡ ショート版（24ターン）';
-    $('#btn-alumni').classList.toggle('hidden', !SHORT);
     $('#app-version').textContent = APP_VERSION + (SHORT ? '（ショート版）' : '') + (DEV ? '（DEV表示ON）' : '');
     show('#screen-title');
   }
@@ -321,6 +320,7 @@
   function renderCreate(c) {
     candidate = c;
     renderBackgroundButtons();
+    renderCreateAlumniButton();
     $('#create-stats').replaceChildren(
       el('div', 'section-label', '能力値'),
       skillTable(c.skills),
@@ -331,7 +331,20 @@
     show('#screen-create');
   }
 
+  function renderCreateAlumniButton() {
+    const button = $('#btn-alumni');
+    button.classList.toggle('hidden', !SHORT);
+    if (!SHORT) return;
+    const profile = DT.state.loadAlumniProfile(undefined, GAME_MODE);
+    const required = DT.state.requiredAlumniCount(profile);
+    button.textContent = '🌸 登場する卒業生を設定（' + profile.selectedIds.length + ' / ' + required + '人）';
+  }
+
   $('#btn-reroll').onclick = () => renderCreate(newCandidate());
+  $('#btn-create-back').onclick = () => {
+    candidate = null;
+    initTitle();
+  };
   $('#btn-start').onclick = () => {
     state = candidate;
     state.name = ($('#create-name').value || '').trim() || '主人公';
@@ -512,7 +525,7 @@
   }
   function closeRecords() { $('#records-modal').classList.add('hidden'); }
 
-  // 卒業生名簿（ショート版）: 保存済みの卒業生から、次周回に登場する2〜5人を選ぶ。
+  // 卒業生名簿（ショート版）: 5人未満は全員、5人以上は次周回に登場する5人を選ぶ。
   function openAlumniRoster() {
     if (!SHORT) return;
     alumniDraftProfile = DT.state.loadAlumniProfile(undefined, GAME_MODE);
@@ -541,12 +554,13 @@
   }
   function renderAlumniRoster(message) {
     if (!alumniDraftProfile) return;
-    const min = DT.state.ALUMNI_ACTIVE_MIN;
-    const max = DT.state.ALUMNI_ACTIVE_MAX;
+    const required = DT.state.requiredAlumniCount(alumniDraftProfile);
     const count = alumniDraftIds.length;
     const poolMax = DT.state.ALUMNI_POOL_MAX;
     $('#alumni-sub').textContent = message || (
-      '登場メンバー ' + count + ' / ' + max + '人　・　保存 ' + alumniDraftProfile.pool.length + ' / ' + poolMax + '人'
+      '登場メンバー ' + count + ' / ' + required + '人'
+      + (alumniDraftProfile.pool.length >= DT.state.ALUMNI_ACTIVE_MAX ? '（5人必須）' : '（全員）')
+      + '　・　保存 ' + alumniDraftProfile.pool.length + ' / ' + poolMax + '人'
     );
     $('#alumni-sub').classList.toggle('cond-warn', !!message);
     const query = alumniSearchQuery.trim().toLowerCase();
@@ -554,6 +568,7 @@
       if (!query) return true;
       return [
         entry.name,
+        entry.rank,
         entry.type,
         alumniTechniqueLabel(entry.techniqueId),
         entry.cardTitle
@@ -571,11 +586,10 @@
       name.appendChild(el('span', 'alumni-origin ' + entry.source,
         entry.source === 'graduate' ? '育成' : '初期'));
       meta.appendChild(name);
-      const detail = entry.type + '／得意技「' + alumniTechniqueLabel(entry.techniqueId) + '」';
+      const detail = '卒業ランク' + entry.rank + '／' + entry.type + '／得意技「' + alumniTechniqueLabel(entry.techniqueId) + '」';
       meta.appendChild(el('span', 'alumni-roster-detail', detail));
       if (entry.source === 'graduate') {
         const achievement = [];
-        if (entry.rank) achievement.push('ランク' + entry.rank);
         if (entry.cardTitle) achievement.push('「' + entry.cardTitle + '」');
         if (entry.totalPoints) achievement.push(entry.totalPoints + 'pt');
         if (achievement.length) meta.appendChild(el('span', 'alumni-roster-achievement', achievement.join('・')));
@@ -584,14 +598,18 @@
       row.onclick = () => {
         const at = alumniDraftIds.indexOf(entry.id);
         if (at >= 0) {
-          if (alumniDraftIds.length <= min) {
-            renderAlumniRoster('3年・4年で別の先輩を出すため、最低' + min + '人必要です。');
+          if (alumniDraftProfile.pool.length <= required) {
+            renderAlumniRoster('卒業生が5人未満の間は、保存されている全員を登場メンバーにします。');
+            return;
+          }
+          if (alumniDraftIds.length <= required - 1) {
+            renderAlumniRoster('入れ替える先輩を1人選んで、登場メンバーを5人に戻してください。');
             return;
           }
           alumniDraftIds.splice(at, 1);
         } else {
-          if (alumniDraftIds.length >= max) {
-            renderAlumniRoster('選べるのは最大' + max + '人です。先に誰かを外してください。');
+          if (alumniDraftIds.length >= required) {
+            renderAlumniRoster('登場メンバーは5人です。先に入れ替える先輩を1人外してください。');
             return;
           }
           alumniDraftIds.push(entry.id);
@@ -602,13 +620,19 @@
     });
     if (!rows.length) rows.push(el('div', 'dev-note', '条件に合う卒業生はいません。'));
     $('#alumni-list').replaceChildren(...rows);
-    $('#btn-alumni-save').disabled = count < min || count > max;
+    $('#btn-alumni-save').disabled = count !== required;
   }
   function saveAlumniRoster() {
     const result = DT.state.saveAlumniSelection(alumniDraftIds, undefined, GAME_MODE);
     if (!result.ok) {
       renderAlumniRoster(result.reason);
       return;
+    }
+    // スカウト中だけ、保存した登場メンバーを今回の候補へ即時反映する。
+    // 育成開始後に名簿を見た場合は、進行中のactiveAlumniを変更しない。
+    if (SHORT && candidate && !$('#screen-create').classList.contains('hidden')) {
+      candidate.activeAlumni = DT.state.loadActiveAlumni(undefined, GAME_MODE);
+      renderCreateAlumniButton();
     }
     closeAlumniRoster();
   }
@@ -998,8 +1022,8 @@
 
   // --- ターン実行フロー ---
   // 1ターンの流れ: startTurn → ①練習前スロット(runPreSlot) → ②行動実行(runActionPhase: 練習は怪我・SNS込み)
-  //                → ③練習後スロット(runPostSlot: 大会・固定イベント) → finishTurn
-  //   イベント枠は「練習前=状態/ランダム」「練習後=固定/大会」。怪我・SNSは練習の一部（枠外）。
+  //                → ③練習後スロット(runPostSlot: 大会・通常版の固定イベント) → finishTurn
+  //   ショート版は奇数月のイベントをrunPreSlotの1枠へ統合。大会は別枠、怪我・SNSは練習の一部（枠外）。
   const pushMsgs = arr => arr.forEach(m => pendingMessages.push(m));
 
   function startTurn(actionId, slots) {
@@ -1011,25 +1035,46 @@
     runPreSlot();
   }
 
-  // ① 練習前スロット: 1月=初詣おみくじ（固定・全モード）＞状態イベント（過労/覚醒/励まし）＞ランダム。最大1件。
+  function renderConditionalPreEvent(cond) {
+    if (cond.choices) { renderEvent(cond, afterPreSlot); return; }
+    // 選択肢なしの状態イベント（過労で倒れる）。倒れた場合は当ターンの行動をキャンセル（強制休養）
+    const cr = DT.events.applyConditional(state, cond);
+    pushMsgs(cr.messages);
+    if (cond.id === 'collapse') pendingSkipAction = true;
+    showEventNotice(cond.speaker || '💫 できごと', cond.text, cr.messages.slice(1), afterPreSlot);
+  }
+
+  // ① 練習前スロット: ショート版は奇数月に1件だけ。通常版は従来どおり最大1件。
   function runPreSlot() {
-    // ショート版の卒業生イベントは通常イベント1件を置き換える。同月の大会はafterPreSlot→runPostSlotで別に処理する。
-    if (SHORT && DT.shortMode.isEventMonth(state.turn)) {
-      const alumniEvent = DT.events.alumniEventFor(state);
-      if (alumniEvent) { renderAlumniEvent(alumniEvent, afterPreSlot); return; }
+    if (SHORT) {
+      // 早期引退の選択も3年生5月のイベント1枠として扱い、3年生4月には出さない。
+      if (state.turn === 26 && !state.retireOfferSeen) {
+        renderRetireOffer(pendingMessages, afterPreSlot);
+        return;
+      }
+      const slot = DT.events.shortEventFor(state);
+      if (!slot) { afterPreSlot(); return; }
+      if (slot.kind === 'scheduled') {
+        const sched = slot.event;
+        if (sched.choices) { renderEvent(sched, afterPreSlot); return; }
+        const sr = DT.events.applyScheduled(state, sched);
+        pushMsgs(sr.messages);
+        showEventNotice(sched.speaker || '📅 ' + sched.name, sr.messages[0] || sched.text, [], afterPreSlot);
+        return;
+      }
+      if (slot.kind === 'alumni') { renderAlumniEvent(slot.event, afterPreSlot); return; }
+      if (slot.kind === 'omikuji') { renderOmikuji(); return; }
+      if (slot.kind === 'conditional') { renderConditionalPreEvent(slot.event); return; }
+      if (slot.kind === 'char') { renderEvent(slot.event, afterPreSlot); return; }
+      const h = DT.events.applyHappening(state, slot.event);
+      pushMsgs(h.messages);
+      showEventNotice('📓 今月のできごと', slot.event.text, h.messages.slice(1), afterPreSlot);
+      return;
     }
     if (DT.events.isOmikujiTurn(state.turn)) { renderOmikuji(); return; }
     const cond = DT.events.conditionalEventFor(state);
-    if (cond) {
-      if (cond.choices) { renderEvent(cond, afterPreSlot); return; } // 覚醒のきざし・連敗の励まし等
-      // 選択肢なしの状態イベント（過労で倒れる）。倒れた場合は当ターンの行動をキャンセル（強制休養）
-      const cr = DT.events.applyConditional(state, cond);
-      pushMsgs(cr.messages);
-      if (cond.id === 'collapse') pendingSkipAction = true;
-      showEventNotice(cond.speaker || '💫 できごと', cond.text, cr.messages.slice(1), afterPreSlot);
-      return;
-    }
-    const ev = SHORT ? DT.events.rollGuaranteed(state) : DT.events.roll(state);
+    if (cond) { renderConditionalPreEvent(cond); return; }
+    const ev = DT.events.roll(state);
     if (ev && ev.kind === 'char') { renderEvent(ev.event, afterPreSlot); return; }
     if (ev) { // ハプニング
       const h = DT.events.applyHappening(state, ev.event);
@@ -1127,7 +1172,8 @@
       finishTurn(pendingMessages, results);
       return;
     }
-    const sched = DT.events.scheduledEventFor(state);
+    // ショート版の固定イベントはrunPreSlotで奇数月の1枠として処理済み。
+    const sched = SHORT ? null : DT.events.scheduledEventFor(state);
     if (sched) {
       // 選択肢つきの固定イベント（大会前の緊張・後輩入部・進路の悩み等）はイベント画面へ
       if (sched.choices) {
@@ -1143,7 +1189,7 @@
     finishTurn(pendingMessages, null);
   }
 
-  // 台湾合宿「行く」で低確率発生するコミカル分岐（トイレ事件→やる気-20だが覚醒）
+  // 台湾合宿「行く」で低確率発生するコミカルな追加結果（別イベント画面にはしない）。
   const TAIWAN_TOILET_CHANCE = 0.5;
 
   // イベント(選択肢あり)を表示。解決後にonDone()を呼ぶ（練習前スロット→行動 / 練習後スロット→ターン終了 を継続）。
@@ -1158,14 +1204,20 @@
         // 覚醒のきざし: 通常のapplyChoice(既読管理)を通さず専用処理（50%成功／失敗でやる気-10）
         if (event.awakenTrigger) { handleAwakenChoice(event, i, onDone); return; }
         const r = DT.events.applyChoice(state, event, i);
-        // 合宿に「行く」(i===0)を選んだら一定確率でトイレ事件に突入（そのページで結果を見せる）
+        const messages = r.messages.slice();
+        // 台湾合宿の珍事件は、同月に2件目のイベントを出さず「台湾合宿」の結果へ統合する。
         if (event.id === 'taiwan_camp' && i === 0 && Math.random() < TAIWAN_TOILET_CHANCE) {
-          showTaiwanToilet(extra => { pushMsgs(r.messages); pushMsgs(extra); onDone(); });
-          return;
+          const extra = DT.events.applyConditional(state, {
+            id: 'taiwan_toilet',
+            text: '宿舎のトイレが詰まる珍事件も起きた。言葉が通じない焦りの中で走り回り、極限の集中から難しい技への感覚が研ぎ澄まされた。',
+            effects: { motivation: -20, stat: { id: 'difficulty', amount: 4 } }
+          });
+          messages[0] += ' ' + extra.messages[0];
+          messages.push(...extra.messages.slice(1));
         }
         // 選択の結果（結果文＋効果）を専用ページで表示してから続行（ログだけにしない）
         const header = event.speaker || (chara ? chara.name : '結果');
-        showEventNotice(header, r.messages[0], r.messages.slice(1), () => { pushMsgs(r.messages); onDone(); });
+        showEventNotice(header, messages[0], messages.slice(1), () => { pushMsgs(messages); onDone(); });
       };
       return b;
     });
@@ -1176,9 +1228,12 @@
   function renderAlumniEvent(event, onDone) {
     $('#event-char').textContent = event.speaker;
     const technique = DT.events.techniqueLabel(event.alumni.techniqueId);
+    const rank = event.rankBonus || DT.events.alumniRankBonus(event.alumni);
     $('#event-text').replaceChildren(
       el('p', '', event.text),
-      el('div', 'notice-effect', event.alumni.type + '／得意技「' + technique + '」')
+      el('div', 'notice-effect', '卒業ランク' + rank.rank + '／' + event.alumni.type + '／得意技「' + technique + '」'),
+      el('div', 'notice-effect alumni-rank-effect',
+        'ランク補正：成功率 +' + Math.round(rank.chance * 100) + '%／成功時 やる気 +' + rank.motivation)
     );
     const buttons = event.choices.map((choice, i) => {
       const b = el('button', i === 0 ? 'primary' : '', choice.label);
@@ -1217,25 +1272,6 @@
       const effectLines = d ? ['やる気 ' + d] : [];
       showEventNotice('✨ 覚醒のきざし', choice.result, effectLines, () => { if (d) pendingMessages.push('やる気 ' + d); onDone(); });
     }
-  }
-
-  // 台湾合宿・トイレ事件: やる気-20だが「覚醒モード」で難易度+4・操作安定度+3（合宿ベースの新奇性+8と重複しない軸で表現）
-  function showTaiwanToilet(onDone) {
-    $('#event-char').textContent = '🚽 台湾合宿・珍事件';
-    $('#event-text').replaceChildren(el('p', '',
-      '合宿中、宿舎のトイレが詰まってしまった……！ 言葉も通じない中、助けを求めて必死に走り回る。極限の焦りが、なぜか集中を研ぎ澄ませ——覚醒モードに入った！'));
-    const b = el('button', 'primary', '覚醒する');
-    b.onclick = () => {
-      // 覚醒＝難しい技が急にできる（難易度+4のみ）。ベースの合宿(新奇性+8/操作+3)と役割を分け重複させない
-      const ev = { id: 'taiwan_toilet',
-        text: 'パニックの果てに何かが弾けた。難しい技も体が勝手に動く……覚醒だ！（やる気は落ちたが……）',
-        effects: { motivation: -20, stat: { id: 'difficulty', amount: 4 } } };
-      const r = DT.events.applyConditional(state, ev);
-      // 「覚醒！」エフェクト→結果ページ→続行
-      showAwakenSplash(() => showEventNotice('✨ 覚醒', r.messages[0], r.messages.slice(1), () => onDone(r.messages)));
-    };
-    $('#event-choices').replaceChildren(b);
-    show('#screen-event');
   }
 
   // 全画面エフェクトを一度ドンと表示（タップ or 約1.4秒で続行）。variant='' 覚醒(金) / 'injury' 怪我(赤)
@@ -1301,9 +1337,12 @@
         const nums = (r.entrants ? '位/' + r.entrants + '人' : '位') + '（' + r.score + '点' + pts + '）';
         histMsgs.push('🏆 ' + r.name + '　' + r.divisionLabel + '　' + r.rank + nums);
       });
-      // 人気者イベント（確定発火）。効果適用＋ログ記録し、大会結果の後に専用ページで表示
+      // 人気者イベント（確定発火）。ショート版は同月2件目にせず、効果とログだけ大会結果へ統合する。
       pendingPopularity = evaluatePopularity(state, contestResults);
-      if (pendingPopularity) histMsgs.push('🌟 人気者になった！', ...pendingPopularity.effectLines);
+      if (pendingPopularity) {
+        histMsgs.push('🌟 人気者になった！', ...pendingPopularity.effectLines);
+        if (SHORT) logs.push('🌟 人気者になった！', ...pendingPopularity.effectLines);
+      }
     }
     if (histMsgs.length) {
       state.logHistory = state.logHistory || [];
@@ -1333,8 +1372,8 @@
       runPreSlot();
       return;
     }
-    // 改善プラン#4: 2年AJDC(24ターン)を終えた25ターン目(3年生4月)の頭に一度だけ、早期引退の選択を出す
-    if (state.turn === 25 && !state.retireOfferSeen) { renderRetireOffer(logs); return; }
+    // 通常版は従来どおり3年生4月、ショート版は次の奇数月（5月）のイベント枠で提示する。
+    if (!SHORT && state.turn === 25 && !state.retireOfferSeen) { renderRetireOffer(logs); return; }
     renderHomeWithPopups(logs);
   }
 
@@ -1354,7 +1393,7 @@
   // ---- 早期引退（改善プラン#4）: 2年AJDC後に「競技を続ける／区切りをつける」を選ぶ ----
   // 引退するとstatus='retired'（退学とは別扱い）で即エンディング＝現時点の実績でカード化。
   // E/Dランクのカード回収が「わざと弱く4年遊ぶ」苦行にならないための自然な導線。
-  function renderRetireOffer(logs) {
+  function renderRetireOffer(logs, onContinue) {
     const e = DT.ending.evaluate(state);
     const top = DT.cards.pickCandidates(Object.assign({}, state, { status: 'retired' }))[0];
     $('#event-char').textContent = '🌸 3年生の春';
@@ -1370,15 +1409,16 @@
     cont.onclick = () => {
       state.retireOfferSeen = true;
       DT.state.save(state); // リロードで再提案しない
-      renderHomeWithPopups(logs);
+      if (onContinue) onContinue();
+      else renderHomeWithPopups(logs);
     };
     const retire = el('button', '', '🌅 ここで競技生活に区切りをつける');
-    retire.onclick = () => renderRetireConfirm(logs);
+    retire.onclick = () => renderRetireConfirm(logs, onContinue);
     $('#event-choices').replaceChildren(cont, retire);
     show('#screen-event');
   }
 
-  function renderRetireConfirm(logs) {
+  function renderRetireConfirm(logs, onContinue) {
     $('#event-char').textContent = '🌅 本当に区切りをつける？';
     $('#event-text').replaceChildren(
       el('p', '', '引退すると3〜4年生はプレイせず、いまの実績でエンディングになる。この決断は取り消せない。')
@@ -1391,7 +1431,7 @@
       renderEnding();
     };
     const no = el('button', 'primary', 'やっぱり続ける');
-    no.onclick = () => renderRetireOffer(logs);
+    no.onclick = () => renderRetireOffer(logs, onContinue);
     $('#event-choices').replaceChildren(no, yes);
     show('#screen-event');
   }
@@ -1674,11 +1714,12 @@
       renderRevealStage();
     } else {
       contestReveal = null;
-      // 人気者イベントが成立していれば、大会結果の後に専用ページを挟む
-      if (pendingPopularity) {
+      // 通常版だけ専用ページを挟む。ショート版は奇数月1件制限のため大会ログへ統合済み。
+      if (pendingPopularity && !SHORT) {
         const p = pendingPopularity; pendingPopularity = null;
         showEventNotice('🌟 人気者！', p.text, p.effectLines, () => afterTurn(pendingLogs));
       } else {
+        pendingPopularity = null;
         afterTurn(pendingLogs);
       }
     }
@@ -2201,6 +2242,19 @@
   // ---- カード図鑑（Phase3）: 解禁済みコレクションの一覧・鑑賞・画像保存 ----
   const rankKeyOf = snap => (snap.expelled ? 'X' : snap.rank);
 
+  function zukanTileArt(entry, got) {
+    const art = el('span', 'zt-art' + (got ? '' : ' is-locked'));
+    if (got) {
+      // 旧コレクションのsnapにidが無い場合も、図鑑側のカードIDから採用イラストを引けるよう補完する。
+      fillCardArt(art, Object.assign({}, got.snap, { id: entry.id }));
+    } else {
+      // 未解禁カードは個別イラストを伏せ、共通ディアボロをシルエット表示する。
+      fillCardArt(art, { id: '', type: 'allround' });
+      art.appendChild(el('span', 'zt-lockmark', '？'));
+    }
+    return art;
+  }
+
   function openZukan() {
     const col = DT.state.loadCollection(undefined, GAME_MODE);
     const catalog = DT.cards.catalog();
@@ -2218,14 +2272,17 @@
       catalog.filter(c => c.layer === l.key).forEach(c => {
         const got = col[c.id];
         const tile = el('button', 'zukan-tile' + (got ? ' owned zrank-' + rankKeyOf(got.snap) : ' locked'));
+        tile.dataset.cardId = c.id;
+        tile.appendChild(zukanTileArt(c, got));
+        const copy = el('span', 'zt-copy');
         if (got) {
-          tile.appendChild(el('span', 'zt-title', c.title));
-          tile.appendChild(el('span', 'zt-sub', (got.snap.expelled ? '×' : got.snap.rank) + ' / No.' + String(got.cardNo).padStart(3, '0')));
+          copy.appendChild(el('span', 'zt-title', c.title));
+          copy.appendChild(el('span', 'zt-sub', (got.snap.expelled ? '×' : got.snap.rank) + ' / No.' + String(got.cardNo).padStart(3, '0')));
           tile.onclick = () => openZukanDetail(got);
         } else {
-          tile.appendChild(el('span', 'zt-q', '？'));
-          tile.appendChild(el('span', 'zt-title', '？？？'));
+          copy.appendChild(el('span', 'zt-title', '？？？'));
         }
+        tile.appendChild(copy);
         grid.appendChild(tile);
       });
       nodes.push(grid);
@@ -2629,6 +2686,9 @@
   if (QUERY_PARAMS.get('gallery')) {
     initTitle();
     renderCardGallery();
+  } else if (DEV && QUERY_PARAMS.get('preview') === 'create') {
+    initTitle();
+    renderCreate(newCandidate());
   } else if (DEV && SHORT && QUERY_PARAMS.get('preview') === 'alumni') {
     previewAlumniEvent();
   } else if (DEV && SHORT && QUERY_PARAMS.get('preview') === 'alumni-roster') {
